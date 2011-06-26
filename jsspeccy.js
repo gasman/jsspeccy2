@@ -113,6 +113,7 @@ function Memory() {
 var memory = Memory();
 
 var tstates = 0; /* number of tstates since start if this frame */
+var iff1 = 0, iff2 = 0, im = 0, halted = false;
 
 var FRAME_LENGTH = 69888;
 
@@ -164,8 +165,63 @@ function z80InitTables() {
 z80InitTables();
 
 /* Opcode generator functions: each returns a parameterless function that performs the opcode */
-function NOP() {
+function DEC_R(r) {
 	return function() {
+		regs[rF] = (regs[rF] & FLAG_C ) | ( regs[r] & 0x0f ? 0 : FLAG_H ) | FLAG_N;
+		regs[r]--;
+		regs[rF] |= (regs[r] == 0x7f ? FLAG_V : 0) | sz53Table[regs[r]];
+	}
+}
+function DI() {
+	return function() {
+		iff1 = iff2 = 0;
+		tstates += 4;
+	}
+}
+function EX_RR_RR(rp1, rp2) {
+	return function() {
+		var temp = regPairs[rp1];
+		regPairs[rp1] = regPairs[rp2];
+		regPairs[rp2] = temp;
+		tstates += 4;
+	}
+}
+function INC_R(r) {
+	return function() {
+		regs[r]++;
+		regs[rF] = (regs[rF] & FLAG_C) | ( regs[r] == 0x80 ? FLAG_V : 0 ) | ( regs[r] & 0x0f ? 0 : FLAG_H ) | sz53Table[regs[r]];
+		tstates += 4;
+	}
+}
+function INC_RR(rp) {
+	return function() {
+		regPairs[rp]++;
+		tstates += 6;
+	}
+}
+function JP_N() {
+	return function() {
+		var l = memory.read(regPairs[rpPC]++);
+		var h = memory.read(regPairs[rpPC]++);
+		regPairs[rpPC] = (h<<8) | l;
+		tstates += 10;
+	}
+}
+function LD_iRRi_R(rp, r) {
+	return function() {
+		memory.write(regPairs[rp], regs[r]);
+		tstates += 7;
+	}
+}
+function LD_R_N(r) {
+	return function() {
+		regs[r] = memory.read(regPairs[rpPC]++);
+		tstates += 7;
+	}
+}
+function LD_R_R(r1, r2) {
+	return function() {
+		regs[r1] = regs[r2];
 		tstates += 4;
 	}
 }
@@ -177,29 +233,23 @@ function LD_RR_N(rp) {
 		tstates += 10;
 	}
 }
-function LD_iRRi_R(rp, r) {
+function NOP() {
 	return function() {
-		memory.write(regPairs[rp], regs[r]);
-		tstates += 7;
+		tstates += 4;
 	}
 }
-function INC_RR(rp) {
+function RLCA() {
 	return function() {
-		regPairs[rp]++;
-		tstates += 6;
+		regs[rA] = (regs[rA] << 1) | (regs[rA] >> 7);
+		regs[rF] = ( regs[rF] & ( FLAG_P | FLAG_Z | FLAG_S ) ) | ( regs[rA] & ( FLAG_C | FLAG_3 | FLAG_5) );
+		tstates += 4;
 	}
 }
-function INC_R(r) {
+function XOR_R(r) {
 	return function() {
-		regs[r]++;
-		regs[rF] = (regs[rF] & FLAG_C) | ( regs[r] == 0x80 ? FLAG_V : 0 ) | ( regs[r] & 0x0f ? 0 : FLAG_H ) | sz53Table[regs[r]];
-	}
-}
-function DEC_R(r) {
-	return function() {
-		regs[rF] = (regs[rF] & FLAG_C ) | ( regs[r] & 0x0f ? 0 : FLAG_H ) | FLAG_N;
-		regs[r]--;
-		regs[rF] |= (regs[r] == 0x7f ? FLAG_V : 0) | sz53Table[regs[r]];
+		regs[rA] ^= regs[r];
+		regs[rF] = sz53pTable[regs[rA]];
+		tstates += 4;
 	}
 }
 
@@ -210,33 +260,123 @@ OPCODE_RUNNERS = {
 	0x03: /* INC BC */     INC_RR(rpBC),
 	0x04: /* INC B */      INC_R(rB),
 	0x05: /* DEC B */      DEC_R(rB),
+	0x06: /* LD B,nn */    LD_R_N(rB),
+	0x07: /* RLCA */       RLCA(),
+	0x08: /* EX AF,AF' */  EX_RR_RR(rpAF, rpAF_),
 	
 	0x0C: /* INC C */      INC_R(rC),
 	0x0D: /* DEC C */      DEC_R(rC),
+	0x0E: /* LD C,nn */    LD_R_N(rC),
 	
 	0x11: /* LD DE,nnnn */ LD_RR_N(rpDE),
 	0x12: /* LD (DE),A */  LD_iRRi_R(rpDE, rA),
 	0x13: /* INC DE */     INC_RR(rpDE),
 	0x14: /* INC D */      INC_R(rD),
 	0x15: /* DEC D */      DEC_R(rD),
+	0x16: /* LD D,nn */    LD_R_N(rD),
 	
 	0x1C: /* INC E */      INC_R(rE),
 	0x1D: /* DEC E */      DEC_R(rE),
+	0x1E: /* LD E,nn */    LD_R_N(rE),
 	
 	0x21: /* LD HL,nnnn */ LD_RR_N(rpHL),
 	
 	0x23: /* INC HL */     INC_RR(rpHL),
 	0x24: /* INC H */      INC_R(rH),
 	0x25: /* DEC H */      DEC_R(rH),
+	0x26: /* LD H,nn */    LD_R_N(rH),
 	
 	0x2C: /* INC L */      INC_R(rL),
 	0x2D: /* DEC L */      DEC_R(rL),
+	0x2E: /* LD L,nn */    LD_R_N(rL),
 	
 	0x31: /* LD SP,nnnn */ LD_RR_N(rpSP),
 	
 	0x33: /* INC SP */     INC_RR(rpSP),
-
+	
 	0x3C: /* INC A */      INC_R(rA),
+	
+	0x3E: /* LD A,nn */    LD_R_N(rA),
+	
+	0x40: /* LD B,B */     LD_R_R(rB, rB),
+	0x41: /* LD B,C */     LD_R_R(rB, rC),
+	0x42: /* LD B,D */     LD_R_R(rB, rD),
+	0x43: /* LD B,E */     LD_R_R(rB, rE),
+	0x44: /* LD B,H */     LD_R_R(rB, rH),
+	0x45: /* LD B,L */     LD_R_R(rB, rL),
+	
+	0x47: /* LD B,A */     LD_R_R(rB, rA),
+	0x48: /* LD C,B */     LD_R_R(rC, rB),
+	0x49: /* LD C,C */     LD_R_R(rC, rC),
+	0x4a: /* LD C,D */     LD_R_R(rC, rD),
+	0x4b: /* LD C,E */     LD_R_R(rC, rE),
+	0x4c: /* LD C,H */     LD_R_R(rC, rH),
+	0x4d: /* LD C,L */     LD_R_R(rC, rL),
+	
+	0x4f: /* LD C,A */     LD_R_R(rC, rA),
+	0x50: /* LD D,B */     LD_R_R(rD, rB),
+	0x51: /* LD D,C */     LD_R_R(rD, rC),
+	0x52: /* LD D,D */     LD_R_R(rD, rD),
+	0x53: /* LD D,E */     LD_R_R(rD, rE),
+	0x54: /* LD D,H */     LD_R_R(rD, rH),
+	0x55: /* LD D,L */     LD_R_R(rD, rL),
+	
+	0x57: /* LD D,A */     LD_R_R(rD, rA),
+	0x58: /* LD E,B */     LD_R_R(rE, rB),
+	0x59: /* LD E,C */     LD_R_R(rE, rC),
+	0x5a: /* LD E,D */     LD_R_R(rE, rD),
+	0x5b: /* LD E,E */     LD_R_R(rE, rE),
+	0x5c: /* LD E,H */     LD_R_R(rE, rH),
+	0x5d: /* LD E,L */     LD_R_R(rE, rL),
+	
+	0x5f: /* LD E,A */     LD_R_R(rE, rA),
+	0x60: /* LD H,B */     LD_R_R(rH, rB),
+	0x61: /* LD H,C */     LD_R_R(rH, rC),
+	0x62: /* LD H,D */     LD_R_R(rH, rD),
+	0x63: /* LD H,E */     LD_R_R(rH, rE),
+	0x64: /* LD H,H */     LD_R_R(rH, rH),
+	0x65: /* LD H,L */     LD_R_R(rH, rL),
+	
+	0x67: /* LD H,A */     LD_R_R(rH, rA),
+	0x68: /* LD L,B */     LD_R_R(rL, rB),
+	0x69: /* LD L,C */     LD_R_R(rL, rC),
+	0x6a: /* LD L,D */     LD_R_R(rL, rD),
+	0x6b: /* LD L,E */     LD_R_R(rL, rE),
+	0x6c: /* LD L,H */     LD_R_R(rL, rH),
+	0x6d: /* LD L,L */     LD_R_R(rL, rL),
+	
+	0x6f: /* LD L,A */     LD_R_R(rL, rA),
+	0x70: /* LD (HL),B */  LD_iRRi_R(rpHL, rB),
+	0x71: /* LD (HL),C */  LD_iRRi_R(rpHL, rC),
+	0x72: /* LD (HL),D */  LD_iRRi_R(rpHL, rD),
+	0x73: /* LD (HL),E */  LD_iRRi_R(rpHL, rE),
+	0x74: /* LD (HL),H */  LD_iRRi_R(rpHL, rH),
+	0x75: /* LD (HL),L */  LD_iRRi_R(rpHL, rL),
+	
+	0x77: /* LD (HL),A */  LD_iRRi_R(rpHL, rA),
+	0x78: /* LD A,B */     LD_R_R(rA, rB),
+	0x79: /* LD A,C */     LD_R_R(rA, rC),
+	0x7a: /* LD A,D */     LD_R_R(rA, rD),
+	0x7b: /* LD A,E */     LD_R_R(rA, rE),
+	0x7c: /* LD A,H */     LD_R_R(rA, rH),
+	0x7d: /* LD A,L */     LD_R_R(rA, rL),
+	
+	0x7f: /* LD A,A */     LD_R_R(rA, rA),
+	
+	0xA8: /* XOR B */      XOR_R(rB),
+	0xA9: /* XOR C */      XOR_R(rC),
+	0xAA: /* XOR D */      XOR_R(rD),
+	0xAB: /* XOR E */      XOR_R(rE),
+	0xAC: /* XOR H */      XOR_R(rH),
+	0xAD: /* XOR L */      XOR_R(rL),
+	
+	0xAF: /* XOR A */      XOR_R(rA),
+	
+	0xC3: /* JP nnnn */    JP_N(),
+	
+	0xEB: /* EX DE,HL */   EX_RR_RR(rpDE, rpHL),
+	
+	0xF3: /* DI */         DI(),
 	
 	0x100: 0 /* dummy line so I don't have to keep adjusting trailing commas */
 }
@@ -245,6 +385,13 @@ function runFrame() {
 	while (tstates < FRAME_LENGTH) {
 		var opcode = memory.read(regPairs[rpPC]++);
 		OPCODE_RUNNERS[opcode]();
+	}
+}
+
+function maskableInterrupt() {
+	if (halted) {
+		regPairs[rpPC]++;
+		halted = false;
 	}
 }
 
