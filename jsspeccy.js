@@ -78,13 +78,34 @@ if (regs[0] == 0x01) {
 
 function Memory() {
 	var self = {};
-	var mem = new Uint8Array(0x10000);
+	
+	var ramPages = [];
+	for (var i = 0; i < 8; i++) {
+		ramPages[i] = new Uint8Array(0x3fff);
+	}
+	
+	var scratch = new Uint8Array(0x3fff);
+	
+	var readSlots = [
+		roms['48.rom'],
+		ramPages[5],
+		ramPages[2],
+		ramPages[0]
+	]
+	var writeSlots = [
+		scratch,
+		ramPages[5],
+		ramPages[2],
+		ramPages[0]
+	]
 	
 	self.read = function(addr) {
-		return mem[addr];
+		var page = readSlots[addr >> 14];
+		return page[addr & 0x3fff];
 	}
 	self.write = function(addr, val) {
-		if (addr > 0x3fff) mem[addr] = val;
+		var page = writeSlots[addr >> 14];
+		page[addr & 0x3fff] = val;
 	}
 	
 	return self;
