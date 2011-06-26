@@ -112,6 +112,19 @@ function Memory() {
 }
 var memory = Memory();
 
+function IOBus() {
+	var self = {};
+	
+	self.read = function(addr) {
+		return 0xff;
+	}
+	self.write = function(addr, val) {
+	}
+	
+	return self;
+}
+var ioBus = IOBus();
+
 var tstates = 0; /* number of tstates since start if this frame */
 var iff1 = 0, iff2 = 0, im = 0, halted = false;
 
@@ -165,11 +178,26 @@ function z80InitTables() {
 z80InitTables();
 
 /* Opcode generator functions: each returns a parameterless function that performs the opcode */
+function CP_R(r) {
+	return function() {
+		var cptemp = regs[rA] - regs[r];
+		var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (regs[r] & 0x88) >> 2 ) | ( (cptemp & 0x88) >> 1 );
+		regs[rF] = ( cptemp & 0x100 ? FLAG_C : ( cptemp ? 0 : FLAG_Z ) ) | FLAG_N | halfcarrySubTable[lookup & 0x07] | overflowSubTable[lookup >> 4] | ( regs[r] & ( FLAG_3 | FLAG_5 ) ) | ( cptemp & FLAG_S );
+		tstates += 4;
+	}
+}
 function DEC_R(r) {
 	return function() {
 		regs[rF] = (regs[rF] & FLAG_C ) | ( regs[r] & 0x0f ? 0 : FLAG_H ) | FLAG_N;
 		regs[r]--;
 		regs[rF] |= (regs[r] == 0x7f ? FLAG_V : 0) | sz53Table[regs[r]];
+		tstates += 4;
+	}
+}
+function DEC_RR(rp) {
+	return function() {
+		regPairs[rp]--;
+		tstates += 6;
 	}
 }
 function DI() {
@@ -207,6 +235,13 @@ function JP_N() {
 		tstates += 10;
 	}
 }
+function LD_iRRi_N(rp) {
+	return function() {
+		var n = memory.read(regPairs[rpPC]++);
+		memory.write(regPairs[rp], n);
+		tstates += 10;
+	}
+}
 function LD_iRRi_R(rp, r) {
 	return function() {
 		memory.write(regPairs[rp], regs[r]);
@@ -220,9 +255,16 @@ function LD_R_N(r) {
 	}
 }
 function LD_R_R(r1, r2) {
-	return function() {
-		regs[r1] = regs[r2];
-		tstates += 4;
+	if (r1 == rI && r2 == rA) {
+		return function() {
+			regs[r1] = regs[r2];
+			tstates += 9;
+		}
+	} else {
+		return function() {
+			regs[r1] = regs[r2];
+			tstates += 4;
+		}
 	}
 }
 function LD_RR_N(rp) {
@@ -238,11 +280,25 @@ function NOP() {
 		tstates += 4;
 	}
 }
+function OUT_iNi_A() {
+	return function() {
+		var port = memory.read(regPairs[rpPC]++);
+		ioBus.write( (regs[rA] << 8) | port, regs[rA]);
+		tstates += 11;
+	}
+}
 function RLCA() {
 	return function() {
 		regs[rA] = (regs[rA] << 1) | (regs[rA] >> 7);
 		regs[rF] = ( regs[rF] & ( FLAG_P | FLAG_Z | FLAG_S ) ) | ( regs[rA] & ( FLAG_C | FLAG_3 | FLAG_5) );
 		tstates += 4;
+	}
+}
+function SHIFT(opcodeTable) {
+	/* Fake instruction for CB/ED-shifted opcodes */
+	return function() {
+		var opcode = memory.read(regPairs[rpPC]++);
+		opcodeTable[opcode]();
 	}
 }
 function XOR_R(r) {
@@ -251,6 +307,11 @@ function XOR_R(r) {
 		regs[rF] = sz53pTable[regs[rA]];
 		tstates += 4;
 	}
+}
+
+OPCODE_RUNNERS_ED = {
+	0x47: /* LD I,A */     LD_R_R(rI, rA),
+	0x100: 0 /* dummy line so I don't have to keep adjusting trailing commas */
 }
 
 OPCODE_RUNNERS = {
@@ -264,6 +325,7 @@ OPCODE_RUNNERS = {
 	0x07: /* RLCA */       RLCA(),
 	0x08: /* EX AF,AF' */  EX_RR_RR(rpAF, rpAF_),
 	
+	0x0B: /* DEC BC */     DEC_RR(rpBC),
 	0x0C: /* INC C */      INC_R(rC),
 	0x0D: /* DEC C */      DEC_R(rC),
 	0x0E: /* LD C,nn */    LD_R_N(rC),
@@ -275,6 +337,7 @@ OPCODE_RUNNERS = {
 	0x15: /* DEC D */      DEC_R(rD),
 	0x16: /* LD D,nn */    LD_R_N(rD),
 	
+	0x1B: /* DEC DE */     DEC_RR(rpDE),
 	0x1C: /* INC E */      INC_R(rE),
 	0x1D: /* DEC E */      DEC_R(rE),
 	0x1E: /* LD E,nn */    LD_R_N(rE),
@@ -286,6 +349,7 @@ OPCODE_RUNNERS = {
 	0x25: /* DEC H */      DEC_R(rH),
 	0x26: /* LD H,nn */    LD_R_N(rH),
 	
+	0x2B: /* DEC HL */     DEC_RR(rpHL),
 	0x2C: /* INC L */      INC_R(rL),
 	0x2D: /* DEC L */      DEC_R(rL),
 	0x2E: /* LD L,nn */    LD_R_N(rL),
@@ -294,6 +358,9 @@ OPCODE_RUNNERS = {
 	
 	0x33: /* INC SP */     INC_RR(rpSP),
 	
+	0x36: /* LD (HL),nn */ LD_iRRi_N(rpHL),
+	
+	0x3B: /* DEC SP */     DEC_RR(rpSP),
 	0x3C: /* INC A */      INC_R(rA),
 	
 	0x3E: /* LD A,nn */    LD_R_N(rA),
@@ -372,9 +439,22 @@ OPCODE_RUNNERS = {
 	
 	0xAF: /* XOR A */      XOR_R(rA),
 	
+	0xb8: /* CP B */       CP_R(rB),
+	0xb9: /* CP C */       CP_R(rC),
+	0xba: /* CP D */       CP_R(rD),
+	0xbb: /* CP E */       CP_R(rE),
+	0xbc: /* CP H */       CP_R(rH),
+	0xbd: /* CP L */       CP_R(rL),
+	
+	0xbf: /* CP A */       CP_R(rA),
+	
 	0xC3: /* JP nnnn */    JP_N(),
 	
+	0xD3: /* OUT (nn),A */ OUT_iNi_A(),
+	
 	0xEB: /* EX DE,HL */   EX_RR_RR(rpDE, rpHL),
+	
+	0xED: /* shift code */ SHIFT(OPCODE_RUNNERS_ED),
 	
 	0xF3: /* DI */         DI(),
 	
