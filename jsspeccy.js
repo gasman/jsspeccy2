@@ -235,6 +235,38 @@ function JP_N() {
 		tstates += 10;
 	}
 }
+function JR_C_N(flag, sense) {
+	if (sense) {
+		/* branch if flag set */
+		return function() {
+			var offset = memory.read(regPairs[rpPC]++);
+			if (regs[rF] & flag) {
+				regPairs[rpPC] += (offset & 0x80 ? offset - 0x100 : offset);
+				tstates += 12;
+			} else {
+				tstates += 7;
+			}
+		}
+	} else {
+		/* branch if flag reset */
+		return function() {
+			var offset = memory.read(regPairs[rpPC]++);
+			if (regs[rF] & flag) {
+				tstates += 7;
+			} else {
+				regPairs[rpPC] += (offset & 0x80 ? offset - 0x100 : offset);
+				tstates += 12;
+			}
+		}
+	}
+}
+function JR_N() {
+	return function() {
+			var offset = memory.read(regPairs[rpPC]++);
+			regPairs[rpPC] += (offset & 0x80 ? offset - 0x100 : offset);
+			tstates += 12;
+	}
+}
 function LD_iRRi_N(rp) {
 	return function() {
 		var n = memory.read(regPairs[rpPC]++);
@@ -337,11 +369,14 @@ OPCODE_RUNNERS = {
 	0x15: /* DEC D */      DEC_R(rD),
 	0x16: /* LD D,nn */    LD_R_N(rD),
 	
+	0x18: /* JR nn */      JR_N(),
+	
 	0x1B: /* DEC DE */     DEC_RR(rpDE),
 	0x1C: /* INC E */      INC_R(rE),
 	0x1D: /* DEC E */      DEC_R(rE),
 	0x1E: /* LD E,nn */    LD_R_N(rE),
 	
+	0x20: /* JR NZ,nn */   JR_C_N(FLAG_Z, false),
 	0x21: /* LD HL,nnnn */ LD_RR_N(rpHL),
 	
 	0x23: /* INC HL */     INC_RR(rpHL),
@@ -349,16 +384,21 @@ OPCODE_RUNNERS = {
 	0x25: /* DEC H */      DEC_R(rH),
 	0x26: /* LD H,nn */    LD_R_N(rH),
 	
+	0x28: /* JR Z,nn */    JR_C_N(FLAG_Z, true),
+	
 	0x2B: /* DEC HL */     DEC_RR(rpHL),
 	0x2C: /* INC L */      INC_R(rL),
 	0x2D: /* DEC L */      DEC_R(rL),
 	0x2E: /* LD L,nn */    LD_R_N(rL),
 	
+	0x30: /* JR NC,nn */   JR_C_N(FLAG_C, false),
 	0x31: /* LD SP,nnnn */ LD_RR_N(rpSP),
 	
 	0x33: /* INC SP */     INC_RR(rpSP),
 	
 	0x36: /* LD (HL),nn */ LD_iRRi_N(rpHL),
+	
+	0x38: /* JR C,nn */    JR_C_N(FLAG_C, true),
 	
 	0x3B: /* DEC SP */     DEC_RR(rpSP),
 	0x3C: /* INC A */      INC_R(rA),
