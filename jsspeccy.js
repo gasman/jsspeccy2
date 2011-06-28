@@ -178,12 +178,39 @@ function z80InitTables() {
 z80InitTables();
 
 /* Opcode generator functions: each returns a parameterless function that performs the opcode */
+function ADD_RR_RR(rp1, rp2) {
+	var tstatesToAdd = (rp1 == rpHL ? 11 : 15);
+	return function() {
+		var add16temp = regPairs[rp1] + regPairs[rp2];
+		var lookup = ( (regPairs[rp1] & 0x0800) >> 11 ) | ( (regPairs[rp2] & 0x0800) >> 10 ) | ( (add16temp & 0x0800) >>  9 );
+		regPairs[rp1] = add16temp;
+		regs[rF] = ( regs[rF] & ( FLAG_V | FLAG_Z | FLAG_S ) ) | ( add16temp & 0x10000 ? FLAG_C : 0 ) | ( ( add16temp >> 8 ) & ( FLAG_3 | FLAG_5 ) ) | halfcarryAddTable[lookup];
+		tstates += tstatesToAdd;
+	}
+}
+function AND_R(r) {
+	return function() {
+		regs[rA] &= regs[r];
+		regs[rF] = FLAG_H | sz53pTable[regs[rA]];
+		tstates += 4;
+	}
+}
 function CP_R(r) {
 	return function() {
 		var cptemp = regs[rA] - regs[r];
 		var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (regs[r] & 0x88) >> 2 ) | ( (cptemp & 0x88) >> 1 );
 		regs[rF] = ( cptemp & 0x100 ? FLAG_C : ( cptemp ? 0 : FLAG_Z ) ) | FLAG_N | halfcarrySubTable[lookup & 0x07] | overflowSubTable[lookup >> 4] | ( regs[r] & ( FLAG_3 | FLAG_5 ) ) | ( cptemp & FLAG_S );
 		tstates += 4;
+	}
+}
+function DEC_iHLi() {
+	return function() {
+		var value = memory.read(regPairs[rpHL]);
+		regs[rF] = (regs[rF] & FLAG_C ) | ( value & 0x0f ? 0 : FLAG_H ) | FLAG_N;
+		value = (value - 1) & 0xff;
+		memory.write(regPairs[rpHL], value);
+		regs[rF] |= (value == 0x7f ? FLAG_V : 0) | sz53Table[value];
+		tstates += 7;
 	}
 }
 function DEC_R(r) {
@@ -206,12 +233,34 @@ function DI() {
 		tstates += 4;
 	}
 }
+function EI() {
+	return function() {
+		iff1 = iff2 = 1;
+		/* TODO: block interrupts from being triggered immediately after an EI */
+		tstates += 4;
+	}
+}
 function EX_RR_RR(rp1, rp2) {
 	return function() {
 		var temp = regPairs[rp1];
 		regPairs[rp1] = regPairs[rp2];
 		regPairs[rp2] = temp;
 		tstates += 4;
+	}
+}
+function EXX() {
+	return function() {
+		var wordtemp;
+		wordtemp = regPairs[rpBC]; regPairs[rpBC] = regPairs[rpBC_]; regPairs[rpBC_] = wordtemp;
+		wordtemp = regPairs[rpDE]; regPairs[rpDE] = regPairs[rpDE_]; regPairs[rpDE_] = wordtemp;
+		wordtemp = regPairs[rpHL]; regPairs[rpHL] = regPairs[rpHL_]; regPairs[rpHL_] = wordtemp;
+		tstates += 4;
+	}
+}
+function IM(val) {
+	return function() {
+		im = val;
+		tstates += 8;
 	}
 }
 function INC_R(r) {
@@ -227,7 +276,7 @@ function INC_RR(rp) {
 		tstates += 6;
 	}
 }
-function JP_N() {
+function JP_NN() {
 	return function() {
 		var l = memory.read(regPairs[rpPC]++);
 		var h = memory.read(regPairs[rpPC]++);
@@ -262,9 +311,20 @@ function JR_C_N(flag, sense) {
 }
 function JR_N() {
 	return function() {
-			var offset = memory.read(regPairs[rpPC]++);
-			regPairs[rpPC] += (offset & 0x80 ? offset - 0x100 : offset);
-			tstates += 12;
+		var offset = memory.read(regPairs[rpPC]++);
+		regPairs[rpPC] += (offset & 0x80 ? offset - 0x100 : offset);
+		tstates += 12;
+	}
+}
+function LD_iNNi_RR(rp) {
+	var tstatesToAdd = (rp == rpHL ? 16 : 20);
+	return function() {
+		var l = memory.read(regPairs[rpPC]++);
+		var h = memory.read(regPairs[rpPC]++);
+		var addr = (h<<8) | l;
+		memory.write(addr, regPairs[rp] & 0xff);
+		memory.write((addr + 1) & 0xffff, regPairs[rp] >> 8);
+		tstates += tstatesToAdd;
 	}
 }
 function LD_iRRi_N(rp) {
@@ -299,12 +359,65 @@ function LD_R_R(r1, r2) {
 		}
 	}
 }
-function LD_RR_N(rp) {
+function LD_RR_iNNi(rp, shifted) {
+	var tstatesToAdd = ( (rp == rpHL && !shifted) ? 16 : 20);
+	return function() {
+		var l = memory.read(regPairs[rpPC]++);
+		var h = memory.read(regPairs[rpPC]++);
+		var addr = (h<<8) | l;
+		l = memory.read(addr);
+		h = memory.read((addr + 1) & 0xffff);
+		regPairs[rp] = (h<<8) | l;
+		tstates += tstatesToAdd;
+	}
+}
+function LD_RR_NN(rp) {
+	var tstatesToAdd = ( (rp == rpIX || rp == rpIY) ? 14 : 10);
 	return function() {
 		var l = memory.read(regPairs[rpPC]++);
 		var h = memory.read(regPairs[rpPC]++);
 		regPairs[rp] = (h<<8) | l;
-		tstates += 10;
+		tstates += tstatesToAdd;
+	}
+}
+function LD_RR_RR(rp1, rp2) {
+	/* only used for LD SP,HL/IX/IY */
+	var tstatesToAdd = ( rp2 == rpHL ? 6 : 10);
+	return function() {
+		regPairs[rp1] = regPairs[rp2];
+		tstates += tstatesToAdd;
+	}
+}
+function LDDR() {
+	return function() {
+		var bytetemp = memory.read(regPairs[rpHL]);
+		memory.write(regPairs[rpDE],bytetemp);
+		regPairs[rpBC]--;
+		bytetemp = (bytetemp + regs[rA]) & 0xff;
+		regs[rF] = ( regs[rF] & ( FLAG_C | FLAG_Z | FLAG_S ) ) | ( regPairs[rpBC] ? FLAG_V : 0 ) | ( bytetemp & FLAG_3 ) | ( (bytetemp & 0x02) ? FLAG_5 : 0 );
+		if (regPairs[rpBC]) {
+			regPairs[rpPC]-=2;
+			tstates += 21;
+		} else {
+			tstates += 16;
+		}
+		regPairs[rpHL]--; regPairs[rpDE]--;
+	}
+}
+function LDIR() {
+	return function() {
+		var bytetemp = memory.read(regPairs[rpHL]);
+		memory.write(regPairs[rpDE],bytetemp);
+		regPairs[rpBC]--;
+		bytetemp = (bytetemp + regs[rA]) & 0xff;
+		regs[rF] = ( regs[rF] & ( FLAG_C | FLAG_Z | FLAG_S ) ) | ( regPairs[rpBC] ? FLAG_V : 0 ) | ( bytetemp & FLAG_3 ) | ( (bytetemp & 0x02) ? FLAG_5 : 0 );
+		if (regPairs[rpBC]) {
+			regPairs[rpPC]-=2;
+			tstates += 21;
+		} else {
+			tstates += 16;
+		}
+		regPairs[rpHL]++; regPairs[rpDE]++;
 	}
 }
 function NOP() {
@@ -326,10 +439,20 @@ function RLCA() {
 		tstates += 4;
 	}
 }
+function SBC_HL_RR(rp) {
+	return function() {
+		var sub16temp = regPairs[rpHL] - regPairs[rp] - (regs[rF] & FLAG_C);
+		var lookup = ( (regPairs[rpHL] & 0x8800) >> 11 ) | ( (regPairs[rp] & 0x8800) >> 10 ) | ( (sub16temp & 0x8800) >>  9 );
+		regPairs[rpHL] = sub16temp;
+		regs[rF] = ( sub16temp & 0x10000 ? FLAG_C : 0 ) | FLAG_N | overflowSubTable[lookup >> 4] | ( regs[rH] & ( FLAG_3 | FLAG_5 | FLAG_S ) ) | halfcarrySubTable[lookup&0x07] | ( regPairs[rpHL] ? 0 : FLAG_Z);
+		tstates += 15;
+	}
+}
 function SHIFT(opcodeTable) {
 	/* Fake instruction for CB/ED-shifted opcodes */
 	return function() {
 		var opcode = memory.read(regPairs[rpPC]++);
+		if (!opcodeTable[opcode]) console.log(regPairs[rpPC], opcodeTable);
 		opcodeTable[opcode]();
 	}
 }
@@ -341,14 +464,77 @@ function XOR_R(r) {
 	}
 }
 
+OPCODE_RUNNERS_DD = {
+	0x09: /* ADD IX,BC */  ADD_RR_RR(rpIX, rpBC),
+	
+	0x19: /* ADD IX,DE */  ADD_RR_RR(rpIX, rpDE),
+	
+	0x21: /* LD IX,nnnn */ LD_RR_NN(rpIX),
+	0x22: /* LD (nnnn),IX */ LD_iNNi_RR(rpIX),
+	
+	0x29: /* ADD IX,IX */  ADD_RR_RR(rpIX, rpIX),
+	0x2A: /* LD IX,(nnnn) */ LD_RR_iNNi(rpIX),
+	
+	0x39: /* ADD IX,SP */  ADD_RR_RR(rpIX, rpSP),
+	
+	0xF9: /* LD SP,IX */   LD_RR_RR(rpSP, rpIX),
+	
+	0x100: 'dd' /* dummy line so I don't have to keep adjusting trailing commas */
+}
+
 OPCODE_RUNNERS_ED = {
+	0x42: /* SBC HL,BC */  SBC_HL_RR(rpBC),
+	0x43: /* LD (nnnn),BC */ LD_iNNi_RR(rpBC),
+	
+	0x46: /* IM 0 */       IM(0),
 	0x47: /* LD I,A */     LD_R_R(rI, rA),
-	0x100: 0 /* dummy line so I don't have to keep adjusting trailing commas */
+	
+	0x4B: /* LD BC,(nnnn) */ LD_RR_iNNi(rpBC),
+	
+	0x52: /* SBC HL,DE */  SBC_HL_RR(rpDE),
+	0x53: /* LD (nnnn),DE */ LD_iNNi_RR(rpDE),
+	
+	0x56: /* IM 1 */       IM(1),
+	
+	0x5B: /* LD DE,(nnnn) */ LD_RR_iNNi(rpDE),
+	
+	0x5E: /* IM 2 */       IM(2),
+	
+	0x62: /* SBC HL,HL */  SBC_HL_RR(rpHL),
+	
+	0x6B: /* LD HL,(nnnn) */ LD_RR_iNNi(rpHL, true),
+	
+	0x72: /* SBC HL,SP */  SBC_HL_RR(rpSP),
+	0x73: /* LD (nnnn),SP */ LD_iNNi_RR(rpSP),
+	
+	0xB0: /* LDIR */       LDIR(),
+	
+	0xB8: /* LDDR */       LDDR(),
+	
+	0x100: 'ed' /* dummy line so I don't have to keep adjusting trailing commas */
+}
+
+OPCODE_RUNNERS_FD = {
+	0x09: /* ADD IY,BC */  ADD_RR_RR(rpIY, rpBC),
+	
+	0x19: /* ADD IY,DE */  ADD_RR_RR(rpIY, rpDE),
+	
+	0x21: /* LD IY,nnnn */ LD_RR_NN(rpIY),
+	0x22: /* LD (nnnn),IY */ LD_iNNi_RR(rpIY),
+	
+	0x29: /* ADD IY,IY */  ADD_RR_RR(rpIY, rpIY),
+	0x2A: /* LD IY,(nnnn) */ LD_RR_iNNi(rpIY),
+	
+	0x39: /* ADD IY,SP */  ADD_RR_RR(rpIY, rpSP),
+	
+	0xF9: /* LD SP,IY */   LD_RR_RR(rpSP, rpIY),
+	
+	0x100: 'fd' /* dummy line so I don't have to keep adjusting trailing commas */
 }
 
 OPCODE_RUNNERS = {
 	0x00: /* NOP */        NOP(),
-	0x01: /* LD BC,nnnn */ LD_RR_N(rpBC),
+	0x01: /* LD BC,nnnn */ LD_RR_NN(rpBC),
 	0x02: /* LD (BC),A */  LD_iRRi_R(rpBC, rA),
 	0x03: /* INC BC */     INC_RR(rpBC),
 	0x04: /* INC B */      INC_R(rB),
@@ -356,13 +542,14 @@ OPCODE_RUNNERS = {
 	0x06: /* LD B,nn */    LD_R_N(rB),
 	0x07: /* RLCA */       RLCA(),
 	0x08: /* EX AF,AF' */  EX_RR_RR(rpAF, rpAF_),
+	0x09: /* ADD HL,BC */  ADD_RR_RR(rpHL, rpBC),
 	
 	0x0B: /* DEC BC */     DEC_RR(rpBC),
 	0x0C: /* INC C */      INC_R(rC),
 	0x0D: /* DEC C */      DEC_R(rC),
 	0x0E: /* LD C,nn */    LD_R_N(rC),
 	
-	0x11: /* LD DE,nnnn */ LD_RR_N(rpDE),
+	0x11: /* LD DE,nnnn */ LD_RR_NN(rpDE),
 	0x12: /* LD (DE),A */  LD_iRRi_R(rpDE, rA),
 	0x13: /* INC DE */     INC_RR(rpDE),
 	0x14: /* INC D */      INC_R(rD),
@@ -370,6 +557,7 @@ OPCODE_RUNNERS = {
 	0x16: /* LD D,nn */    LD_R_N(rD),
 	
 	0x18: /* JR nn */      JR_N(),
+	0x19: /* ADD HL,DE */  ADD_RR_RR(rpHL, rpDE),
 	
 	0x1B: /* DEC DE */     DEC_RR(rpDE),
 	0x1C: /* INC E */      INC_R(rE),
@@ -377,28 +565,31 @@ OPCODE_RUNNERS = {
 	0x1E: /* LD E,nn */    LD_R_N(rE),
 	
 	0x20: /* JR NZ,nn */   JR_C_N(FLAG_Z, false),
-	0x21: /* LD HL,nnnn */ LD_RR_N(rpHL),
-	
+	0x21: /* LD HL,nnnn */ LD_RR_NN(rpHL),
+	0x22: /* LD (nnnn),HL */ LD_iNNi_RR(rpHL),
 	0x23: /* INC HL */     INC_RR(rpHL),
 	0x24: /* INC H */      INC_R(rH),
 	0x25: /* DEC H */      DEC_R(rH),
 	0x26: /* LD H,nn */    LD_R_N(rH),
 	
 	0x28: /* JR Z,nn */    JR_C_N(FLAG_Z, true),
-	
+	0x29: /* ADD HL,HL */  ADD_RR_RR(rpHL, rpHL),
+	0x2A: /* LD HL,(nnnn) */ LD_RR_iNNi(rpHL),
 	0x2B: /* DEC HL */     DEC_RR(rpHL),
 	0x2C: /* INC L */      INC_R(rL),
 	0x2D: /* DEC L */      DEC_R(rL),
 	0x2E: /* LD L,nn */    LD_R_N(rL),
 	
 	0x30: /* JR NC,nn */   JR_C_N(FLAG_C, false),
-	0x31: /* LD SP,nnnn */ LD_RR_N(rpSP),
+	0x31: /* LD SP,nnnn */ LD_RR_NN(rpSP),
 	
 	0x33: /* INC SP */     INC_RR(rpSP),
 	
+	0x35: /* DEC (HL) */   DEC_iHLi(),
 	0x36: /* LD (HL),nn */ LD_iRRi_N(rpHL),
 	
 	0x38: /* JR C,nn */    JR_C_N(FLAG_C, true),
+	0x39: /* ADD HL,SP */  ADD_RR_RR(rpHL, rpSP),
 	
 	0x3B: /* DEC SP */     DEC_RR(rpSP),
 	0x3C: /* INC A */      INC_R(rA),
@@ -470,6 +661,14 @@ OPCODE_RUNNERS = {
 	
 	0x7f: /* LD A,A */     LD_R_R(rA, rA),
 	
+	0xa0: /* AND A,B */    AND_R(rB),
+	0xa1: /* AND A,C */    AND_R(rC),
+	0xa2: /* AND A,D */    AND_R(rD),
+	0xa3: /* AND A,E */    AND_R(rE),
+	0xa4: /* AND A,H */    AND_R(rH),
+	0xa5: /* AND A,L */    AND_R(rL),
+	
+	0xa7: /* AND A,A */    AND_R(rA),
 	0xA8: /* XOR B */      XOR_R(rB),
 	0xA9: /* XOR C */      XOR_R(rC),
 	0xAA: /* XOR D */      XOR_R(rD),
@@ -488,15 +687,25 @@ OPCODE_RUNNERS = {
 	
 	0xbf: /* CP A */       CP_R(rA),
 	
-	0xC3: /* JP nnnn */    JP_N(),
+	0xC3: /* JP nnnn */    JP_NN(),
 	
 	0xD3: /* OUT (nn),A */ OUT_iNi_A(),
+	
+	0xD9: /* EXX */        EXX(),
+	
+	0xDD: /* shift code */ SHIFT(OPCODE_RUNNERS_DD),
 	
 	0xEB: /* EX DE,HL */   EX_RR_RR(rpDE, rpHL),
 	
 	0xED: /* shift code */ SHIFT(OPCODE_RUNNERS_ED),
 	
 	0xF3: /* DI */         DI(),
+	
+	0xF9: /* LD SP,HL */   LD_RR_RR(rpSP, rpHL),
+	
+	0xFB: /* EI */         EI(),
+	
+	0xFD: /* shift code */ SHIFT(OPCODE_RUNNERS_FD),
 	
 	0x100: 0 /* dummy line so I don't have to keep adjusting trailing commas */
 }
@@ -515,5 +724,9 @@ function maskableInterrupt() {
 	}
 }
 
-runFrame();
-console.log(regPairs[rpPC]);
+function tick() {
+	runFrame();
+	tstates -= FRAME_LENGTH;
+	setTimeout(tick, 20);
+}
+tick();
