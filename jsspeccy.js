@@ -177,7 +177,9 @@ function z80InitTables() {
 }
 z80InitTables();
 
-/* Opcode generator functions: each returns a parameterless function that performs the opcode */
+/* Opcode generator functions: each returns a parameterless function that performs the opcode
+	(apart from the ones prefixed by DDCBnn, which are passed the offset nn (converted to a signed byte)).
+*/
 function ADD_RR_RR(rp1, rp2) {
 	var tstatesToAdd = (rp1 == rpHL ? 11 : 15);
 	return function() {
@@ -211,6 +213,20 @@ function DEC_iHLi() {
 		memory.write(regPairs[rpHL], value);
 		regs[rF] |= (value == 0x7f ? FLAG_V : 0) | sz53Table[value];
 		tstates += 7;
+	}
+}
+function DEC_iRRpNNi(rp) {
+	return function() {
+		var offset = memory.read(regPairs[rpPC]++);
+		if (offset & 0x80) offset -= 0x100;
+		var addr = (regPairs[rp] + offset) & 0xffff;
+		
+		var value = memory.read(addr);
+		regs[rF] = (regs[rF] & FLAG_C ) | ( value & 0x0f ? 0 : FLAG_H ) | FLAG_N;
+		value = (value - 1) & 0xff;
+		memory.write(addr, value);
+		regs[rF] |= (value == 0x7f ? FLAG_V : 0) | sz53Table[value];
+		tstates += 23;
 	}
 }
 function DEC_R(r) {
@@ -314,6 +330,15 @@ function JR_N() {
 		var offset = memory.read(regPairs[rpPC]++);
 		regPairs[rpPC] += (offset & 0x80 ? offset - 0x100 : offset);
 		tstates += 12;
+	}
+}
+function LD_iNNi_A() {
+	return function() {
+		var l = memory.read(regPairs[rpPC]++);
+		var h = memory.read(regPairs[rpPC]++);
+		var addr = (h<<8) | l;
+		memory.write(addr, regs[rA]);
+		tstates += 13;
 	}
 }
 function LD_iNNi_RR(rp) {
@@ -448,12 +473,31 @@ function SBC_HL_RR(rp) {
 		tstates += 15;
 	}
 }
+function SET_N_iRRpNNi(bit, rp) {
+	var hexMask = 1 << bit;
+	return function(offset) {
+		var addr = (regPairs[rp] + offset) & 0xffff;
+		var value = memory.read(addr);
+		memory.write(addr, value | hexMask);
+	}
+}
 function SHIFT(opcodeTable) {
-	/* Fake instruction for CB/ED-shifted opcodes */
+	/* Fake instruction for CB/ED-shifted opcodes - passes control to a secondary opcode table */
 	return function() {
 		var opcode = memory.read(regPairs[rpPC]++);
 		if (!opcodeTable[opcode]) console.log(regPairs[rpPC], opcodeTable);
 		opcodeTable[opcode]();
+	}
+}
+function SHIFT_DDCB(opcodeTable) {
+	/* like SHIFT, but with the extra quirk that we have to pull an offset parameter from PC
+	*before* the final opcode to tell us what to do */
+	return function() {
+		var offset = memory.read(regPairs[rpPC]++);
+		if (offset & 0x80) offset -= 0x100;
+		var opcode = memory.read(regPairs[rpPC]++);
+		if (!opcodeTable[opcode]) console.log(regPairs[rpPC], opcodeTable);
+		opcodeTable[opcode](offset);
 	}
 }
 function XOR_R(r) {
@@ -464,23 +508,53 @@ function XOR_R(r) {
 	}
 }
 
-OPCODE_RUNNERS_DD = {
-	0x09: /* ADD IX,BC */  ADD_RR_RR(rpIX, rpBC),
+/* Generate the opcode runner lookup table for either the DD or FD set, acting on the
+specified register pair (IX or IY) */
+function generateDDFDOpcodeSet(rp) {
+	var ddcbOpcodeRunners = {
+		
+		0xC6: /* SET 0,(IX+nn) */ SET_N_iRRpNNi(0, rp),
+		
+		0xCE: /* SET 1,(IX+nn) */ SET_N_iRRpNNi(1, rp),
+		
+		0xD6: /* SET 2,(IX+nn) */ SET_N_iRRpNNi(2, rp),
+		
+		0xDE: /* SET 3,(IX+nn) */ SET_N_iRRpNNi(3, rp),
+		
+		0xE6: /* SET 4,(IX+nn) */ SET_N_iRRpNNi(4, rp),
+		
+		0xEE: /* SET 5,(IX+nn) */ SET_N_iRRpNNi(5, rp),
+		
+		0xF6: /* SET 6,(IX+nn) */ SET_N_iRRpNNi(6, rp),
+		
+		0xFE: /* SET 7,(IX+nn) */ SET_N_iRRpNNi(7, rp),
+		
+		0x100: 'ddcb' /* dummy line so I don't have to keep adjusting trailing commas */
+	}
 	
-	0x19: /* ADD IX,DE */  ADD_RR_RR(rpIX, rpDE),
-	
-	0x21: /* LD IX,nnnn */ LD_RR_NN(rpIX),
-	0x22: /* LD (nnnn),IX */ LD_iNNi_RR(rpIX),
-	
-	0x29: /* ADD IX,IX */  ADD_RR_RR(rpIX, rpIX),
-	0x2A: /* LD IX,(nnnn) */ LD_RR_iNNi(rpIX),
-	
-	0x39: /* ADD IX,SP */  ADD_RR_RR(rpIX, rpSP),
-	
-	0xF9: /* LD SP,IX */   LD_RR_RR(rpSP, rpIX),
-	
-	0x100: 'dd' /* dummy line so I don't have to keep adjusting trailing commas */
+	return {
+		0x09: /* ADD IX,BC */  ADD_RR_RR(rp, rpBC),
+		
+		0x19: /* ADD IX,DE */  ADD_RR_RR(rp, rpDE),
+		
+		0x21: /* LD IX,nnnn */ LD_RR_NN(rp),
+		0x22: /* LD (nnnn),IX */ LD_iNNi_RR(rp),
+		
+		0x29: /* ADD IX,IX */  ADD_RR_RR(rp, rp),
+		0x2A: /* LD IX,(nnnn) */ LD_RR_iNNi(rp),
+		
+		0x35: /* DEC (IX+nn) */ DEC_iRRpNNi(rp),
+		0x39: /* ADD IX,SP */  ADD_RR_RR(rp, rpSP),
+		
+		0xCB: /* shift code */ SHIFT_DDCB(ddcbOpcodeRunners),
+		
+		0xF9: /* LD SP,IX */   LD_RR_RR(rpSP, rp),
+		
+		0x100: 'dd' /* dummy line so I don't have to keep adjusting trailing commas */
+	}
 }
+
+OPCODE_RUNNERS_DD = generateDDFDOpcodeSet(rpIX);
 
 OPCODE_RUNNERS_ED = {
 	0x42: /* SBC HL,BC */  SBC_HL_RR(rpBC),
@@ -514,23 +588,7 @@ OPCODE_RUNNERS_ED = {
 	0x100: 'ed' /* dummy line so I don't have to keep adjusting trailing commas */
 }
 
-OPCODE_RUNNERS_FD = {
-	0x09: /* ADD IY,BC */  ADD_RR_RR(rpIY, rpBC),
-	
-	0x19: /* ADD IY,DE */  ADD_RR_RR(rpIY, rpDE),
-	
-	0x21: /* LD IY,nnnn */ LD_RR_NN(rpIY),
-	0x22: /* LD (nnnn),IY */ LD_iNNi_RR(rpIY),
-	
-	0x29: /* ADD IY,IY */  ADD_RR_RR(rpIY, rpIY),
-	0x2A: /* LD IY,(nnnn) */ LD_RR_iNNi(rpIY),
-	
-	0x39: /* ADD IY,SP */  ADD_RR_RR(rpIY, rpSP),
-	
-	0xF9: /* LD SP,IY */   LD_RR_RR(rpSP, rpIY),
-	
-	0x100: 'fd' /* dummy line so I don't have to keep adjusting trailing commas */
-}
+OPCODE_RUNNERS_FD = generateDDFDOpcodeSet(rpIY);
 
 OPCODE_RUNNERS = {
 	0x00: /* NOP */        NOP(),
@@ -582,7 +640,7 @@ OPCODE_RUNNERS = {
 	
 	0x30: /* JR NC,nn */   JR_C_N(FLAG_C, false),
 	0x31: /* LD SP,nnnn */ LD_RR_NN(rpSP),
-	
+	0x32: /* LD (nnnn),a */ LD_iNNi_A(),
 	0x33: /* INC SP */     INC_RR(rpSP),
 	
 	0x35: /* DEC (HL) */   DEC_iHLi(),
