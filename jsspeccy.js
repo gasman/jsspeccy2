@@ -197,6 +197,16 @@ function AND_R(r) {
 		tstates += 4;
 	}
 }
+function BIT_N_iRRpNNi(bit, rp) {
+	return function(offset) {
+		var addr = (regPairs[rp] + offset) & 0xffff;
+		var value = memory.read(addr);
+		regs[rF] = ( regs[rF] & FLAG_C ) | FLAG_H | ( ( addr >> 8 ) & ( FLAG_3 | FLAG_5 ) );
+		if( ! ( (value) & ( 0x01 << (bit) ) ) ) regs[rF] |= FLAG_P | FLAG_Z;
+		if( (bit) == 7 && (value) & 0x80 ) regs[rF] |= FLAG_S;
+		tstates += 20;
+	}
+}
 function CALL_NN() {
 	return function() {
 		var l = memory.read(regPairs[rpPC]++);
@@ -259,6 +269,21 @@ function DI() {
 		tstates += 4;
 	}
 }
+function DJNZ_N() {
+	return function() {
+		regs[rB]--;
+		if (regs[rB]) {
+			/* take branch */
+			var offset = memory.read(regPairs[rpPC]++);
+			regPairs[rpPC] += (offset & 0x80 ? offset - 0x100 : offset);
+			tstates += 13;
+		} else {
+			/* do not take branch */
+			regPairs[rpPC]++; /* skip past offset byte */
+			tstates += 8;
+		}
+	}
+}
 function EI() {
 	return function() {
 		iff1 = iff2 = 1;
@@ -314,21 +339,23 @@ function JR_C_N(flag, sense) {
 	if (sense) {
 		/* branch if flag set */
 		return function() {
-			var offset = memory.read(regPairs[rpPC]++);
 			if (regs[rF] & flag) {
+				var offset = memory.read(regPairs[rpPC]++);
 				regPairs[rpPC] += (offset & 0x80 ? offset - 0x100 : offset);
 				tstates += 12;
 			} else {
+				regPairs[rpPC]++; /* skip past offset byte */
 				tstates += 7;
 			}
 		}
 	} else {
 		/* branch if flag reset */
 		return function() {
-			var offset = memory.read(regPairs[rpPC]++);
 			if (regs[rF] & flag) {
+				regPairs[rpPC]++; /* skip past offset byte */
 				tstates += 7;
 			} else {
+				var offset = memory.read(regPairs[rpPC]++);
 				regPairs[rpPC] += (offset & 0x80 ? offset - 0x100 : offset);
 				tstates += 12;
 			}
@@ -373,6 +400,16 @@ function LD_iRRi_R(rp, r) {
 	return function() {
 		memory.write(regPairs[rp], regs[r]);
 		tstates += 7;
+	}
+}
+function LD_iRRpNNi_R(rp, r) {
+	return function() {
+		var offset = memory.read(regPairs[rpPC]++);
+		if (offset & 0x80) offset -= 0x100;
+		var addr = (regPairs[rp] + offset) & 0xffff;
+		
+		memory.write(addr, regs[r]);
+		tstates += 19;
 	}
 }
 function LD_R_N(r) {
@@ -475,6 +512,15 @@ function PUSH_RR(rp) {
 		tstates += tstatesToAdd;
 	}
 }
+function RES_N_iRRpNNi(bit, rp) {
+	var hexMask = 0xff ^ (1 << bit);
+	return function(offset) {
+		var addr = (regPairs[rp] + offset) & 0xffff;
+		var value = memory.read(addr);
+		memory.write(addr, value & hexMask);
+		tstates += 23;
+	}
+}
 function RLCA() {
 	return function() {
 		regs[rA] = (regs[rA] << 1) | (regs[rA] >> 7);
@@ -497,6 +543,7 @@ function SET_N_iRRpNNi(bit, rp) {
 		var addr = (regPairs[rp] + offset) & 0xffff;
 		var value = memory.read(addr);
 		memory.write(addr, value | hexMask);
+		tstates += 23;
 	}
 }
 function SHIFT(opcodeTable) {
@@ -531,6 +578,38 @@ specified register pair (IX or IY) */
 function generateDDFDOpcodeSet(rp) {
 	var ddcbOpcodeRunners = {
 		
+		0x46: /* BIT 0,(IX+nn) */ BIT_N_iRRpNNi(0, rp),
+		
+		0x4E: /* BIT 1,(IX+nn) */ BIT_N_iRRpNNi(1, rp),
+		
+		0x56: /* BIT 2,(IX+nn) */ BIT_N_iRRpNNi(2, rp),
+		
+		0x5E: /* BIT 3,(IX+nn) */ BIT_N_iRRpNNi(3, rp),
+		
+		0x66: /* BIT 4,(IX+nn) */ BIT_N_iRRpNNi(4, rp),
+		
+		0x6E: /* BIT 5,(IX+nn) */ BIT_N_iRRpNNi(5, rp),
+		
+		0x76: /* BIT 6,(IX+nn) */ BIT_N_iRRpNNi(6, rp),
+		
+		0x7E: /* BIT 7,(IX+nn) */ BIT_N_iRRpNNi(7, rp),
+		
+		0x86: /* RES 0,(IX+nn) */ RES_N_iRRpNNi(0, rp),
+		
+		0x8E: /* RES 1,(IX+nn) */ RES_N_iRRpNNi(1, rp),
+		
+		0x96: /* RES 2,(IX+nn) */ RES_N_iRRpNNi(2, rp),
+		
+		0x9E: /* RES 3,(IX+nn) */ RES_N_iRRpNNi(3, rp),
+		
+		0xA6: /* RES 4,(IX+nn) */ RES_N_iRRpNNi(4, rp),
+		
+		0xAE: /* RES 5,(IX+nn) */ RES_N_iRRpNNi(5, rp),
+		
+		0xB6: /* RES 6,(IX+nn) */ RES_N_iRRpNNi(6, rp),
+		
+		0xBE: /* RES 7,(IX+nn) */ RES_N_iRRpNNi(7, rp),
+		
 		0xC6: /* SET 0,(IX+nn) */ SET_N_iRRpNNi(0, rp),
 		
 		0xCE: /* SET 1,(IX+nn) */ SET_N_iRRpNNi(1, rp),
@@ -563,6 +642,14 @@ function generateDDFDOpcodeSet(rp) {
 		
 		0x35: /* DEC (IX+nn) */ DEC_iRRpNNi(rp),
 		0x39: /* ADD IX,SP */  ADD_RR_RR(rp, rpSP),
+		
+		0x70: /* LD (IX+nn),B */ LD_iRRpNNi_R(rp, rB),
+		0x71: /* LD (IX+nn),C */ LD_iRRpNNi_R(rp, rC),
+		0x72: /* LD (IX+nn),D */ LD_iRRpNNi_R(rp, rD),
+		0x73: /* LD (IX+nn),E */ LD_iRRpNNi_R(rp, rE),
+		0x74: /* LD (IX+nn),H */ LD_iRRpNNi_R(rp, rH),
+		0x75: /* LD (IX+nn),L */ LD_iRRpNNi_R(rp, rL),
+		0x77: /* LD (IX+nn),A */ LD_iRRpNNi_R(rp, rA),
 		
 		0xCB: /* shift code */ SHIFT_DDCB(ddcbOpcodeRunners),
 		
@@ -627,6 +714,7 @@ OPCODE_RUNNERS = {
 	0x0D: /* DEC C */      DEC_R(rC),
 	0x0E: /* LD C,nn */    LD_R_N(rC),
 	
+	0x10: /* DJNZ nn */    DJNZ_N(),
 	0x11: /* LD DE,nnnn */ LD_RR_NN(rpDE),
 	0x12: /* LD (DE),A */  LD_iRRi_R(rpDE, rA),
 	0x13: /* INC DE */     INC_RR(rpDE),
