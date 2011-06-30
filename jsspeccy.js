@@ -197,6 +197,16 @@ function AND_R(r) {
 		tstates += 4;
 	}
 }
+function CALL_NN() {
+	return function() {
+		var l = memory.read(regPairs[rpPC]++);
+		var h = memory.read(regPairs[rpPC]++);
+		memory.write(--regPairs[rpSP], regPairs[rpPC] >> 8);
+		memory.write(--regPairs[rpSP], regPairs[rpPC] & 0xff);
+		regPairs[rpPC] = (h<<8) | l;
+		tstates += 17;
+	}
+}
 function CP_R(r) {
 	return function() {
 		var cptemp = regs[rA] - regs[r];
@@ -457,6 +467,14 @@ function OUT_iNi_A() {
 		tstates += 11;
 	}
 }
+function PUSH_RR(rp) {
+	var tstatesToAdd = ( (rp == rpIX || rp == rpIY) ? 15 : 11);
+	return function() {
+		memory.write(--regPairs[rpSP], regPairs[rp] >> 8);
+		memory.write(--regPairs[rpSP], regPairs[rp] & 0xff);
+		tstates += tstatesToAdd;
+	}
+}
 function RLCA() {
 	return function() {
 		regs[rA] = (regs[rA] << 1) | (regs[rA] >> 7);
@@ -547,6 +565,8 @@ function generateDDFDOpcodeSet(rp) {
 		0x39: /* ADD IX,SP */  ADD_RR_RR(rp, rpSP),
 		
 		0xCB: /* shift code */ SHIFT_DDCB(ddcbOpcodeRunners),
+		
+		0xE5: /* PUSH IX */    PUSH_RR(rp),
 		
 		0xF9: /* LD SP,IX */   LD_RR_RR(rpSP, rp),
 		
@@ -747,17 +767,27 @@ OPCODE_RUNNERS = {
 	
 	0xC3: /* JP nnnn */    JP_NN(),
 	
+	0xC5: /* PUSH BC */    PUSH_RR(rpBC),
+	
+	0xCD: /* CALL nnnn */  CALL_NN(),
+	
 	0xD3: /* OUT (nn),A */ OUT_iNi_A(),
+	
+	0xD5: /* PUSH DE */    PUSH_RR(rpDE),
 	
 	0xD9: /* EXX */        EXX(),
 	
 	0xDD: /* shift code */ SHIFT(OPCODE_RUNNERS_DD),
+	
+	0xE5: /* PUSH HL */    PUSH_RR(rpHL),
 	
 	0xEB: /* EX DE,HL */   EX_RR_RR(rpDE, rpHL),
 	
 	0xED: /* shift code */ SHIFT(OPCODE_RUNNERS_ED),
 	
 	0xF3: /* DI */         DI(),
+	
+	0xF5: /* PUSH AF */    PUSH_RR(rpAF),
 	
 	0xF9: /* LD SP,HL */   LD_RR_RR(rpSP, rpHL),
 	
