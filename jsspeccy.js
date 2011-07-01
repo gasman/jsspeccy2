@@ -423,6 +423,15 @@ function JR_N() {
 		tstates += 12;
 	}
 }
+function LD_A_iNNi() {
+	return function() {
+		var l = memory.read(regPairs[rpPC]++);
+		var h = memory.read(regPairs[rpPC]++);
+		var addr = (h<<8) | l;
+		regs[rA] = memory.read(addr);
+		tstates += 13;
+	}
+}
 function LD_iNNi_A() {
 	return function() {
 		var l = memory.read(regPairs[rpPC]++);
@@ -959,10 +968,10 @@ OPCODE_RUNNERS = {
 	0x37: /* SCF */        SCF(),
 	0x38: /* JR C,nn */    JR_C_N(FLAG_C, true),
 	0x39: /* ADD HL,SP */  ADD_RR_RR(rpHL, rpSP),
-	
+	0x3A: /* LD A,(nnnn) */ LD_A_iNNi(),
 	0x3B: /* DEC SP */     DEC_RR(rpSP),
 	0x3C: /* INC A */      INC_R(rA),
-	
+	0x3D: /* DEC A */      DEC_R(rA),
 	0x3E: /* LD A,nn */    LD_R_N(rA),
 	0x3F: /* CCF */        CCF(),
 	0x40: /* LD B,B */     LD_R_R(rB, rB),
