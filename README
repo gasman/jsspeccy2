@@ -1,0 +1,65 @@
+JSSpeccy: A ZX Spectrum emulator in pure Javascript
+===================================================
+by Matt Westcott <matt@west.co.tt>
+
+- A Spectrum emulator? In Javascript?
+Yes.
+
+- Why?
+As a birthday gift to Princess Ragnhild of Norway.
+
+- Really?
+No.
+
+Features
+--------
+* 48K Spectrum emulation
+* Most documented and undocumented Z80 behaviour
+* A screen with a border
+* Keyboard scanning
+* SNA snapshot loading
+* TAP tape image loading
+* Erm...
+
+Notable non-features (don't hold your breath):
+----------------------------------------------
+* 128K (and later models)
+* Sound
+* Z80 / TZX / any other exotic file formats
+* ULA effects (multicolour / contention)
+* TV dot crawl
+* Your mum shouting that your tea's ready
+
+Requirements
+------------
+Any browser supporting the <canvas> element (which include Firefox, Opera,
+Chrome and Safari) should work. Browsers supporting the putImageData method
+(which include Firefox and Opera) will be somewhat faster.
+
+Instructions
+------------
+Open jsspeccy.html. Click on 'run'. Double click on a snapshot filename.
+
+Build instructions (aka 'how to add more games')
+------------------------------------------------
+If you're on a browser that supports getAsBinary on file inputs, you can
+use the file upload box, and you're laughing. Unfortunately, at the time
+of writing this is Firefox 3.5 and nothing else.
+
+For other browsers, snapshots have to be compiled in - put your .SNA
+files in the 'snapshots' directory, then run 'make'. This will compile
+them into the file snapshots.js (as well as doing some other stuff:
+compiling roms into roms.js, and rebuilding the Z80 core from bits of
+perl and C preprocessor and bits of string). You need Make and Perl for
+this.
+
+Acknowledgements
+----------------
+The Z80 core and unit tests were ported from Fuse:
+	http://fuse-emulator.sourceforge.net/
+ExplorerCanvas is packaged in the hopes that this might some day run in
+Internet Explorer, but don't count on it:
+	http://excanvas.sourceforge.net/
+
+                                  Matt Westcott 2009-11-21
+                                  http://matt.west.co.tt/
