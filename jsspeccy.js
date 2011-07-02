@@ -108,6 +108,11 @@ function Memory() {
 		page[addr & 0x3fff] = val;
 	}
 	
+	var screenPage = ramPages[5];
+	self.readScreen = function(addr) {
+		return screenPage[addr];
+	}
+	
 	return self;
 }
 var memory = Memory();
@@ -119,6 +124,9 @@ function IOBus() {
 		return 0xff;
 	}
 	self.write = function(addr, val) {
+		if (!(addr & 0x01)) {
+			display.setBorder(val & 0x07);
+		}
 	}
 	
 	return self;
@@ -129,6 +137,86 @@ var tstates = 0; /* number of tstates since start if this frame */
 var iff1 = 0, iff2 = 0, im = 0, halted = false;
 
 var FRAME_LENGTH = 69888;
+
+function Display() {
+	var self = {};
+	
+	var TSTATES_PER_SCANLINE = 228;
+	var LEFT_BORDER_CHARS = 4;
+	var RIGHT_BORDER_CHARS = 4;
+	var TOP_BORDER_LINES = 24;
+	var BOTTOM_BORDER_LINES = 24;
+	var TSTATES_UNTIL_ORIGIN = 14000;
+	var TSTATES_PER_CHAR = 4;
+	
+	var BEAM_X_MAX = (32 + RIGHT_BORDER_CHARS);
+	var BEAM_Y_MAX = (192 + BOTTOM_BORDER_LINES);
+	
+	var CANVAS_WIDTH = 256 + 8 * (LEFT_BORDER_CHARS + RIGHT_BORDER_CHARS);
+	var CANVAS_HEIGHT = 192 + TOP_BORDER_LINES + BOTTOM_BORDER_LINES;
+	
+	var canvas, ctx;
+	
+	self.init = function() {
+		canvas = document.createElement('canvas');
+		canvas.width = CANVAS_WIDTH;
+		canvas.height = CANVAS_HEIGHT;
+		document.body.appendChild(canvas);
+		ctx = canvas.getContext('2d');
+	}
+	
+	var borderColour = 7;
+	self.setBorder = function(val) {
+		borderColour = val;
+	}
+	
+	var beamX, beamY; /* X character pos and Y pixel pos of beam at next screen event,
+		relative to top left of non-border screen; negative / overlarge values are in the border */
+	
+	var currentLineStartTime;
+	self.startFrame = function() {
+		self.nextEventTime = currentLineStartTime = TSTATES_UNTIL_ORIGIN - (TOP_BORDER_LINES * TSTATES_PER_SCANLINE) - (LEFT_BORDER_CHARS * TSTATES_PER_CHAR);
+		beamX = -LEFT_BORDER_CHARS;
+		beamY = -TOP_BORDER_LINES;
+	}
+	self.doEvent = function() {
+		if (beamY < 0) {
+			/* top border */
+			console.log(self.nextEventTime, beamX, beamY, '= border');
+		} else if (beamY < 192) {
+			if (beamX < 0) {
+				/* left border */
+				console.log(self.nextEventTime, beamX, beamY, '= border');
+			} else if (beamX < 32) {
+				console.log(self.nextEventTime, beamX, beamY, '= screen');
+			} else {
+				/* right border */
+				console.log(self.nextEventTime, beamX, beamY, '= border');
+			}
+		} else {
+			/* bottom border */
+			console.log(self.nextEventTime, beamX, beamY, '= border');
+		}
+		
+		/* increment beam / nextEventTime for next event */
+		beamX++;
+		if (beamX < BEAM_X_MAX) {
+			self.nextEventTime += TSTATES_PER_CHAR;
+		} else {
+			beamX = -LEFT_BORDER_CHARS;
+			beamY++;
+			if (beamY < BEAM_Y_MAX) {
+				currentLineStartTime += TSTATES_PER_SCANLINE;
+				self.nextEventTime = currentLineStartTime;
+			} else {
+				self.nextEventTime = null;
+			}
+		}
+	}
+	
+	return self;
+}
+var display = Display();
 
 var FLAG_C = 0x01;
 var FLAG_N = 0x02;
@@ -1351,9 +1439,13 @@ OPCODE_RUNNERS = {
 }
 
 function runFrame() {
-	while (tstates < FRAME_LENGTH) {
+	display.startFrame();
+	//while (tstates < FRAME_LENGTH) {
+	for (var i = 0; i < 2000; i++) {
 		var opcode = memory.read(regPairs[rpPC]++);
 		OPCODE_RUNNERS[opcode]();
+		if (tstates > 8500) console.log(tstates);
+		while (display.nextEventTime != null && display.nextEventTime <= tstates) display.doEvent();
 	}
 }
 
@@ -1369,4 +1461,9 @@ function tick() {
 	tstates -= FRAME_LENGTH;
 	setTimeout(tick, 20);
 }
-tick();
+
+window.onload = function() {
+	display.init();
+	//tick();
+	runFrame();
+}
