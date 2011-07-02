@@ -583,6 +583,19 @@ function CCF() {
 		tstates += 4;
 	}
 }
+function CP_iRRpNNi(rp) {
+	return function() {
+		var offset = memory.read(regPairs[rpPC]++);
+		if (offset & 0x80) offset -= 0x100;
+		var addr = (regPairs[rp] + offset) & 0xffff;
+		
+		var val = memory.read(addr);
+		var cptemp = regs[rA] - val;
+		var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (val & 0x88) >> 2 ) | ( (cptemp & 0x88) >> 1 );
+		regs[rF] = ( cptemp & 0x100 ? FLAG_C : ( cptemp ? 0 : FLAG_Z ) ) | FLAG_N | halfcarrySubTable[lookup & 0x07] | overflowSubTable[lookup >> 4] | ( val & ( FLAG_3 | FLAG_5 ) ) | ( cptemp & FLAG_S );
+		tstates += 19;
+	}
+}
 function CP_iHLi() {
 	return function() {
 		var val = memory.read(regPairs[rpHL]);
@@ -714,6 +727,13 @@ function IM(val) {
 	return function() {
 		im = val;
 		tstates += 8;
+	}
+}
+function IN_A_N() {
+	return function() {
+		var val = memory.read(regPairs[rpPC]++);
+		regs[rA] = ioBus.read( (regs[rA] << 8) | val );
+		tstates += 11;
 	}
 }
 function IN_R_iCi(r) {
@@ -1614,6 +1634,8 @@ function generateDDFDOpcodeSet(rp) {
 		
 		0x96: /* SUB A,(IX+dd) */ SUB_iRRpNNi(rp),
 		
+		0xBE: /* CP (IX+dd) */ CP_iRRpNNi(rp),
+		
 		0xCB: /* shift code */ SHIFT_DDCB(ddcbOpcodeRunners),
 		
 		0xE1: /* POP IX */     POP_RR(rp),
@@ -1901,7 +1923,7 @@ OPCODE_RUNNERS = {
 	0xD8: /* RET C */      RET_C(FLAG_C, true),
 	0xD9: /* EXX */        EXX(),
 	0xDA: /* JP C,nnnn */  JP_C_NN(FLAG_C, true),
-	
+	0xDB: /* IN A,(nn) */  IN_A_N(),
 	0xDC: /* CALL C,nnnn */ CALL_C_NN(FLAG_C, true),
 	0xDD: /* shift code */ SHIFT(OPCODE_RUNNERS_DD),
 	
