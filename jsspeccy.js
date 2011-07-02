@@ -313,7 +313,6 @@ for (var row = 0; row < 8; row++) {
 }
 
 function keyDown(evt) {
-	console.log(evt.keyCode);
 	registerKeyDown(evt.keyCode);
 	if (!evt.metaKey) return false;
 }
