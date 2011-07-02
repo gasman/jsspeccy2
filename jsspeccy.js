@@ -452,6 +452,16 @@ function ADC_A_R(r) {
 		tstates += 4;
 	}
 }
+function ADD_A_iHLi() {
+	return function() {
+		var val = memory.read(regPairs[rpHL]);
+		var addtemp = regs[rA] + val;
+		var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (val & 0x88) >> 2 ) | ( (addtemp & 0x88) >> 1 );
+		regs[rA] = addtemp;
+		regs[rF] = ( addtemp & 0x100 ? FLAG_C : 0 ) | halfcarryAddTable[lookup & 0x07] | overflowAddTable[lookup >> 4] | sz53Table[regs[rA]];
+		tstates += 7;
+	}
+}
 function ADD_A_iRRpNNi(rp) {
 	return function() {
 		var offset = memory.read(regPairs[rpPC]++);
@@ -473,7 +483,7 @@ function ADD_A_N(r) {
 		var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (val & 0x88) >> 2 ) | ( (addtemp & 0x88) >> 1 );
 		regs[rA] = addtemp;
 		regs[rF] = ( addtemp & 0x100 ? FLAG_C : 0 ) | halfcarryAddTable[lookup & 0x07] | overflowAddTable[lookup >> 4] | sz53Table[regs[rA]];
-		tstates += 4;
+		tstates += 7;
 	}
 }
 function ADD_A_R(r) {
@@ -760,6 +770,16 @@ function IN_R_iCi(r) {
 		regs[r] = ioBus.read(regPairs[rpBC]);
 		regs[rF] = (regs[rF] & FLAG_C) | sz53pTable[regs[r]];
 		tstates += 12;
+	}
+}
+function INC_iHLi() {
+	return function() {
+		var value = memory.read(regPairs[rpHL]);
+		regs[rF] = (regs[rF] & FLAG_C ) | ( value & 0x0f ? 0 : FLAG_H ) | FLAG_N;
+		value = (value + 1) & 0xff;
+		memory.write(regPairs[rpHL], value);
+		regs[rF] = (regs[rF] & FLAG_C) | ( value == 0x80 ? FLAG_V : 0 ) | ( value & 0x0f ? 0 : FLAG_H ) | sz53Table[value];
+		tstates += 7;
 	}
 }
 function INC_iRRpNNi(rp) {
@@ -1199,6 +1219,28 @@ function RST(addr) {
 		tstates += 11;
 	}
 }
+function SBC_A_iHLi() {
+	return function() {
+		var val = memory.read(regPairs[rpHL]);
+		
+		var sbctemp = regs[rA] - val - ( regs[rF] & FLAG_C );
+		var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (val & 0x88) >> 2 ) | ( (sbctemp & 0x88) >> 1 );
+		regs[rA] = sbctemp;
+		regs[rF] = ( sbctemp & 0x100 ? FLAG_C : 0 ) | FLAG_N | halfcarrySubTable[lookup & 0x07] | overflowSubTable[lookup >> 4] | sz53Table[regs[rA]];
+		tstates += 7;
+	}
+}
+function SBC_A_N() {
+	return function() {
+		var val = memory.read(regPairs[rpPC]++);
+		
+		var sbctemp = regs[rA] - val - ( regs[rF] & FLAG_C );
+		var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (val & 0x88) >> 2 ) | ( (sbctemp & 0x88) >> 1 );
+		regs[rA] = sbctemp;
+		regs[rF] = ( sbctemp & 0x100 ? FLAG_C : 0 ) | FLAG_N | halfcarrySubTable[lookup & 0x07] | overflowSubTable[lookup >> 4] | sz53Table[regs[rA]];
+		tstates += 7;
+	}
+}
 function SBC_A_R(r) {
 	return function() {
 		var sbctemp = regs[rA] - regs[r] - ( regs[rF] & FLAG_C );
@@ -1273,6 +1315,16 @@ function SRL_R(r) {
 		regs[r] >>= 1;
 		regs[rF] |= sz53pTable[regs[r]];
 		tstates += 8;
+	}
+}
+function SUB_iHLi() {
+	return function() {
+		var val = memory.read(regPairs[rpHL]);
+		var subtemp = regs[rA] - val;
+		var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (val & 0x88) >> 2 ) | ( (subtemp & 0x88) >> 1 );
+		regs[rA] = subtemp;
+		regs[rF] = ( subtemp & 0x100 ? FLAG_C : 0 ) | FLAG_N | halfcarrySubTable[lookup & 0x07] | overflowSubTable[lookup >> 4] | sz53Table[regs[rA]];
+		tstates += 7;
 	}
 }
 function SUB_iRRpNNi(rp) {
@@ -1777,7 +1829,7 @@ OPCODE_RUNNERS = {
 	0x31: /* LD SP,nnnn */ LD_RR_NN(rpSP),
 	0x32: /* LD (nnnn),a */ LD_iNNi_A(),
 	0x33: /* INC SP */     INC_RR(rpSP),
-	
+	0x34: /* INC (HL) */   INC_iHLi(),
 	0x35: /* DEC (HL) */   DEC_iHLi(),
 	0x36: /* LD (HL),nn */ LD_iRRi_N(rpHL),
 	0x37: /* SCF */        SCF(),
@@ -1859,7 +1911,7 @@ OPCODE_RUNNERS = {
 	0x83: /* ADD A,E */    ADD_A_R(rE),
 	0x84: /* ADD A,H */    ADD_A_R(rH),
 	0x85: /* ADD A,L */    ADD_A_R(rL),
-	
+	0x86: /* ADD A,(HL) */ ADD_A_iHLi(),
 	0x87: /* ADD A,A */    ADD_A_R(rA),
 	0x88: /* ADC A,B */    ADC_A_R(rB),
 	0x89: /* ADC A,C */    ADC_A_R(rC),
@@ -1875,7 +1927,7 @@ OPCODE_RUNNERS = {
 	0x93: /* SUB A,E */    SUB_R(rE),
 	0x94: /* SUB A,H */    SUB_R(rH),
 	0x95: /* SUB A,L */    SUB_R(rL),
-	
+	0x96: /* SUB A,(HL) */ SUB_iHLi(),
 	0x97: /* SUB A,A */    SUB_R(rA),
 	0x98: /* SBC A,B */    SBC_A_R(rB),
 	0x99: /* SBC A,C */    SBC_A_R(rC),
@@ -1883,7 +1935,7 @@ OPCODE_RUNNERS = {
 	0x9b: /* SBC A,E */    SBC_A_R(rE),
 	0x9c: /* SBC A,H */    SBC_A_R(rH),
 	0x9d: /* SBC A,L */    SBC_A_R(rL),
-
+	0x9e: /* SBC A,(HL) */ SBC_A_iHLi(),
 	0x9f: /* SBC A,A */    SBC_A_R(rA),
 	0xa0: /* AND A,B */    AND_R(rB),
 	0xa1: /* AND A,C */    AND_R(rC),
@@ -1947,7 +1999,7 @@ OPCODE_RUNNERS = {
 	0xDB: /* IN A,(nn) */  IN_A_N(),
 	0xDC: /* CALL C,nnnn */ CALL_C_NN(FLAG_C, true),
 	0xDD: /* shift code */ SHIFT(OPCODE_RUNNERS_DD),
-	
+	0xDE: /* SBC A,nn */   SBC_A_N(),
 	0xDF: /* RST 0x18 */   RST(0x0018),
 	0xE0: /* RET PO */     RET_C(FLAG_P, false),
 	0xE1: /* POP HL */     POP_RR(rpHL),
