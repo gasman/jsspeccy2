@@ -515,7 +515,7 @@ function ADD_RR_RR(rp1, rp2) {
 }
 function AND_iHLi() {
 	return function() {
-		val = memory.read(regPairs[rpHL]);
+		var val = memory.read(regPairs[rpHL]);
 		regs[rA] &= val;
 		regs[rF] = FLAG_H | sz53pTable[regs[rA]];
 		tstates += 7;
@@ -523,7 +523,7 @@ function AND_iHLi() {
 }
 function AND_N() {
 	return function() {
-		val = memory.read(regPairs[rpPC]++);
+		var val = memory.read(regPairs[rpPC]++);
 		regs[rA] &= val;
 		regs[rF] = FLAG_H | sz53pTable[regs[rA]];
 		tstates += 7;
@@ -1079,15 +1079,27 @@ function NOP() {
 }
 function OR_iHLi() {
 	return function() {
-		val = memory.read(regPairs[rpHL]);
+		var val = memory.read(regPairs[rpHL]);
 		regs[rA] |= val;
 		regs[rF] = sz53pTable[regs[rA]];
 		tstates += 7;
 	}
 }
+function OR_iRRpNNi(rp) {
+	return function() {
+		var offset = memory.read(regPairs[rpPC]++);
+		if (offset & 0x80) offset -= 0x100;
+		var addr = (regPairs[rp] + offset) & 0xffff;
+		
+		var val = memory.read(addr);
+		regs[rA] |= val;
+		regs[rF] = sz53pTable[regs[rA]];
+		tstates += 19;
+	}
+}
 function OR_N() {
 	return function() {
-		val = memory.read(regPairs[rpPC]++);
+		var val = memory.read(regPairs[rpPC]++);
 		regs[rA] |= val;
 		regs[rF] = sz53pTable[regs[rA]];
 		tstates += 7;
@@ -1218,6 +1230,14 @@ function RLCA() {
 		regs[rA] = (regs[rA] << 1) | (regs[rA] >> 7);
 		regs[rF] = ( regs[rF] & ( FLAG_P | FLAG_Z | FLAG_S ) ) | ( regs[rA] & ( FLAG_C | FLAG_3 | FLAG_5) );
 		tstates += 4;
+	}
+}
+function RR_R(r) {
+	return function() {
+		var rrtemp = regs[r];
+		regs[r] = ( regs[r]>>1 ) | ( regs[rF] << 7 );
+		regs[rF] = ( rrtemp & FLAG_C ) | sz53pTable[regs[r]];
+		tstates += 8;
 	}
 }
 function RRCA() {
@@ -1401,6 +1421,18 @@ function XOR_iHLi() {
 		tstates += 7;
 	}
 }
+function XOR_iRRpNNi(rp) {
+	return function() {
+		var offset = memory.read(regPairs[rpPC]++);
+		if (offset & 0x80) offset -= 0x100;
+		var addr = (regPairs[rp] + offset) & 0xffff;
+		
+		var val = memory.read(addr);
+		regs[rA] ^= val;
+		regs[rF] = sz53pTable[regs[rA]];
+		tstates += 19;
+	}
+}
 function XOR_N() {
 	return function() {
 		var val = memory.read(regPairs[rpPC]++);
@@ -1436,6 +1468,14 @@ OPCODE_RUNNERS_CB = {
 	
 	0x17: /* RL A */       RL_R(rA),
 	
+	0x18: /* RR B */       RR_R(rB),
+	0x19: /* RR C */       RR_R(rC),
+	0x1a: /* RR D */       RR_R(rD),
+	0x1b: /* RR E */       RR_R(rE),
+	0x1c: /* RR H */       RR_R(rH),
+	0x1d: /* RR L */       RR_R(rL),
+	
+	0x1f: /* RR A */       RR_R(rA),
 	0x20: /* SLA B */      SLA_R(rB),
 	0x21: /* SLA C */      SLA_R(rC),
 	0x22: /* SLA D */      SLA_R(rD),
@@ -1746,6 +1786,10 @@ function generateDDFDOpcodeSet(rp) {
 		0x86: /* ADD A,(IX+nn) */ ADD_A_iRRpNNi(rp),
 		
 		0x96: /* SUB A,(IX+dd) */ SUB_iRRpNNi(rp),
+		
+		0xAE: /* XOR A,(IX+dd) */ XOR_iRRpNNi(rp),
+		
+		0xB6: /* OR A,(IX+dd) */ OR_iRRpNNi(rp),
 		
 		0xBE: /* CP (IX+dd) */ CP_iRRpNNi(rp),
 		
