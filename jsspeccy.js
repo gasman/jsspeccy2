@@ -495,6 +495,14 @@ function ADD_RR_RR(rp1, rp2) {
 		tstates += tstatesToAdd;
 	}
 }
+function AND_iHLi() {
+	return function() {
+		val = memory.read(regPairs[rpHL]);
+		regs[rA] &= val;
+		regs[rF] = FLAG_H | sz53pTable[regs[rA]];
+		tstates += 7;
+	}
+}
 function AND_N() {
 	return function() {
 		val = memory.read(regPairs[rpPC]++);
@@ -724,6 +732,13 @@ function EXX() {
 		wordtemp = regPairs[rpBC]; regPairs[rpBC] = regPairs[rpBC_]; regPairs[rpBC_] = wordtemp;
 		wordtemp = regPairs[rpDE]; regPairs[rpDE] = regPairs[rpDE_]; regPairs[rpDE_] = wordtemp;
 		wordtemp = regPairs[rpHL]; regPairs[rpHL] = regPairs[rpHL_]; regPairs[rpHL_] = wordtemp;
+		tstates += 4;
+	}
+}
+function HALT() {
+	return function() {
+		halted = true;
+		regPairs[rpPC]--;
 		tstates += 4;
 	}
 }
@@ -1698,6 +1713,8 @@ OPCODE_RUNNERS_ED = {
 	
 	0x78: /* IN A,(C) */   IN_R_iCi(rA),
 	
+	0x7B: /* LD SP,(nnnn) */ LD_RR_iNNi(rpSP),
+	
 	0xB0: /* LDIR */       LDIR(),
 	
 	0xB8: /* LDDR */       LDDR(),
@@ -1826,7 +1843,7 @@ OPCODE_RUNNERS = {
 	0x73: /* LD (HL),E */  LD_iRRi_R(rpHL, rE),
 	0x74: /* LD (HL),H */  LD_iRRi_R(rpHL, rH),
 	0x75: /* LD (HL),L */  LD_iRRi_R(rpHL, rL),
-	
+	0x76: /* HALT */       HALT(),
 	0x77: /* LD (HL),A */  LD_iRRi_R(rpHL, rA),
 	0x78: /* LD A,B */     LD_R_R(rA, rB),
 	0x79: /* LD A,C */     LD_R_R(rA, rC),
@@ -1874,7 +1891,7 @@ OPCODE_RUNNERS = {
 	0xa3: /* AND A,E */    AND_R(rE),
 	0xa4: /* AND A,H */    AND_R(rH),
 	0xa5: /* AND A,L */    AND_R(rL),
-	
+	0xa6: /* AND A,(HL) */ AND_iHLi(),
 	0xa7: /* AND A,A */    AND_R(rA),
 	0xA8: /* XOR B */      XOR_R(rB),
 	0xA9: /* XOR C */      XOR_R(rC),
