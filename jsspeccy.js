@@ -193,16 +193,27 @@ function Display() {
 	var BEAM_X_MAX = (32 + RIGHT_BORDER_CHARS);
 	var BEAM_Y_MAX = (192 + BOTTOM_BORDER_LINES);
 	
+	var SCALE_FACTOR = 2;
+	
 	var CANVAS_WIDTH = 256 + 8 * (LEFT_BORDER_CHARS + RIGHT_BORDER_CHARS);
 	var CANVAS_HEIGHT = 192 + TOP_BORDER_LINES + BOTTOM_BORDER_LINES;
 	
 	var canvas, ctx, imageData, pixels;
 	
 	self.init = function() {
+		document.body.style.backgroundColor = 'black';
+		var div = document.createElement('div');
+		div.style.width = CANVAS_WIDTH * SCALE_FACTOR + 'px';
+		div.style.height = CANVAS_HEIGHT * SCALE_FACTOR + 'px';
+		div.style.margin = '75px auto';
 		canvas = document.createElement('canvas');
 		canvas.width = CANVAS_WIDTH;
 		canvas.height = CANVAS_HEIGHT;
-		document.body.appendChild(canvas);
+		div.appendChild(canvas);
+		document.body.appendChild(div);
+		canvas.style.width = CANVAS_WIDTH * SCALE_FACTOR + 'px';
+		canvas.style.height = CANVAS_HEIGHT * SCALE_FACTOR + 'px';
+		canvas.style.imageRendering = '-webkit-optimize-contrast';
 		ctx = canvas.getContext('2d');
 		imageData = ctx.createImageData(CANVAS_WIDTH, CANVAS_HEIGHT);
 		pixels = imageData.data;
