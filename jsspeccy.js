@@ -419,6 +419,15 @@ z80InitTables();
 /* Opcode generator functions: each returns a parameterless function that performs the opcode
 	(apart from the ones prefixed by DDCBnn, which are passed the offset nn (converted to a signed byte)).
 */
+function ADC_A_R(r) {
+	return function() {
+		var adctemp = regs[rA] + regs[r] + (regs[rF] & FLAG_C);
+		var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (regs[r] & 0x88) >> 2 ) | ( (adctemp & 0x88) >> 1 );
+		regs[rA] = adctemp;
+		regs[rF] = ( adctemp & 0x100 ? FLAG_C : 0 ) | halfcarryAddTable[lookup & 0x07] | overflowAddTable[lookup >> 4] | sz53Table[regs[rA]];
+		tstates += 4;
+	}
+}
 function ADD_A_iRRpNNi(rp) {
 	return function() {
 		var offset = memory.read(regPairs[rpPC]++);
@@ -491,10 +500,18 @@ function BIT_N_iHLi(bit) {
 	return function() {
 		var addr = regPairs[rpHL];
 		var value = memory.read(addr);
-		regs[rF] = ( regs[rF] & FLAG_C ) | FLAG_H | ( ( addr >> 8 ) & ( FLAG_3 | FLAG_5 ) );
+		regs[rF] = ( regs[rF] & FLAG_C ) | FLAG_H | ( value & ( FLAG_3 | FLAG_5 ) );
 		if( ! ( (value) & ( 0x01 << (bit) ) ) ) regs[rF] |= FLAG_P | FLAG_Z;
 		if( (bit) == 7 && (value) & 0x80 ) regs[rF] |= FLAG_S;
 		tstates += 12;
+	}
+}
+function BIT_N_R(bit, r) {
+	return function() {
+		regs[rF] = ( regs[rF] & FLAG_C ) | FLAG_H | ( regs[r] & ( FLAG_3 | FLAG_5 ) );
+		if( ! ( regs[r] & ( 0x01 << (bit) ) ) ) regs[rF] |= FLAG_P | FLAG_Z;
+		if( (bit) == 7 && regs[r] & 0x80 ) regs[rF] |= FLAG_S;
+		tstates += 8;
 	}
 }
 function CALL_C_NN(flag, sense) {
@@ -544,6 +561,15 @@ function CCF() {
 	return function() {
 		regs[rF] = ( regs[rF] & (FLAG_P | FLAG_Z | FLAG_S) ) | ( (regs[rF] & FLAG_C) ? FLAG_H : FLAG_C ) | ( regs[rA] & (FLAG_3 | FLAG_5) );
 		tstates += 4;
+	}
+}
+function CP_iHLi() {
+	return function() {
+		var val = memory.read(regPairs[rpHL]);
+		var cptemp = regs[rA] - val;
+		var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (val & 0x88) >> 2 ) | ( (cptemp & 0x88) >> 1 );
+		regs[rF] = ( cptemp & 0x100 ? FLAG_C : ( cptemp ? 0 : FLAG_Z ) ) | FLAG_N | halfcarrySubTable[lookup & 0x07] | overflowSubTable[lookup >> 4] | ( val & ( FLAG_3 | FLAG_5 ) ) | ( cptemp & FLAG_S );
+		tstates += 7;
 	}
 }
 function CP_N() {
@@ -675,6 +701,19 @@ function IN_R_iCi(r) {
 		regs[r] = ioBus.read(regPairs[rpBC]);
 		regs[rF] = (regs[rF] & FLAG_C) | sz53pTable[regs[r]];
 		tstates += 12;
+	}
+}
+function INC_iRRpNNi(rp) {
+	return function() {
+		var offset = memory.read(regPairs[rpPC]++);
+		if (offset & 0x80) offset -= 0x100;
+		var addr = (regPairs[rp] + offset) & 0xffff;
+		
+		var value = memory.read(addr);
+		value = (value + 1) & 0xff;
+		memory.write(addr, value);
+		regs[rF] = (regs[rF] & FLAG_C) | ( value == 0x80 ? FLAG_V : 0 ) | ( value & 0x0f ? 0 : FLAG_H ) | sz53Table[value];
+		tstates += 23;
 	}
 }
 function INC_R(r) {
@@ -987,6 +1026,13 @@ function RES_N_iRRpNNi(bit, rp) {
 		tstates += 23;
 	}
 }
+function RES_N_R(bit, r) {
+	var hexMask = 0xff ^ (1 << bit);
+	return function() {
+		regs[r] &= hexMask;
+		tstates += 8;
+	}
+}
 function RET() {
 	return function() {
 		var l = memory.read(regPairs[rpSP]++);
@@ -1020,6 +1066,14 @@ function RET_C(flag, sense) {
 				tstates += 11;
 			}
 		}
+	}
+}
+function RL_R(r) {
+	return function() {
+		var rltemp = regs[r];
+		regs[r] = ( regs[r]<<1 ) | ( regs[rF] & FLAG_C );
+		regs[rF] = ( rltemp >> 7 ) | sz53pTable[regs[r]];
+		tstates =+ 8;
 	}
 }
 function RLC_R(r) {
@@ -1102,6 +1156,13 @@ function SET_N_iRRpNNi(bit, rp) {
 		tstates += 23;
 	}
 }
+function SET_N_R(bit, r) {
+	var hexMask = 1 << bit;
+	return function() {
+		regs[r] |= hexMask;
+		tstates += 8;
+	}
+}
 function SHIFT(opcodeTable) {
 	/* Fake instruction for CB/ED-shifted opcodes - passes control to a secondary opcode table */
 	return function() {
@@ -1119,6 +1180,14 @@ function SHIFT_DDCB(opcodeTable) {
 		var opcode = memory.read(regPairs[rpPC]++);
 		if (!opcodeTable[opcode]) console.log(regPairs[rpPC], opcodeTable);
 		opcodeTable[opcode](offset);
+	}
+}
+function SRL_R(r) {
+	return function() {
+		regs[rF] = regs[r] & FLAG_C;
+		regs[r] >>= 1;
+		regs[rF] |= sz53pTable[regs[r]];
+		tstates += 8;
 	}
 }
 function SUB_N(r) {
@@ -1148,6 +1217,14 @@ function XOR_iHLi() {
 		tstates += 7;
 	}
 }
+function XOR_N() {
+	return function() {
+		var val = memory.read(regPairs[rpPC]++);
+		regs[rA] ^= val;
+		regs[rF] = sz53pTable[regs[rA]];
+		tstates += 7;
+	}
+}
 function XOR_R(r) {
 	return function() {
 		regs[rA] ^= regs[r];
@@ -1166,54 +1243,215 @@ OPCODE_RUNNERS_CB = {
 	
 	0x07: /* RLC A */      RLC_R(rA),
 	
+	0x10: /* RL B */       RL_R(rB),
+	0x11: /* RL C */       RL_R(rC),
+	0x12: /* RL D */       RL_R(rD),
+	0x13: /* RL E */       RL_R(rE),
+	0x14: /* RL H */       RL_R(rH),
+	0x15: /* RL L */       RL_R(rL),
+	
+	0x17: /* RL A */       RL_R(rA),
+	
+	0x38: /* SRL B */      SRL_R(rB),
+	0x39: /* SRL C */      SRL_R(rC),
+	0x3a: /* SRL D */      SRL_R(rD),
+	0x3b: /* SRL E */      SRL_R(rE),
+	0x3c: /* SRL H */      SRL_R(rH),
+	0x3d: /* SRL L */      SRL_R(rL),
+	
+	0x3f: /* SRL A */      SRL_R(rA),
+	0x40: /* BIT 0,B */    BIT_N_R(0, rB),
+	0x41: /* BIT 0,C */    BIT_N_R(0, rC),
+	0x42: /* BIT 0,D */    BIT_N_R(0, rD),
+	0x43: /* BIT 0,E */    BIT_N_R(0, rE),
+	0x44: /* BIT 0,H */    BIT_N_R(0, rH),
+	0x45: /* BIT 0,L */    BIT_N_R(0, rL),
 	0x46: /* BIT 0,(HL) */ BIT_N_iHLi(0),
-	
+	0x47: /* BIT 0,A */    BIT_N_R(0, rA),
+	0x48: /* BIT 1,B */    BIT_N_R(1, rB),
+	0x49: /* BIT 1,C */    BIT_N_R(1, rC),
+	0x4A: /* BIT 1,D */    BIT_N_R(1, rD),
+	0x4B: /* BIT 1,E */    BIT_N_R(1, rE),
+	0x4C: /* BIT 1,H */    BIT_N_R(1, rH),
+	0x4D: /* BIT 1,L */    BIT_N_R(1, rL),
 	0x4E: /* BIT 1,(HL) */ BIT_N_iHLi(1),
-	
+	0x4F: /* BIT 1,A */    BIT_N_R(1, rA),
+	0x50: /* BIT 2,B */    BIT_N_R(2, rB),
+	0x51: /* BIT 2,C */    BIT_N_R(2, rC),
+	0x52: /* BIT 2,D */    BIT_N_R(2, rD),
+	0x53: /* BIT 2,E */    BIT_N_R(2, rE),
+	0x54: /* BIT 2,H */    BIT_N_R(2, rH),
+	0x55: /* BIT 2,L */    BIT_N_R(2, rL),
 	0x56: /* BIT 2,(HL) */ BIT_N_iHLi(2),
-	
+	0x57: /* BIT 2,A */    BIT_N_R(2, rA),
+	0x58: /* BIT 3,B */    BIT_N_R(3, rB),
+	0x59: /* BIT 3,C */    BIT_N_R(3, rC),
+	0x5A: /* BIT 3,D */    BIT_N_R(3, rD),
+	0x5B: /* BIT 3,E */    BIT_N_R(3, rE),
+	0x5C: /* BIT 3,H */    BIT_N_R(3, rH),
+	0x5D: /* BIT 3,L */    BIT_N_R(3, rL),
 	0x5E: /* BIT 3,(HL) */ BIT_N_iHLi(3),
-	
+	0x5F: /* BIT 3,A */    BIT_N_R(3, rA),
+	0x60: /* BIT 4,B */    BIT_N_R(4, rB),
+	0x61: /* BIT 4,C */    BIT_N_R(4, rC),
+	0x62: /* BIT 4,D */    BIT_N_R(4, rD),
+	0x63: /* BIT 4,E */    BIT_N_R(4, rE),
+	0x64: /* BIT 4,H */    BIT_N_R(4, rH),
+	0x65: /* BIT 4,L */    BIT_N_R(4, rL),
 	0x66: /* BIT 4,(HL) */ BIT_N_iHLi(4),
-	
+	0x67: /* BIT 4,A */    BIT_N_R(4, rA),
+	0x68: /* BIT 5,B */    BIT_N_R(5, rB),
+	0x69: /* BIT 5,C */    BIT_N_R(5, rC),
+	0x6A: /* BIT 5,D */    BIT_N_R(5, rD),
+	0x6B: /* BIT 5,E */    BIT_N_R(5, rE),
+	0x6C: /* BIT 5,H */    BIT_N_R(5, rH),
+	0x6D: /* BIT 5,L */    BIT_N_R(5, rL),
 	0x6E: /* BIT 5,(HL) */ BIT_N_iHLi(5),
-	
+	0x6F: /* BIT 5,A */    BIT_N_R(5, rA),
+	0x70: /* BIT 6,B */    BIT_N_R(6, rB),
+	0x71: /* BIT 6,C */    BIT_N_R(6, rC),
+	0x72: /* BIT 6,D */    BIT_N_R(6, rD),
+	0x73: /* BIT 6,E */    BIT_N_R(6, rE),
+	0x74: /* BIT 6,H */    BIT_N_R(6, rH),
+	0x75: /* BIT 6,L */    BIT_N_R(6, rL),
 	0x76: /* BIT 6,(HL) */ BIT_N_iHLi(6),
-	
+	0x77: /* BIT 6,A */    BIT_N_R(6, rA),
+	0x78: /* BIT 7,B */    BIT_N_R(7, rB),
+	0x79: /* BIT 7,C */    BIT_N_R(7, rC),
+	0x7A: /* BIT 7,D */    BIT_N_R(7, rD),
+	0x7B: /* BIT 7,E */    BIT_N_R(7, rE),
+	0x7C: /* BIT 7,H */    BIT_N_R(7, rH),
+	0x7D: /* BIT 7,L */    BIT_N_R(7, rL),
 	0x7E: /* BIT 7,(HL) */ BIT_N_iHLi(7),
-	
+	0x7F: /* BIT 7,A */    BIT_N_R(7, rA),
+	0x80: /* RES 0,B */    RES_N_R(0, rB),
+	0x81: /* RES 0,C */    RES_N_R(0, rC),
+	0x82: /* RES 0,D */    RES_N_R(0, rD),
+	0x83: /* RES 0,E */    RES_N_R(0, rE),
+	0x84: /* RES 0,H */    RES_N_R(0, rH),
+	0x85: /* RES 0,L */    RES_N_R(0, rL),
 	0x86: /* RES 0,(HL) */ RES_N_iHLi(0),
-	
+	0x87: /* RES 0,A */    RES_N_R(0, rA),
+	0x88: /* RES 1,B */    RES_N_R(1, rB),
+	0x89: /* RES 1,C */    RES_N_R(1, rC),
+	0x8A: /* RES 1,D */    RES_N_R(1, rD),
+	0x8B: /* RES 1,E */    RES_N_R(1, rE),
+	0x8C: /* RES 1,H */    RES_N_R(1, rH),
+	0x8D: /* RES 1,L */    RES_N_R(1, rL),
 	0x8E: /* RES 1,(HL) */ RES_N_iHLi(1),
-	
+	0x8F: /* RES 1,A */    RES_N_R(1, rA),
+	0x90: /* RES 2,B */    RES_N_R(2, rB),
+	0x91: /* RES 2,C */    RES_N_R(2, rC),
+	0x92: /* RES 2,D */    RES_N_R(2, rD),
+	0x93: /* RES 2,E */    RES_N_R(2, rE),
+	0x94: /* RES 2,H */    RES_N_R(2, rH),
+	0x95: /* RES 2,L */    RES_N_R(2, rL),
 	0x96: /* RES 2,(HL) */ RES_N_iHLi(2),
-	
+	0x97: /* RES 2,A */    RES_N_R(2, rA),
+	0x98: /* RES 3,B */    RES_N_R(3, rB),
+	0x99: /* RES 3,C */    RES_N_R(3, rC),
+	0x9A: /* RES 3,D */    RES_N_R(3, rD),
+	0x9B: /* RES 3,E */    RES_N_R(3, rE),
+	0x9C: /* RES 3,H */    RES_N_R(3, rH),
+	0x9D: /* RES 3,L */    RES_N_R(3, rL),
 	0x9E: /* RES 3,(HL) */ RES_N_iHLi(3),
-	
+	0x9F: /* RES 3,A */    RES_N_R(3, rA),
+	0xA0: /* RES 4,B */    RES_N_R(4, rB),
+	0xA1: /* RES 4,C */    RES_N_R(4, rC),
+	0xA2: /* RES 4,D */    RES_N_R(4, rD),
+	0xA3: /* RES 4,E */    RES_N_R(4, rE),
+	0xA4: /* RES 4,H */    RES_N_R(4, rH),
+	0xA5: /* RES 4,L */    RES_N_R(4, rL),
 	0xA6: /* RES 4,(HL) */ RES_N_iHLi(4),
-	
+	0xA7: /* RES 4,A */    RES_N_R(4, rA),
+	0xA8: /* RES 5,B */    RES_N_R(5, rB),
+	0xA9: /* RES 5,C */    RES_N_R(5, rC),
+	0xAA: /* RES 5,D */    RES_N_R(5, rD),
+	0xAB: /* RES 5,E */    RES_N_R(5, rE),
+	0xAC: /* RES 5,H */    RES_N_R(5, rH),
+	0xAD: /* RES 5,L */    RES_N_R(5, rL),
 	0xAE: /* RES 5,(HL) */ RES_N_iHLi(5),
-	
+	0xAF: /* RES 5,A */    RES_N_R(5, rA),
+	0xB0: /* RES 6,B */    RES_N_R(6, rB),
+	0xB1: /* RES 6,C */    RES_N_R(6, rC),
+	0xB2: /* RES 6,D */    RES_N_R(6, rD),
+	0xB3: /* RES 6,E */    RES_N_R(6, rE),
+	0xB4: /* RES 6,H */    RES_N_R(6, rH),
+	0xB5: /* RES 6,L */    RES_N_R(6, rL),
 	0xB6: /* RES 6,(HL) */ RES_N_iHLi(6),
-	
+	0xB7: /* RES 6,A */    RES_N_R(6, rA),
+	0xB8: /* RES 7,B */    RES_N_R(7, rB),
+	0xB9: /* RES 7,C */    RES_N_R(7, rC),
+	0xBA: /* RES 7,D */    RES_N_R(7, rD),
+	0xBB: /* RES 7,E */    RES_N_R(7, rE),
+	0xBC: /* RES 7,H */    RES_N_R(7, rH),
+	0xBD: /* RES 7,L */    RES_N_R(7, rL),
 	0xBE: /* RES 7,(HL) */ RES_N_iHLi(7),
-	
+	0xBF: /* RES 7,A */    RES_N_R(7, rA),
+	0xC0: /* SET 0,B */    SET_N_R(0, rB),
+	0xC1: /* SET 0,C */    SET_N_R(0, rC),
+	0xC2: /* SET 0,D */    SET_N_R(0, rD),
+	0xC3: /* SET 0,E */    SET_N_R(0, rE),
+	0xC4: /* SET 0,H */    SET_N_R(0, rH),
+	0xC5: /* SET 0,L */    SET_N_R(0, rL),
 	0xC6: /* SET 0,(HL) */ SET_N_iHLi(0),
-	
+	0xC7: /* SET 0,A */    SET_N_R(0, rA),
+	0xC8: /* SET 1,B */    SET_N_R(1, rB),
+	0xC9: /* SET 1,C */    SET_N_R(1, rC),
+	0xCA: /* SET 1,D */    SET_N_R(1, rD),
+	0xCB: /* SET 1,E */    SET_N_R(1, rE),
+	0xCC: /* SET 1,H */    SET_N_R(1, rH),
+	0xCD: /* SET 1,L */    SET_N_R(1, rL),
 	0xCE: /* SET 1,(HL) */ SET_N_iHLi(1),
-	
+	0xCF: /* SET 1,A */    SET_N_R(1, rA),
+	0xD0: /* SET 2,B */    SET_N_R(2, rB),
+	0xD1: /* SET 2,C */    SET_N_R(2, rC),
+	0xD2: /* SET 2,D */    SET_N_R(2, rD),
+	0xD3: /* SET 2,E */    SET_N_R(2, rE),
+	0xD4: /* SET 2,H */    SET_N_R(2, rH),
+	0xD5: /* SET 2,L */    SET_N_R(2, rL),
 	0xD6: /* SET 2,(HL) */ SET_N_iHLi(2),
-	
+	0xD7: /* SET 2,A */    SET_N_R(2, rA),
+	0xD8: /* SET 3,B */    SET_N_R(3, rB),
+	0xD9: /* SET 3,C */    SET_N_R(3, rC),
+	0xDA: /* SET 3,D */    SET_N_R(3, rD),
+	0xDB: /* SET 3,E */    SET_N_R(3, rE),
+	0xDC: /* SET 3,H */    SET_N_R(3, rH),
+	0xDD: /* SET 3,L */    SET_N_R(3, rL),
 	0xDE: /* SET 3,(HL) */ SET_N_iHLi(3),
-	
+	0xDF: /* SET 3,A */    SET_N_R(3, rA),
+	0xE0: /* SET 4,B */    SET_N_R(4, rB),
+	0xE1: /* SET 4,C */    SET_N_R(4, rC),
+	0xE2: /* SET 4,D */    SET_N_R(4, rD),
+	0xE3: /* SET 4,E */    SET_N_R(4, rE),
+	0xE4: /* SET 4,H */    SET_N_R(4, rH),
+	0xE5: /* SET 4,L */    SET_N_R(4, rL),
 	0xE6: /* SET 4,(HL) */ SET_N_iHLi(4),
-	
+	0xE7: /* SET 4,A */    SET_N_R(4, rA),
+	0xE8: /* SET 5,B */    SET_N_R(5, rB),
+	0xE9: /* SET 5,C */    SET_N_R(5, rC),
+	0xEA: /* SET 5,D */    SET_N_R(5, rD),
+	0xEB: /* SET 5,E */    SET_N_R(5, rE),
+	0xEC: /* SET 5,H */    SET_N_R(5, rH),
+	0xED: /* SET 5,L */    SET_N_R(5, rL),
 	0xEE: /* SET 5,(HL) */ SET_N_iHLi(5),
-	
+	0xEF: /* SET 5,A */    SET_N_R(5, rA),
+	0xF0: /* SET 6,B */    SET_N_R(6, rB),
+	0xF1: /* SET 6,C */    SET_N_R(6, rC),
+	0xF2: /* SET 6,D */    SET_N_R(6, rD),
+	0xF3: /* SET 6,E */    SET_N_R(6, rE),
+	0xF4: /* SET 6,H */    SET_N_R(6, rH),
+	0xF5: /* SET 6,L */    SET_N_R(6, rL),
 	0xF6: /* SET 6,(HL) */ SET_N_iHLi(6),
-	
+	0xF7: /* SET 6,A */    SET_N_R(6, rA),
+	0xF8: /* SET 7,B */    SET_N_R(7, rB),
+	0xF9: /* SET 7,C */    SET_N_R(7, rC),
+	0xFA: /* SET 7,D */    SET_N_R(7, rD),
+	0xFB: /* SET 7,E */    SET_N_R(7, rE),
+	0xFC: /* SET 7,H */    SET_N_R(7, rH),
+	0xFD: /* SET 7,L */    SET_N_R(7, rL),
 	0xFE: /* SET 7,(HL) */ SET_N_iHLi(7),
-	
+	0xFF: /* SET 7,A */    SET_N_R(7, rA),
 	0x100: 'cb' /* dummy line so I don't have to keep adjusting trailing commas */
 }
 
@@ -1284,6 +1522,7 @@ function generateDDFDOpcodeSet(rp) {
 		0x29: /* ADD IX,IX */  ADD_RR_RR(rp, rp),
 		0x2A: /* LD IX,(nnnn) */ LD_RR_iNNi(rp),
 		
+		0x34: /* INC (IX+nn) */ INC_iRRpNNi(rp),
 		0x35: /* DEC (IX+nn) */ DEC_iRRpNNi(rp),
 		0x36: /* LD (IX+nn),nn */ LD_iRRpNNi_N(rp),
 		
@@ -1516,7 +1755,14 @@ OPCODE_RUNNERS = {
 	0x85: /* ADD A,L */    ADD_A_R(rL),
 	
 	0x87: /* ADD A,A */    ADD_A_R(rA),
+	0x88: /* ADC A,B */    ADC_A_R(rB),
+	0x89: /* ADC A,C */    ADC_A_R(rC),
+	0x8a: /* ADC A,D */    ADC_A_R(rD),
+	0x8b: /* ADC A,E */    ADC_A_R(rE),
+	0x8c: /* ADC A,H */    ADC_A_R(rH),
+	0x8d: /* ADC A,L */    ADC_A_R(rL),
 	
+	0x8f: /* ADC A,A */    ADC_A_R(rA),
 	0x90: /* SUB A,B */    SUB_R(rB),
 	0x91: /* SUB A,C */    SUB_R(rC),
 	0x92: /* SUB A,D */    SUB_R(rD),
@@ -1563,7 +1809,7 @@ OPCODE_RUNNERS = {
 	0xbb: /* CP E */       CP_R(rE),
 	0xbc: /* CP H */       CP_R(rH),
 	0xbd: /* CP L */       CP_R(rL),
-	
+	0xbe: /* CP (HL) */    CP_iHLi(),
 	0xbf: /* CP A */       CP_R(rA),
 	0xC0: /* RET NZ */     RET_C(FLAG_Z, false),
 	0xC1: /* POP BC */     POP_RR(rpBC),
@@ -1611,7 +1857,7 @@ OPCODE_RUNNERS = {
 	0xEB: /* EX DE,HL */   EX_RR_RR(rpDE, rpHL),
 	0xEC: /* CALL PE,nnnn */ CALL_C_NN(FLAG_P, true),
 	0xED: /* shift code */ SHIFT(OPCODE_RUNNERS_ED),
-	
+	0xEE: /* XOR nn */     XOR_N(),
 	0xEF: /* RST 0x28 */   RST(0x0028),
 	0xF0: /* RET P */      RET_C(FLAG_S, false),
 	0xF1: /* POP AF */     POP_RR(rpAF),
