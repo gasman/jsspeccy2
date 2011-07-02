@@ -313,13 +313,15 @@ for (var row = 0; row < 8; row++) {
 }
 
 function keyDown(evt) {
-	registerKeyDown(evt.keyCode)
+	console.log(evt.keyCode);
+	registerKeyDown(evt.keyCode);
 	if (!evt.metaKey) return false;
 }
 function registerKeyDown(keyNum) {
 	var keyCode = keyCodes[keyNum];
 	if (keyCode == null) return;
 	keyStates[keyCode.row] &= ~(keyCode.mask);
+	if (keyCode.caps) keyStates[0] &= 0xfe;
 }
 function keyUp(evt) {
 	registerKeyUp(evt.keyCode);
@@ -329,6 +331,7 @@ function registerKeyUp(keyNum) {
 	var keyCode = keyCodes[keyNum];
 	if (keyCode == null) return;
 	keyStates[keyCode.row] |= keyCode.mask;
+	if (keyCode.caps) keyStates[0] |= 0x01;
 }
 function keyPress(evt) {
 	if (!evt.metaKey) return false;
@@ -379,6 +382,15 @@ var keyCodes = {
 	77: {row: 7, mask: 0x04}, /* M */
 	17: {row: 7, mask: 0x02}, /* sym - gah, firefox screws up ctrl+key too */
 	32: {row: 7, mask: 0x01}, /* space */
+	
+	/* shifted combinations */
+	8: {row: 4, mask: 0x01, caps: true}, /* backspace => caps + 0 */
+	37: {row: 3, mask: 0x10, caps: true}, /* left arrow => caps + 5 */
+	38: {row: 4, mask: 0x08, caps: true}, /* up arrow => caps + 7 */
+	39: {row: 4, mask: 0x04, caps: true}, /* right arrow => caps + 8 */
+	40: {row: 4, mask: 0x10, caps: true}, /* down arrow => caps + 6 */
+	
+	999: null
 };
 
 var FLAG_C = 0x01;
