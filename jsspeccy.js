@@ -212,6 +212,9 @@ function Display() {
 	var attributeLineAddress; /* Address (relative to start of memory page) of the first attribute byte in the current line */
 	var imageDataPos; /* offset into imageData buffer of current draw position */
 	var currentLineStartTime;
+	
+	var flashPhase = 0;
+	
 	self.startFrame = function() {
 		self.nextEventTime = currentLineStartTime = TSTATES_UNTIL_ORIGIN - (TOP_BORDER_LINES * TSTATES_PER_SCANLINE) - (LEFT_BORDER_CHARS * TSTATES_PER_CHAR);
 		beamX = -LEFT_BORDER_CHARS;
@@ -219,6 +222,7 @@ function Display() {
 		pixelLineAddress = 0x0000;
 		attributeLineAddress = 0x1800;
 		imageDataPos = 0;
+		flashPhase = (flashPhase + 1) & 0x1f; /* FLASH has a period of 32 frames (16 on, 16 off) */
 	}
 	
 	self.doEvent = function() {
@@ -237,8 +241,8 @@ function Display() {
 			var pixelByte = memory.readScreen( pixelLineAddress | beamX );
 			var attributeByte = memory.readScreen( attributeLineAddress | beamX );
 			
-			if (attributeByte & 0x80) {
-				/* FLASH: invert ink / paper. TODO: only do this half the time... */
+			if ( (attributeByte & 0x80) && (flashPhase & 0x10) ) {
+				/* FLASH: invert ink / paper */
 				var ink = (attributeByte & 0x78) >> 1;
 				var paper = ( (attributeByte & 0x07) << 2 ) | ( (attributeByte & 0x40) >> 1 );
 			} else {
