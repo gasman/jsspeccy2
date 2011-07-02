@@ -121,7 +121,18 @@ function IOBus() {
 	var self = {};
 	
 	self.read = function(addr) {
-		return 0xff;
+		if ((addr & 0x0001) == 0x0000) {
+			/* read keyboard */
+			var result = 0xff;
+			for (var row = 0; row < 8; row++) {
+				if (!(addr & (1 << (row+8)))) { /* bit held low, so scan this row */
+					result &= keyStates[row];
+				}
+			}
+			return result;
+		} else {
+			return 0xff;
+		}
 	}
 	self.write = function(addr, val) {
 		if (!(addr & 0x01)) {
@@ -141,6 +152,28 @@ var FRAME_LENGTH = 69888;
 function Display() {
 	var self = {};
 	
+	var palette = new Uint8Array([
+		/* dark */
+		0x00, 0x00, 0x00, 0xff,
+		0x00, 0x00, 0xc0, 0xff,
+		0xc0, 0x00, 0x00, 0xff,
+		0xc0, 0x00, 0xc0, 0xff,
+		0x00, 0xc0, 0x00, 0xff,
+		0x00, 0xc0, 0xc0, 0xff,
+		0xc0, 0xc0, 0x00, 0xff,
+		0xc0, 0xc0, 0xc0, 0xff,
+		
+		/* bright */
+		0x00, 0x00, 0x00, 0xff,
+		0x00, 0x00, 0xff, 0xff,
+		0xff, 0x00, 0x00, 0xff,
+		0xff, 0x00, 0xff, 0xff,
+		0x00, 0xff, 0x00, 0xff,
+		0x00, 0xff, 0xff, 0xff,
+		0xff, 0xff, 0x00, 0xff,
+		0xff, 0xff, 0xff, 0xff,
+	])
+	
 	var TSTATES_PER_SCANLINE = 228;
 	var LEFT_BORDER_CHARS = 4;
 	var RIGHT_BORDER_CHARS = 4;
@@ -155,7 +188,7 @@ function Display() {
 	var CANVAS_WIDTH = 256 + 8 * (LEFT_BORDER_CHARS + RIGHT_BORDER_CHARS);
 	var CANVAS_HEIGHT = 192 + TOP_BORDER_LINES + BOTTOM_BORDER_LINES;
 	
-	var canvas, ctx;
+	var canvas, ctx, imageData, pixels;
 	
 	self.init = function() {
 		canvas = document.createElement('canvas');
@@ -163,6 +196,8 @@ function Display() {
 		canvas.height = CANVAS_HEIGHT;
 		document.body.appendChild(canvas);
 		ctx = canvas.getContext('2d');
+		imageData = ctx.createImageData(CANVAS_WIDTH, CANVAS_HEIGHT);
+		pixels = imageData.data;
 	}
 	
 	var borderColour = 7;
@@ -173,29 +208,59 @@ function Display() {
 	var beamX, beamY; /* X character pos and Y pixel pos of beam at next screen event,
 		relative to top left of non-border screen; negative / overlarge values are in the border */
 	
+	var pixelLineAddress; /* Address (relative to start of memory page) of the first screen byte in the current line */
+	var attributeLineAddress; /* Address (relative to start of memory page) of the first attribute byte in the current line */
+	var imageDataPos; /* offset into imageData buffer of current draw position */
 	var currentLineStartTime;
 	self.startFrame = function() {
 		self.nextEventTime = currentLineStartTime = TSTATES_UNTIL_ORIGIN - (TOP_BORDER_LINES * TSTATES_PER_SCANLINE) - (LEFT_BORDER_CHARS * TSTATES_PER_CHAR);
 		beamX = -LEFT_BORDER_CHARS;
 		beamY = -TOP_BORDER_LINES;
+		pixelLineAddress = 0x0000;
+		attributeLineAddress = 0x1800;
+		imageDataPos = 0;
 	}
+	
 	self.doEvent = function() {
-		if (beamY < 0) {
-			/* top border */
-			console.log(self.nextEventTime, beamX, beamY, '= border');
-		} else if (beamY < 192) {
-			if (beamX < 0) {
-				/* left border */
-				console.log(self.nextEventTime, beamX, beamY, '= border');
-			} else if (beamX < 32) {
-				console.log(self.nextEventTime, beamX, beamY, '= screen');
-			} else {
-				/* right border */
-				console.log(self.nextEventTime, beamX, beamY, '= border');
+		if (beamY < 0 | beamY >= 192 | beamX < 0 | beamX >= 32) {
+			/* border */
+			var p = borderColour << 2;
+			for (var i = 0; i < 8; i++) {
+				pixels[imageDataPos++] = palette[p];
+				pixels[imageDataPos++] = palette[p+1];
+				pixels[imageDataPos++] = palette[p+2];
+				pixels[imageDataPos++] = 0xff;
 			}
+			//console.log(self.nextEventTime, beamX, beamY, '= border');
 		} else {
-			/* bottom border */
-			console.log(self.nextEventTime, beamX, beamY, '= border');
+			/* main screen area */
+			var pixelByte = memory.readScreen( pixelLineAddress | beamX );
+			var attributeByte = memory.readScreen( attributeLineAddress | beamX );
+			
+			if (attributeByte & 0x80) {
+				/* FLASH: invert ink / paper. TODO: only do this half the time... */
+				var ink = (attributeByte & 0x78) >> 1;
+				var paper = ( (attributeByte & 0x07) << 2 ) | ( (attributeByte & 0x40) >> 1 );
+			} else {
+				var ink = ( (attributeByte & 0x07) << 2 ) | ( (attributeByte & 0x40) >> 1 );
+				var paper = (attributeByte & 0x78) >> 1;
+			}
+			
+			for (var b = 0x80; b; b >>= 1) {
+				if (pixelByte & b) {
+					pixels[imageDataPos++] = palette[ink];
+					pixels[imageDataPos++] = palette[ink+1];
+					pixels[imageDataPos++] = palette[ink+2];
+					pixels[imageDataPos++] = 0xff;
+				} else {
+					pixels[imageDataPos++] = palette[paper];
+					pixels[imageDataPos++] = palette[paper+1];
+					pixels[imageDataPos++] = palette[paper+2];
+					pixels[imageDataPos++] = 0xff;
+				}
+			}
+			
+			//console.log(self.nextEventTime, beamX, beamY, '= screen', pixelLineAddress | beamX, attributeLineAddress | beamX);
 		}
 		
 		/* increment beam / nextEventTime for next event */
@@ -205,6 +270,14 @@ function Display() {
 		} else {
 			beamX = -LEFT_BORDER_CHARS;
 			beamY++;
+			
+			if (beamY >= 0 && beamY < 192) {
+				/* pixel address = 0 0 0 y7 y6 y2 y1 y0 | y5 y4 y3 x4 x3 x2 x1 x0 */
+				pixelLineAddress = ( (beamY & 0xc0) << 5 ) | ( (beamY & 0x07) << 8 ) | ( (beamY & 0x38) << 2 );
+				/* attribute address = 0 0 0 1 1 0 y7 y6 | y5 y4 y3 x4 x3 x2 x1 x0 */
+				attributeLineAddress = 0x1800 | ( (beamY & 0xf8) << 2 );
+			}
+			
 			if (beamY < BEAM_Y_MAX) {
 				currentLineStartTime += TSTATES_PER_SCANLINE;
 				self.nextEventTime = currentLineStartTime;
@@ -214,9 +287,87 @@ function Display() {
 		}
 	}
 	
+	self.endFrame = function() {
+		ctx.putImageData(imageData, 0, 0);
+	}
+	
 	return self;
 }
 var display = Display();
+
+var keyStates = [];
+for (var row = 0; row < 8; row++) {
+	keyStates[row] = 0xff;
+}
+
+function keyDown(evt) {
+	registerKeyDown(evt.keyCode)
+	if (!evt.metaKey) return false;
+}
+function registerKeyDown(keyNum) {
+	var keyCode = keyCodes[keyNum];
+	if (keyCode == null) return;
+	keyStates[keyCode.row] &= ~(keyCode.mask);
+}
+function keyUp(evt) {
+	registerKeyUp(evt.keyCode);
+	if (!evt.metaKey) return false;
+}
+function registerKeyUp(keyNum) {
+	var keyCode = keyCodes[keyNum];
+	if (keyCode == null) return;
+	keyStates[keyCode.row] |= keyCode.mask;
+}
+function keyPress(evt) {
+	if (!evt.metaKey) return false;
+}
+
+var keyCodes = {
+	49: {row: 3, mask: 0x01}, /* 1 */
+	50: {row: 3, mask: 0x02}, /* 2 */
+	51: {row: 3, mask: 0x04}, /* 3 */
+	52: {row: 3, mask: 0x08}, /* 4 */
+	53: {row: 3, mask: 0x10}, /* 5 */
+	54: {row: 4, mask: 0x10}, /* 6 */
+	55: {row: 4, mask: 0x08}, /* 7 */
+	56: {row: 4, mask: 0x04}, /* 8 */
+	57: {row: 4, mask: 0x02}, /* 9 */
+	48: {row: 4, mask: 0x01}, /* 0 */
+
+	81: {row: 2, mask: 0x01}, /* Q */
+	87: {row: 2, mask: 0x02}, /* W */
+	69: {row: 2, mask: 0x04}, /* E */
+	82: {row: 2, mask: 0x08}, /* R */
+	84: {row: 2, mask: 0x10}, /* T */
+	89: {row: 5, mask: 0x10}, /* Y */
+	85: {row: 5, mask: 0x08}, /* U */
+	73: {row: 5, mask: 0x04}, /* I */
+	79: {row: 5, mask: 0x02}, /* O */
+	80: {row: 5, mask: 0x01}, /* P */
+
+	65: {row: 1, mask: 0x01}, /* A */
+	83: {row: 1, mask: 0x02}, /* S */
+	68: {row: 1, mask: 0x04}, /* D */
+	70: {row: 1, mask: 0x08}, /* F */
+	71: {row: 1, mask: 0x10}, /* G */
+	72: {row: 6, mask: 0x10}, /* H */
+	74: {row: 6, mask: 0x08}, /* J */
+	75: {row: 6, mask: 0x04}, /* K */
+	76: {row: 6, mask: 0x02}, /* L */
+	13: {row: 6, mask: 0x01}, /* enter */
+
+	16: {row: 0, mask: 0x01}, /* caps */
+	192: {row: 0, mask: 0x01}, /* backtick as caps - because firefox screws up a load of key codes when pressing shift */
+	90: {row: 0, mask: 0x02}, /* Z */
+	88: {row: 0, mask: 0x04}, /* X */
+	67: {row: 0, mask: 0x08}, /* C */
+	86: {row: 0, mask: 0x10}, /* V */
+	66: {row: 7, mask: 0x10}, /* B */
+	78: {row: 7, mask: 0x08}, /* N */
+	77: {row: 7, mask: 0x04}, /* M */
+	17: {row: 7, mask: 0x02}, /* sym - gah, firefox screws up ctrl+key too */
+	32: {row: 7, mask: 0x01}, /* space */
+};
 
 var FLAG_C = 0x01;
 var FLAG_N = 0x02;
@@ -412,6 +563,13 @@ function CP_R(r) {
 		tstates += 4;
 	}
 }
+function CPL() {
+	return function() {
+		regs[rA] ^= 0xff;
+		regs[rF] = ( regs[rF] & (FLAG_C | FLAG_P | FLAG_Z | FLAG_S) ) | ( regs[rA] & (FLAG_3 | FLAG_5) ) | (FLAG_N | FLAG_H);
+		tstates += 4;
+	}
+}
 function DEC_iHLi() {
 	return function() {
 		var value = memory.read(regPairs[rpHL]);
@@ -510,6 +668,13 @@ function IM(val) {
 	return function() {
 		im = val;
 		tstates += 8;
+	}
+}
+function IN_R_iCi(r) {
+	return function() {
+		regs[r] = ioBus.read(regPairs[rpBC]);
+		regs[rF] = (regs[rF] & FLAG_C) | sz53pTable[regs[r]];
+		tstates += 12;
 	}
 }
 function INC_R(r) {
@@ -857,6 +1022,13 @@ function RET_C(flag, sense) {
 		}
 	}
 }
+function RLC_R(r) {
+	return function() {
+		regs[r] = ( regs[r]<<1 ) | ( regs[r]>>7 );
+		regs[rF] = ( regs[r] & FLAG_C ) | sz53pTable[regs[r]];
+		tstates += 8;
+	}
+}
 function RLCA() {
 	return function() {
 		regs[rA] = (regs[rA] << 1) | (regs[rA] >> 7);
@@ -985,6 +1157,14 @@ function XOR_R(r) {
 }
 
 OPCODE_RUNNERS_CB = {
+	0x00: /* RLC B */      RLC_R(rB),
+	0x01: /* RLC C */      RLC_R(rC),
+	0x02: /* RLC D */      RLC_R(rD),
+	0x03: /* RLC E */      RLC_R(rE),
+	0x04: /* RLC H */      RLC_R(rH),
+	0x05: /* RLC L */      RLC_R(rL),
+	
+	0x07: /* RLC A */      RLC_R(rA),
 	
 	0x46: /* BIT 0,(HL) */ BIT_N_iHLi(0),
 	
@@ -1152,29 +1332,43 @@ function generateDDFDOpcodeSet(rp) {
 OPCODE_RUNNERS_DD = generateDDFDOpcodeSet(rpIX);
 
 OPCODE_RUNNERS_ED = {
+	
+	0x40: /* IN B,(C) */   IN_R_iCi(rB),
+	
 	0x42: /* SBC HL,BC */  SBC_HL_RR(rpBC),
 	0x43: /* LD (nnnn),BC */ LD_iNNi_RR(rpBC),
 	
 	0x46: /* IM 0 */       IM(0),
 	0x47: /* LD I,A */     LD_R_R(rI, rA),
+	0x48: /* IN C,(C) */   IN_R_iCi(rC),
 	
 	0x4B: /* LD BC,(nnnn) */ LD_RR_iNNi(rpBC),
+	
+	0x50: /* IN D,(C) */   IN_R_iCi(rD),
 	
 	0x52: /* SBC HL,DE */  SBC_HL_RR(rpDE),
 	0x53: /* LD (nnnn),DE */ LD_iNNi_RR(rpDE),
 	
 	0x56: /* IM 1 */       IM(1),
 	
+	0x58: /* IN E,(C) */   IN_R_iCi(rE),
+	
 	0x5B: /* LD DE,(nnnn) */ LD_RR_iNNi(rpDE),
 	
 	0x5E: /* IM 2 */       IM(2),
 	
+	0x60: /* IN H,(C) */   IN_R_iCi(rH),
+	
 	0x62: /* SBC HL,HL */  SBC_HL_RR(rpHL),
+	
+	0x68: /* IN L,(C) */   IN_R_iCi(rL),
 	
 	0x6B: /* LD HL,(nnnn) */ LD_RR_iNNi(rpHL, true),
 	
 	0x72: /* SBC HL,SP */  SBC_HL_RR(rpSP),
 	0x73: /* LD (nnnn),SP */ LD_iNNi_RR(rpSP),
+	
+	0x78: /* IN A,(C) */   IN_R_iCi(rA),
 	
 	0xB0: /* LDIR */       LDIR(),
 	
@@ -1233,7 +1427,7 @@ OPCODE_RUNNERS = {
 	0x2C: /* INC L */      INC_R(rL),
 	0x2D: /* DEC L */      DEC_R(rL),
 	0x2E: /* LD L,nn */    LD_R_N(rL),
-	
+	0x2F: /* CPL */        CPL(),
 	0x30: /* JR NC,nn */   JR_C_N(FLAG_C, false),
 	0x31: /* LD SP,nnnn */ LD_RR_NN(rpSP),
 	0x32: /* LD (nnnn),a */ LD_iNNi_A(),
@@ -1440,19 +1634,46 @@ OPCODE_RUNNERS = {
 
 function runFrame() {
 	display.startFrame();
-	//while (tstates < FRAME_LENGTH) {
-	for (var i = 0; i < 2000; i++) {
+	z80Interrupt();
+	while (tstates < FRAME_LENGTH) {
 		var opcode = memory.read(regPairs[rpPC]++);
 		OPCODE_RUNNERS[opcode]();
-		if (tstates > 8500) console.log(tstates);
+		// if (tstates > 8500) console.log(tstates);
 		while (display.nextEventTime != null && display.nextEventTime <= tstates) display.doEvent();
 	}
+	display.endFrame();
 }
 
-function maskableInterrupt() {
-	if (halted) {
-		regPairs[rpPC]++;
-		halted = false;
+function z80Interrupt() {
+	if (iff1) {
+		if (halted) {
+			regPairs[rpPC]++;
+			halted = false;
+		}
+		iff1 = iff2 = 0;
+		
+		memory.write(--regPairs[rpSP], regPairs[rpPC] >> 8);
+		memory.write(--regPairs[rpSP], regPairs[rpPC] & 0xff);
+		
+		/* TODO: R register */
+		
+		switch (im) {
+			case 0:
+				regPairs[rpPC] = 0x0038;
+				tstates += 12;
+				break;
+			case 1:
+				regPairs[rpPC] = 0x0038;
+				tstates += 13;
+				break;
+			case 2:
+				var inttemp = (regs[rI] << 8) | 0xff;
+				var l = memory.read(inttemp);
+				var h = memory.read( (inttemp+1) & 0xffff );
+				regPairs[rpPC] = (h<<8) | l;
+				tstates += 19;
+				break;
+		}
 	}
 }
 
@@ -1464,6 +1685,9 @@ function tick() {
 
 window.onload = function() {
 	display.init();
-	//tick();
-	runFrame();
+	document.onkeydown = keyDown;
+	document.onkeyup = keyUp;
+	document.onkeypress = keyPress;
+	tick();
+	//runFrame();
 }
