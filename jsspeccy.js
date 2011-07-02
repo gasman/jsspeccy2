@@ -76,7 +76,7 @@ if (regs[0] == 0x01) {
 	var rI = 21;
 }
 
-function Memory() {
+function Memory(use48k) {
 	var self = {};
 	
 	var ramPages = [];
@@ -87,7 +87,7 @@ function Memory() {
 	var scratch = new Uint8Array(0x3fff);
 	
 	var readSlots = [
-		roms['48.rom'],
+		use48k ? roms['48.rom'] : roms['128-0.rom'],
 		ramPages[5],
 		ramPages[2],
 		ramPages[0]
@@ -113,6 +113,12 @@ function Memory() {
 		return screenPage[addr];
 	}
 	
+	self.setPaging = function(val) {
+		readSlots[3] = writeSlots[3] = ramPages[val & 0x07];
+		readSlots[0] = (val & 0x10) ? roms['128-1.rom'] : roms['128-0.rom'];
+		screenPage = (val & 0x08) ? ramPages[7] : ramPages[5];
+	}
+	
 	return self;
 }
 var memory = Memory();
@@ -121,22 +127,24 @@ function IOBus() {
 	var self = {};
 	
 	self.read = function(addr) {
+		var result = 0xff;
 		if ((addr & 0x0001) == 0x0000) {
 			/* read keyboard */
-			var result = 0xff;
+			result = 0xff;
 			for (var row = 0; row < 8; row++) {
 				if (!(addr & (1 << (row+8)))) { /* bit held low, so scan this row */
 					result &= keyStates[row];
 				}
 			}
-			return result;
-		} else {
-			return 0xff;
 		}
+		return result;
 	}
 	self.write = function(addr, val) {
 		if (!(addr & 0x01)) {
 			display.setBorder(val & 0x07);
+		}
+		if (!(addr & 0x8002)) {
+			memory.setPaging(val);
 		}
 	}
 	
@@ -1027,6 +1035,17 @@ function LDDR() {
 		regPairs[rpHL]--; regPairs[rpDE]--;
 	}
 }
+function LDI() {
+	return function() {
+		var bytetemp = memory.read(regPairs[rpHL]);
+		regPairs[rpBC]--;
+		memory.write(regPairs[rpDE],bytetemp);
+		regPairs[rpDE]++; regPairs[rpHL]++;
+		bytetemp = (bytetemp + regs[rA]) & 0xff;
+		regs[rF] = ( regs[rF] & (FLAG_C | FLAG_Z | FLAG_S) ) | ( regPairs[rpBC] ? FLAG_V : 0 ) | (bytetemp & FLAG_3) | ( (bytetemp & 0x02) ? FLAG_5 : 0 );
+		tstates += 16;
+	}
+}
 function LDIR() {
 	return function() {
 		var bytetemp = memory.read(regPairs[rpHL]);
@@ -1079,6 +1098,12 @@ function OR_R(r) {
 		regs[rA] |= regs[r];
 		regs[rF] = sz53pTable[regs[rA]];
 		tstates += 4;
+	}
+}
+function OUT_iCi_R(r) {
+	return function() {
+		ioBus.write(regPairs[rpBC], regs[r]);
+		tstates += 12;
 	}
 }
 function OUT_iNi_A() {
@@ -1309,6 +1334,14 @@ function SHIFT_DDCB(opcodeTable) {
 		opcodeTable[opcode](offset);
 	}
 }
+function SLA_R(r) {
+	return function() {
+		regs[rF] = regs[r] >> 7;
+		regs[r] <<= 1;
+		regs[rF] |= sz53pTable[regs[r]];
+		tstates += 8;
+	}
+}
 function SRL_R(r) {
 	return function() {
 		regs[rF] = regs[r] & FLAG_C;
@@ -1402,6 +1435,15 @@ OPCODE_RUNNERS_CB = {
 	0x15: /* RL L */       RL_R(rL),
 	
 	0x17: /* RL A */       RL_R(rA),
+	
+	0x20: /* SLA B */      SLA_R(rB),
+	0x21: /* SLA C */      SLA_R(rC),
+	0x22: /* SLA D */      SLA_R(rD),
+	0x23: /* SLA E */      SLA_R(rE),
+	0x24: /* SLA H */      SLA_R(rH),
+	0x25: /* SLA L */      SLA_R(rL),
+	
+	0x27: /* SLA A */      SLA_R(rA),
 	
 	0x38: /* SRL B */      SRL_R(rB),
 	0x39: /* SRL C */      SRL_R(rC),
@@ -1728,7 +1770,7 @@ OPCODE_RUNNERS_DD = generateDDFDOpcodeSet(rpIX);
 OPCODE_RUNNERS_ED = {
 	
 	0x40: /* IN B,(C) */   IN_R_iCi(rB),
-	
+	0x41: /* OUT (C),B */  OUT_iCi_R(rB),
 	0x42: /* SBC HL,BC */  SBC_HL_RR(rpBC),
 	0x43: /* LD (nnnn),BC */ LD_iNNi_RR(rpBC),
 	0x44: /* NEG */        NEG(),
@@ -1736,27 +1778,30 @@ OPCODE_RUNNERS_ED = {
 	0x46: /* IM 0 */       IM(0),
 	0x47: /* LD I,A */     LD_R_R(rI, rA),
 	0x48: /* IN C,(C) */   IN_R_iCi(rC),
+	0x49: /* OUT (C),C */  OUT_iCi_R(rC),
 	
 	0x4B: /* LD BC,(nnnn) */ LD_RR_iNNi(rpBC),
 	
 	0x50: /* IN D,(C) */   IN_R_iCi(rD),
-	
+	0x51: /* OUT (C),D */  OUT_iCi_R(rD),
 	0x52: /* SBC HL,DE */  SBC_HL_RR(rpDE),
 	0x53: /* LD (nnnn),DE */ LD_iNNi_RR(rpDE),
 	
 	0x56: /* IM 1 */       IM(1),
 	
 	0x58: /* IN E,(C) */   IN_R_iCi(rE),
+	0x59: /* OUT (C),E */  OUT_iCi_R(rE),
 	
 	0x5B: /* LD DE,(nnnn) */ LD_RR_iNNi(rpDE),
 	
 	0x5E: /* IM 2 */       IM(2),
 	
 	0x60: /* IN H,(C) */   IN_R_iCi(rH),
-	
+	0x61: /* OUT (C),H */  OUT_iCi_R(rH),
 	0x62: /* SBC HL,HL */  SBC_HL_RR(rpHL),
 	
 	0x68: /* IN L,(C) */   IN_R_iCi(rL),
+	0x69: /* OUT (C),L */  OUT_iCi_R(rL),
 	
 	0x6B: /* LD HL,(nnnn) */ LD_RR_iNNi(rpHL, true),
 	
@@ -1764,8 +1809,11 @@ OPCODE_RUNNERS_ED = {
 	0x73: /* LD (nnnn),SP */ LD_iNNi_RR(rpSP),
 	
 	0x78: /* IN A,(C) */   IN_R_iCi(rA),
+	0x79: /* OUT (C),A */  OUT_iCi_R(rA),
 	
 	0x7B: /* LD SP,(nnnn) */ LD_RR_iNNi(rpSP),
+	
+	0xA0: /* LDI */        LDI(),
 	
 	0xB0: /* LDIR */       LDIR(),
 	
