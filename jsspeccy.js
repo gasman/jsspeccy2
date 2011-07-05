@@ -6,8 +6,14 @@ function JSSpeccy(container, opts) {
 		opts = {};
 	}
 	
+	var controller = {};
+	controller.reset = function() {
+		spectrum.reset();
+	}
+	
 	var ui = JSSpeccy.UI({
 		container: container,
+		controller: controller,
 		scaleFactor: opts.scaleFactor || 2
 	});
 	

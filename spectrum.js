@@ -31,6 +31,9 @@ JSSpeccy.Spectrum = function(opts) {
 	self.runFrame = function() {
 		processor.runFrame();
 	}
+	self.reset = function() {
+		processor.reset();
+	}
 	
 	return self;
 }

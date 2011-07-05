@@ -1879,5 +1879,10 @@ JSSpeccy.Z80 = function(opts) {
 		tstates -= display.frameLength;
 	}
 	
+	self.reset = function() {
+		regPairs[rpPC] = regPairs[rpIR] = 0;
+		iff1 = 0; iff2 = 0; im = 0; halted = false;
+	}
+	
 	return self;
 }
