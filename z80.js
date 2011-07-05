@@ -1156,7 +1156,7 @@ JSSpeccy.Z80 = function(opts) {
 		}
 	}
 	
-	OPCODE_RUNNERS_CB = {
+	var OPCODE_RUNNERS_CB = {
 		0x00: /* RLC B */      RLC_R(rB),
 		0x01: /* RLC C */      RLC_R(rC),
 		0x02: /* RLC D */      RLC_R(rD),
@@ -1516,9 +1516,9 @@ JSSpeccy.Z80 = function(opts) {
 		}
 	}
 	
-	OPCODE_RUNNERS_DD = generateDDFDOpcodeSet(rpIX);
+	var OPCODE_RUNNERS_DD = generateDDFDOpcodeSet(rpIX);
 	
-	OPCODE_RUNNERS_ED = {
+	var OPCODE_RUNNERS_ED = {
 		
 		0x40: /* IN B,(C) */   IN_R_iCi(rB),
 		0x41: /* OUT (C),B */  OUT_iCi_R(rB),
@@ -1573,9 +1573,9 @@ JSSpeccy.Z80 = function(opts) {
 		0x100: 'ed' /* dummy line so I don't have to keep adjusting trailing commas */
 	}
 	
-	OPCODE_RUNNERS_FD = generateDDFDOpcodeSet(rpIY);
+	var OPCODE_RUNNERS_FD = generateDDFDOpcodeSet(rpIY);
 	
-	OPCODE_RUNNERS = {
+	var OPCODE_RUNNERS = {
 		0x00: /* NOP */        NOP(),
 		0x01: /* LD BC,nnnn */ LD_RR_NN(rpBC),
 		0x02: /* LD (BC),A */  LD_iRRi_R(rpBC, rA),
