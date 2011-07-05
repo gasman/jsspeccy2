@@ -320,8 +320,14 @@ var keyCodes = {
 	999: null
 };
 
+var z80 = Z80({
+	memory: memory,
+	ioBus: ioBus,
+	display: display
+});
+
 function tick() {
-	runFrame();
+	z80.runFrame();
 	setTimeout(tick, 20);
 }
 
