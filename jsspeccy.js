@@ -1,9 +1,14 @@
-function JSSpeccy(container) {
+function JSSpeccy(container, opts) {
 	if (typeof(container) === 'string') {
 		container = document.getElementById(container);
 	}
+	if (!opts) {
+		opts = {};
+	}
+	
 	var ui = JSSpeccy.UI({
-		container: container
+		container: container,
+		scaleFactor: opts.scaleFactor || 2
 	});
 	
 	var keyboard = JSSpeccy.Keyboard();
