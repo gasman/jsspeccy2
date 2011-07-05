@@ -2,13 +2,13 @@ function JSSpeccy(container) {
 	if (typeof(container) === 'string') {
 		container = document.getElementById(container);
 	}
-	var ui = UI({
+	var ui = JSSpeccy.UI({
 		container: container
 	});
 	
-	var keyboard = Keyboard();
+	var keyboard = JSSpeccy.Keyboard();
 	
-	var spectrum = Spectrum({
+	var spectrum = JSSpeccy.Spectrum({
 		ui: ui,
 		keyboard: keyboard
 	})

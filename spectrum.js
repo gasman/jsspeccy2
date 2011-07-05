@@ -1,23 +1,23 @@
-function Spectrum(opts) {
+JSSpeccy.Spectrum = function(opts) {
 	var self = {};
 	
 	var ui = opts.ui;
 	var keyboard = opts.keyboard;
 	
-	var memory = Memory();
+	var memory = JSSpeccy.Memory();
 	
-	var display = Display({
+	var display = JSSpeccy.Display({
 		ui: ui,
 		memory: memory
 	});
 	
-	var ioBus = IOBus({
+	var ioBus = JSSpeccy.IOBus({
 		keyboard: keyboard,
 		display: display,
 		memory: memory
 	});
 	
-	var processor = Z80({
+	var processor = JSSpeccy.Z80({
 		memory: memory,
 		ioBus: ioBus,
 		display: display

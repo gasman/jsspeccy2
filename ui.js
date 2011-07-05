@@ -1,4 +1,4 @@
-function UI(opts) {
+JSSpeccy.UI = function(opts) {
 	var self = {};
 	
 	var container = opts.container;

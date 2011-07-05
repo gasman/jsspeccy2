@@ -1,4 +1,4 @@
-function Memory(use48k) {
+JSSpeccy.Memory = function(use48k) {
 	var self = {};
 	
 	var ramPages = [];
@@ -9,7 +9,7 @@ function Memory(use48k) {
 	var scratch = new Uint8Array(0x3fff);
 	
 	var readSlots = [
-		use48k ? roms['48.rom'] : roms['128-0.rom'],
+		use48k ? JSSpeccy.roms['48.rom'] : JSSpeccy.roms['128-0.rom'],
 		ramPages[5],
 		ramPages[2],
 		ramPages[0]
@@ -37,7 +37,7 @@ function Memory(use48k) {
 	
 	self.setPaging = function(val) {
 		readSlots[3] = writeSlots[3] = ramPages[val & 0x07];
-		readSlots[0] = (val & 0x10) ? roms['128-1.rom'] : roms['128-0.rom'];
+		readSlots[0] = (val & 0x10) ? JSSpeccy.roms['128-1.rom'] : JSSpeccy.roms['128-0.rom'];
 		screenPage = (val & 0x08) ? ramPages[7] : ramPages[5];
 	}
 	

@@ -1,4 +1,4 @@
-function Z80(opts) {
+JSSpeccy.Z80 = function(opts) {
 	var self = {};
 	
 	var memory = opts.memory;

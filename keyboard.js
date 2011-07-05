@@ -1,4 +1,4 @@
-function Keyboard() {
+JSSpeccy.Keyboard = function() {
 	var self = {};
 	
 	var keyStates = [];

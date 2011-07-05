@@ -2,7 +2,9 @@
 
 $dir = $ARGV[0];
 
-print "var $dir = {};\n";
+$variable = $ARGV[1] || $dir;
+
+print "$variable = {};\n";
 opendir(DIR, $dir) || die "can't opendir $dir: $!";
 while ($file = readdir(DIR)) {
 	next if $file =~ /^\./;
@@ -13,6 +15,6 @@ while ($file = readdir(DIR)) {
 		push(@bytes, unpack("C*", $str));
 	}
 	close(FILE);
-	print "${dir}['$file'] = new Uint8Array([" . join(',', @bytes) . "]);\n"
+	print "${variable}['$file'] = new Uint8Array([" . join(',', @bytes) . "]);\n"
 };
 closedir(DIR);

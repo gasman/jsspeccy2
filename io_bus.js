@@ -1,4 +1,4 @@
-function IOBus(opts) {
+JSSpeccy.IOBus = function(opts) {
 	var self = {};
 	
 	var keyboard = opts.keyboard;

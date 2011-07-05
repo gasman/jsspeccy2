@@ -1,4 +1,4 @@
-function Display(opts) {
+JSSpeccy.Display = function(opts) {
 	var self = {};
 	
 	var ui = opts.ui;
