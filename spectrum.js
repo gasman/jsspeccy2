@@ -1,14 +1,19 @@
 JSSpeccy.Spectrum = function(opts) {
 	var self = {};
 	
+	var model = opts.model || JSSpeccy.Spectrum.MODEL_128K;
+	
 	var ui = opts.ui;
 	var keyboard = opts.keyboard;
 	
-	var memory = JSSpeccy.Memory();
+	var memory = JSSpeccy.Memory({
+		model: (model === JSSpeccy.Spectrum.MODEL_48K ? JSSpeccy.Memory.MODEL_48K : JSSpeccy.Memory.MODEL_128K)
+	});
 	
 	var display = JSSpeccy.Display({
 		ui: ui,
-		memory: memory
+		memory: memory,
+		model: (model === JSSpeccy.Spectrum.MODEL_48K ? JSSpeccy.Display.MODEL_48K : JSSpeccy.Display.MODEL_128K)
 	});
 	
 	var ioBus = JSSpeccy.IOBus({
@@ -29,3 +34,6 @@ JSSpeccy.Spectrum = function(opts) {
 	
 	return self;
 }
+JSSpeccy.Spectrum.MODEL_48K = 1;
+JSSpeccy.Spectrum.MODEL_128K = 2;
+

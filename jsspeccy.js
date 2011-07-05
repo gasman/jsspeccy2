@@ -10,7 +10,8 @@ function JSSpeccy(container) {
 	
 	var spectrum = JSSpeccy.Spectrum({
 		ui: ui,
-		keyboard: keyboard
+		keyboard: keyboard,
+		model: JSSpeccy.Spectrum.MODEL_128K
 	})
 	
 	function tick() {

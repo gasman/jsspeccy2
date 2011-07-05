@@ -3,6 +3,7 @@ JSSpeccy.Display = function(opts) {
 	
 	var ui = opts.ui;
 	var memory = opts.memory;
+	var model = opts.model || JSSpeccy.Display.MODEL_128K;
 	
 	var palette = new Uint8Array([
 		/* dark */
@@ -26,13 +27,21 @@ JSSpeccy.Display = function(opts) {
 		0xff, 0xff, 0xff, 0xff,
 	])
 	
-	var TSTATES_PER_SCANLINE = 228;
 	var LEFT_BORDER_CHARS = 4;
 	var RIGHT_BORDER_CHARS = 4;
 	var TOP_BORDER_LINES = 24;
 	var BOTTOM_BORDER_LINES = 24;
-	var TSTATES_UNTIL_ORIGIN = 14000;
 	var TSTATES_PER_CHAR = 4;
+	
+	if (model === JSSpeccy.Display.MODEL_48K) {
+		var TSTATES_UNTIL_ORIGIN = 14336;
+		var TSTATES_PER_SCANLINE = 224;
+		self.frameLength = 69888;
+	} else { /* model === JSSpeccy.Display.MODEL_128K */
+		var TSTATES_UNTIL_ORIGIN = 14362;
+		var TSTATES_PER_SCANLINE = 228;
+		self.frameLength = 70908;
+	}
 	
 	var BEAM_X_MAX = (32 + RIGHT_BORDER_CHARS);
 	var BEAM_Y_MAX = (192 + BOTTOM_BORDER_LINES);
@@ -142,3 +151,5 @@ JSSpeccy.Display = function(opts) {
 	
 	return self;
 }
+JSSpeccy.Display.MODEL_48K = 1;
+JSSpeccy.Display.MODEL_128K = 2;

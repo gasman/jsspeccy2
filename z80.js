@@ -86,8 +86,6 @@ JSSpeccy.Z80 = function(opts) {
 	var tstates = 0; /* number of tstates since start of this frame */
 	var iff1 = 0, iff2 = 0, im = 0, halted = false;
 	
-	var FRAME_LENGTH = 69888;
-	
 	var FLAG_C = 0x01;
 	var FLAG_N = 0x02;
 	var FLAG_P = 0x04;
@@ -1871,14 +1869,14 @@ JSSpeccy.Z80 = function(opts) {
 	self.runFrame = function() {
 		display.startFrame();
 		z80Interrupt();
-		while (tstates < FRAME_LENGTH) {
+		while (tstates < display.frameLength) {
 			var opcode = memory.read(regPairs[rpPC]++);
 			OPCODE_RUNNERS[opcode]();
 			// if (tstates > 8500) console.log(tstates);
 			while (display.nextEventTime != null && display.nextEventTime <= tstates) display.doEvent();
 		}
 		display.endFrame();
-		tstates -= FRAME_LENGTH;
+		tstates -= display.frameLength;
 	}
 	
 	return self;
