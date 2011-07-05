@@ -23,9 +23,11 @@ function tick() {
 	setTimeout(tick, 20);
 }
 
-window.onload = function() {
-	display.init();
+function JSSpeccy(container) {
+	if (typeof(container) === 'string') {
+		container = document.getElementById(container);
+	}
+	display.init(container);
 	keyboard.attachEvents();
 	tick();
-	//runFrame();
 }

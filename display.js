@@ -43,17 +43,13 @@ function Display(opts) {
 	
 	var canvas, ctx, imageData, pixels;
 	
-	self.init = function() {
-		document.body.style.backgroundColor = 'black';
-		var div = document.createElement('div');
-		div.style.width = CANVAS_WIDTH * SCALE_FACTOR + 'px';
-		div.style.height = CANVAS_HEIGHT * SCALE_FACTOR + 'px';
-		div.style.margin = '75px auto';
+	self.init = function(container) {
+		container.style.width = CANVAS_WIDTH * SCALE_FACTOR + 'px';
+		container.style.height = CANVAS_HEIGHT * SCALE_FACTOR + 'px';
 		canvas = document.createElement('canvas');
 		canvas.width = CANVAS_WIDTH;
 		canvas.height = CANVAS_HEIGHT;
-		div.appendChild(canvas);
-		document.body.appendChild(div);
+		container.appendChild(canvas);
 		canvas.style.width = CANVAS_WIDTH * SCALE_FACTOR + 'px';
 		canvas.style.height = CANVAS_HEIGHT * SCALE_FACTOR + 'px';
 		canvas.style.imageRendering = '-webkit-optimize-contrast';
