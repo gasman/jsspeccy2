@@ -1,6 +1,7 @@
 function Display(opts) {
 	var self = {};
 	
+	var ui = opts.ui;
 	var memory = opts.memory;
 	
 	var palette = new Uint8Array([
@@ -36,27 +37,13 @@ function Display(opts) {
 	var BEAM_X_MAX = (32 + RIGHT_BORDER_CHARS);
 	var BEAM_Y_MAX = (192 + BOTTOM_BORDER_LINES);
 	
-	var SCALE_FACTOR = 2;
-	
 	var CANVAS_WIDTH = 256 + 8 * (LEFT_BORDER_CHARS + RIGHT_BORDER_CHARS);
 	var CANVAS_HEIGHT = 192 + TOP_BORDER_LINES + BOTTOM_BORDER_LINES;
 	
-	var canvas, ctx, imageData, pixels;
-	
-	self.init = function(container) {
-		container.style.width = CANVAS_WIDTH * SCALE_FACTOR + 'px';
-		container.style.height = CANVAS_HEIGHT * SCALE_FACTOR + 'px';
-		canvas = document.createElement('canvas');
-		canvas.width = CANVAS_WIDTH;
-		canvas.height = CANVAS_HEIGHT;
-		container.appendChild(canvas);
-		canvas.style.width = CANVAS_WIDTH * SCALE_FACTOR + 'px';
-		canvas.style.height = CANVAS_HEIGHT * SCALE_FACTOR + 'px';
-		canvas.style.imageRendering = '-webkit-optimize-contrast';
-		ctx = canvas.getContext('2d');
-		imageData = ctx.createImageData(CANVAS_WIDTH, CANVAS_HEIGHT);
-		pixels = imageData.data;
-	}
+	ui.setResolution(CANVAS_WIDTH, CANVAS_HEIGHT);
+	var ctx = ui.canvas.getContext('2d');
+	var imageData = ctx.createImageData(CANVAS_WIDTH, CANVAS_HEIGHT);
+	var pixels = imageData.data;
 	
 	var borderColour = 7;
 	self.setBorder = function(val) {

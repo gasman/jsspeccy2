@@ -86,12 +86,6 @@ function Keyboard() {
 		999: null
 	};
 	
-	self.attachEvents = function() {
-		document.onkeydown = keyDown;
-		document.onkeyup = keyUp;
-		document.onkeypress = keyPress;
-	}
-	
 	self.poll = function(addr) {
 		var result = 0xff;
 		for (var row = 0; row < 8; row++) {
@@ -101,6 +95,10 @@ function Keyboard() {
 		}
 		return result;
 	}
+	
+	document.onkeydown = keyDown;
+	document.onkeyup = keyUp;
+	document.onkeypress = keyPress;
 	
 	return self;
 }
