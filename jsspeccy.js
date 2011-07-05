@@ -1,19 +1,16 @@
-function JSSpeccy(container) {
-	if (typeof(container) === 'string') {
-		container = document.getElementById(container);
-	}
-	var ui = UI({
-		container: container
-	});
+function Spectrum(opts) {
+	var self = {};
+	
+	var ui = opts.ui;
+	var keyboard = opts.keyboard;
 	
 	var memory = Memory();
-	
-	var keyboard = Keyboard();
 	
 	var display = Display({
 		ui: ui,
 		memory: memory
 	});
+	
 	var ioBus = IOBus({
 		keyboard: keyboard,
 		display: display,
@@ -26,8 +23,30 @@ function JSSpeccy(container) {
 		display: display
 	});
 	
-	function tick() {
+	self.runFrame = function() {
 		processor.runFrame();
+	}
+	
+	return self;
+}
+
+function JSSpeccy(container) {
+	if (typeof(container) === 'string') {
+		container = document.getElementById(container);
+	}
+	var ui = UI({
+		container: container
+	});
+	
+	var keyboard = Keyboard();
+	
+	var spectrum = Spectrum({
+		ui: ui,
+		keyboard: keyboard
+	})
+	
+	function tick() {
+		spectrum.runFrame();
 		setTimeout(tick, 20);
 	}
 	
