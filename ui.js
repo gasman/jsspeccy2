@@ -9,6 +9,25 @@ JSSpeccy.UI = function(opts) {
 	container.appendChild(self.canvas);
 	self.canvas.style.imageRendering = '-webkit-optimize-contrast';
 	
+	/* set up drag event on canvas to load files */
+	self.canvas.ondragenter = function() {
+		// Needed for web browser compatibility
+		return false;
+	}
+	self.canvas.ondragover = function () {
+		// Needed for web browser compatibility
+		return false;
+	}
+	self.canvas.ondrop = function(evt) {
+		var files = evt.dataTransfer.files;
+		var reader = new FileReader();
+		reader.onloadend = function() {
+			controller.loadFile(files[0].name, this.result);
+		}
+		reader.readAsBinaryString(files[0]);
+		return false;
+	}
+	
 	var resetButton = document.createElement('button');
 	container.appendChild(resetButton);
 	resetButton.innerText = 'reset';

@@ -10,6 +10,17 @@ function JSSpeccy(container, opts) {
 	controller.reset = function() {
 		spectrum.reset();
 	}
+	controller.loadFile = function(name, data) {
+		if ( name.match(/\.sna$/) ) {
+			 var snapshot = JSSpeccy.loadSna(data);
+			 spectrum = JSSpeccy.Spectrum({
+				ui: ui,
+				keyboard: keyboard,
+				model: snapshot.model
+			 });
+			 spectrum.loadSnapshot(snapshot);
+		}
+	}
 	
 	var ui = JSSpeccy.UI({
 		container: container,

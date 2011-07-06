@@ -35,6 +35,12 @@ JSSpeccy.Spectrum = function(opts) {
 		processor.reset();
 	}
 	
+	self.loadSnapshot = function(snapshot) {
+		memory.loadFromSnapshot(snapshot.memoryPages);
+		processor.loadFromSnapshot(snapshot.registers);
+		display.setBorder(snapshot.ulaState.borderColour);
+	}
+	
 	return self;
 }
 JSSpeccy.Spectrum.MODEL_48K = 1;

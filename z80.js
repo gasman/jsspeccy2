@@ -1884,5 +1884,24 @@ JSSpeccy.Z80 = function(opts) {
 		iff1 = 0; iff2 = 0; im = 0; halted = false;
 	}
 	
+	self.loadFromSnapshot = function(snapRegs) {
+		regPairs[rpAF] = snapRegs['AF'];
+		regPairs[rpBC] = snapRegs['BC'];
+		regPairs[rpDE] = snapRegs['DE'];
+		regPairs[rpHL] = snapRegs['HL'];
+		regPairs[rpAF_] = snapRegs['AF_'];
+		regPairs[rpBC_] = snapRegs['BC_'];
+		regPairs[rpDE_] = snapRegs['DE_'];
+		regPairs[rpHL_] = snapRegs['HL_'];
+		regPairs[rpIX] = snapRegs['IX'];
+		regPairs[rpIY] = snapRegs['IY'];
+		regPairs[rpSP] = snapRegs['SP'];
+		regPairs[rpPC] = snapRegs['PC'];
+		regPairs[rpIR] = snapRegs['IR'];
+		iff1 = snapRegs['iff1'];
+		iff2 = snapRegs['iff2'];
+		im = snapRegs['im'];
+	}
+	
 	return self;
 }

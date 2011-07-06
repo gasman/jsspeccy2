@@ -47,6 +47,14 @@ JSSpeccy.Memory = function(opts) {
 		}
 	}
 	
+	self.loadFromSnapshot = function(snapshotPages) {
+		for (p in snapshotPages) {
+			for (var i = 0; i < 0x4000; i++) {
+				ramPages[p][i] = snapshotPages[p][i];
+			}
+		}
+	}
+	
 	return self;
 }
 JSSpeccy.Memory.MODEL_48K = 1;
