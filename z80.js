@@ -725,9 +725,10 @@ JSSpeccy.Z80 = function(opts) {
 		}
 	}
 	function LD_R_N(r) {
+		var tstatesToAdd = (r == rIXH || r == rIXL || r == rIYH || r == rIYL) ? 11 : 7;
 		return function() {
 			regs[r] = memory.read(regPairs[rpPC]++);
-			tstates += 7;
+			tstates += tstatesToAdd;
 		}
 	}
 	function LD_R_R(r1, r2) {
@@ -737,9 +738,11 @@ JSSpeccy.Z80 = function(opts) {
 				tstates += 9;
 			}
 		} else {
+			var tstatesToAdd = 4;
+			if (r1 == rIXH || r1 == rIXL || r1 == rIYH || r1 == rIYL) tstatesToAdd = 8;
 			return function() {
 				regs[r1] = regs[r2];
-				tstates += 4;
+				tstates += tstatesToAdd;
 			}
 		}
 	}
@@ -993,6 +996,14 @@ JSSpeccy.Z80 = function(opts) {
 			tstates += 8;
 		}
 	}
+	function RRC_R(r) {
+		return function() {
+			regs[rF] = regs[r] & FLAG_C;
+			regs[r] = ( regs[r] >> 1 ) | ( regs[r] <<7 );
+			regs[rF] |= sz53pTable[regs[r]];
+			tstates += 8;
+		}
+	}
 	function RRCA() {
 		return function() {
 			regs[rF] = ( regs[rF] & (FLAG_P | FLAG_Z | FLAG_S) ) | (regs[rA] & FLAG_C);
@@ -1212,6 +1223,14 @@ JSSpeccy.Z80 = function(opts) {
 		
 		0x07: /* RLC A */      RLC_R(rA),
 		
+		0x08: /* RRC B */      RRC_R(rB),
+		0x09: /* RRC C */      RRC_R(rC),
+		0x0a: /* RRC D */      RRC_R(rD),
+		0x0b: /* RRC E */      RRC_R(rE),
+		0x0c: /* RRC H */      RRC_R(rH),
+		0x0d: /* RRC L */      RRC_R(rL),
+		
+		0x0f: /* RRC A */      RRC_R(rA),
 		0x10: /* RL B */       RL_R(rB),
 		0x11: /* RL C */       RL_R(rC),
 		0x12: /* RL D */       RL_R(rD),
@@ -1443,7 +1462,7 @@ JSSpeccy.Z80 = function(opts) {
 	
 	/* Generate the opcode runner lookup table for either the DD or FD set, acting on the
 	specified register pair (IX or IY) */
-	function generateDDFDOpcodeSet(rp) {
+	function generateDDFDOpcodeSet(rp, rh, rl) {
 		var ddcbOpcodeRunners = {
 			
 			0x46: /* BIT 0,(IX+nn) */ BIT_N_iRRpNNi(0, rp),
@@ -1506,9 +1525,13 @@ JSSpeccy.Z80 = function(opts) {
 			0x22: /* LD (nnnn),IX */ LD_iNNi_RR(rp),
 			0x23: /* INC IX */     INC_RR(rp),
 			
+			0x26: /* LD IXh, nn */ LD_R_N(rh),
+			
 			0x29: /* ADD IX,IX */  ADD_RR_RR(rp, rp),
 			0x2A: /* LD IX,(nnnn) */ LD_RR_iNNi(rp),
 			0x2B: /* DEC IX */     DEC_RR(rp),
+			
+			0x2E: /* LD IXl, nn */ LD_R_N(rl),
 			
 			0x34: /* INC (IX+nn) */ INC_iRRpNNi(rp),
 			0x35: /* DEC (IX+nn) */ DEC_iRRpNNi(rp),
@@ -1525,9 +1548,10 @@ JSSpeccy.Z80 = function(opts) {
 			0x5E: /* LD E,(IX+nn) */ LD_R_iRRpNNi(rE, rp),
 			
 			0x66: /* LD H,(IX+nn) */ LD_R_iRRpNNi(rH, rp),
+			0x67: /* LD IXh,A */     LD_R_R(rh, rA),
 			
 			0x6E: /* LD L,(IX+nn) */ LD_R_iRRpNNi(rL, rp),
-			
+			0x6F: /* LD IXl,A */     LD_R_R(rl, rA),
 			0x70: /* LD (IX+nn),B */ LD_iRRpNNi_R(rp, rB),
 			0x71: /* LD (IX+nn),C */ LD_iRRpNNi_R(rp, rC),
 			0x72: /* LD (IX+nn),D */ LD_iRRpNNi_R(rp, rD),
@@ -1566,7 +1590,7 @@ JSSpeccy.Z80 = function(opts) {
 		}
 	}
 	
-	var OPCODE_RUNNERS_DD = generateDDFDOpcodeSet(rpIX);
+	var OPCODE_RUNNERS_DD = generateDDFDOpcodeSet(rpIX, rIXH, rIXL);
 	
 	var OPCODE_RUNNERS_ED = {
 		
@@ -1625,7 +1649,7 @@ JSSpeccy.Z80 = function(opts) {
 		0x100: 'ed' /* dummy line so I don't have to keep adjusting trailing commas */
 	}
 	
-	var OPCODE_RUNNERS_FD = generateDDFDOpcodeSet(rpIY);
+	var OPCODE_RUNNERS_FD = generateDDFDOpcodeSet(rpIY, rIYH, rIYL);
 	
 	var OPCODE_RUNNERS = {
 		0x00: /* NOP */        NOP(),
