@@ -8,6 +8,9 @@ JSSpeccy.IOBus = function(opts) {
 	self.read = function(addr) {
 		if ((addr & 0x0001) == 0x0000) {
 			return keyboard.poll(addr);
+		} else if ((addr & 0x00e0) == 0x0000) {
+			/* kempston joystick */
+			return 0;
 		} else {
 			return 0xff;
 		}
