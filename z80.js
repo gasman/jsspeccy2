@@ -226,6 +226,18 @@ JSSpeccy.Z80 = function(opts) {
 			tstates += 7;
 		}
 	}
+	function AND_iRRpNNi(rp) {
+		return function() {
+			var offset = memory.read(regPairs[rpPC]++);
+			if (offset & 0x80) offset -= 0x100;
+			var addr = (regPairs[rp] + offset) & 0xffff;
+			
+			var val = memory.read(addr);
+			regs[rA] &= val;
+			regs[rF] = FLAG_H | sz53pTable[regs[rA]];
+			tstates += 19;
+		}
+	}
 	function AND_N() {
 		return function() {
 			var val = memory.read(regPairs[rpPC]++);
@@ -357,6 +369,40 @@ JSSpeccy.Z80 = function(opts) {
 			tstates += 4;
 		}
 	}
+	function CPDR() {
+		return function() {
+			var value = memory.read(regPairs[rpHL]);
+			var bytetemp = (regs[rA] - value) & 0xff;
+			var lookup = ( (regs[rA] & 0x08) >> 3 ) | ( (value & 0x08) >> 2 ) | ( (bytetemp & 0x08) >> 1 );
+			regPairs[rpBC]--;
+			regs[rF] = (regs[rF] & FLAG_C) | ( regPairs[rpBC] ? (FLAG_V | FLAG_N) : FLAG_N ) | halfcarrySubTable[lookup] | (bytetemp ? 0 : FLAG_Z) | (bytetemp & FLAG_S);
+			if (regs[rF] & FLAG_H) bytetemp--;
+			regs[rF] |= (bytetemp & FLAG_3) | ( (bytetemp & 0x02) ? FLAG_5 : 0 );
+			if( ( regs[rF] & (FLAG_V | FLAG_Z) ) == FLAG_V ) {
+				regPairs[rpPC] -= 2;
+				tstates += 5;
+			}
+			regPairs[rpHL]--;
+			tstates += 16;
+		}
+	}
+	function CPIR() {
+		return function() {
+			var value = memory.read(regPairs[rpHL]);
+			var bytetemp = (regs[rA] - value) & 0xff;
+			var lookup = ( (regs[rA] & 0x08) >> 3 ) | ( (value & 0x08) >> 2 ) | ( (bytetemp & 0x08) >> 1 );
+			regPairs[rpBC]--;
+			regs[rF] = (regs[rF] & FLAG_C) | ( regPairs[rpBC] ? (FLAG_V | FLAG_N) : FLAG_N ) | halfcarrySubTable[lookup] | (bytetemp ? 0 : FLAG_Z) | (bytetemp & FLAG_S);
+			if (regs[rF] & FLAG_H) bytetemp--;
+			regs[rF] |= (bytetemp & FLAG_3) | ( (bytetemp & 0x02) ? FLAG_5 : 0 );
+			if( ( regs[rF] & (FLAG_V | FLAG_Z) ) == FLAG_V ) {
+				regPairs[rpPC] -= 2;
+				tstates += 5;
+			}
+			regPairs[rpHL]++;
+			tstates += 16;
+		}
+	}
 	function CPL() {
 		return function() {
 			regs[rA] ^= 0xff;
@@ -397,9 +443,10 @@ JSSpeccy.Z80 = function(opts) {
 		}
 	}
 	function DEC_RR(rp) {
+		var tstatesToAdd = (rp == rpIX || rp == rpIY) ? 10 : 6;
 		return function() {
 			regPairs[rp]--;
-			tstates += 6;
+			tstates += tstatesToAdd;
 		}
 	}
 	function DI() {
@@ -516,9 +563,10 @@ JSSpeccy.Z80 = function(opts) {
 		}
 	}
 	function INC_RR(rp) {
+		var tstatesToAdd = (rp == rpIX || rp == rpIY) ? 10 : 6;
 		return function() {
 			regPairs[rp]++;
-			tstates += 6;
+			tstates += tstatesToAdd;
 		}
 	}
 	function JP_C_NN(flag, sense) {
@@ -1456,9 +1504,11 @@ JSSpeccy.Z80 = function(opts) {
 			
 			0x21: /* LD IX,nnnn */ LD_RR_NN(rp),
 			0x22: /* LD (nnnn),IX */ LD_iNNi_RR(rp),
+			0x23: /* INC IX */     INC_RR(rp),
 			
 			0x29: /* ADD IX,IX */  ADD_RR_RR(rp, rp),
 			0x2A: /* LD IX,(nnnn) */ LD_RR_iNNi(rp),
+			0x2B: /* DEC IX */     DEC_RR(rp),
 			
 			0x34: /* INC (IX+nn) */ INC_iRRpNNi(rp),
 			0x35: /* DEC (IX+nn) */ DEC_iRRpNNi(rp),
@@ -1491,6 +1541,8 @@ JSSpeccy.Z80 = function(opts) {
 			0x86: /* ADD A,(IX+nn) */ ADD_A_iRRpNNi(rp),
 			
 			0x96: /* SUB A,(IX+dd) */ SUB_iRRpNNi(rp),
+			
+			0xA6: /* AND (IX+dd) */ AND_iRRpNNi(rp),
 			
 			0xAE: /* XOR A,(IX+dd) */ XOR_iRRpNNi(rp),
 			
@@ -1565,8 +1617,10 @@ JSSpeccy.Z80 = function(opts) {
 		0xA0: /* LDI */        LDI(),
 		
 		0xB0: /* LDIR */       LDIR(),
+		0xb1: /* CPIR */       CPIR(),
 		
 		0xB8: /* LDDR */       LDDR(),
+		0xb9: /* CPDR */       CPDR(),
 		
 		0x100: 'ed' /* dummy line so I don't have to keep adjusting trailing commas */
 	}
