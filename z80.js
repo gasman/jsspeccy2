@@ -143,7 +143,21 @@ JSSpeccy.Z80 = function(opts) {
 			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (val & 0x88) >> 2 ) | ( (adctemp & 0x88) >> 1 );
 			regs[rA] = adctemp;
 			regs[rF] = ( adctemp & 0x100 ? FLAG_C : 0 ) | halfcarryAddTable[lookup & 0x07] | overflowAddTable[lookup >> 4] | sz53Table[regs[rA]];
-			tstates += 4;
+			tstates += 7;
+		}
+	}
+	function ADC_A_iRRpNNi(rp) {
+		return function() {
+			var offset = memory.read(regPairs[rpPC]++);
+			if (offset & 0x80) offset -= 0x100;
+			var addr = (regPairs[rp] + offset) & 0xffff;
+			
+			var val = memory.read(addr);
+			var adctemp = regs[rA] + val + (regs[rF] & FLAG_C);
+			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (val & 0x88) >> 2 ) | ( (adctemp & 0x88) >> 1 );
+			regs[rA] = adctemp;
+			regs[rF] = ( adctemp & 0x100 ? FLAG_C : 0 ) | halfcarryAddTable[lookup & 0x07] | overflowAddTable[lookup >> 4] | sz53Table[regs[rA]];
+			tstates += 19;
 		}
 	}
 	function ADC_A_N() {
@@ -968,6 +982,20 @@ JSSpeccy.Z80 = function(opts) {
 			tstates =+ 15;
 		}
 	}
+	function RL_iRRpNNi(rp) {
+		return function() {
+			var offset = memory.read(regPairs[rpPC]++);
+			if (offset & 0x80) offset -= 0x100;
+			var addr = (regPairs[rp] + offset) & 0xffff;
+			
+			var value = memory.read(addr);
+			var rltemp = value;
+			value = ( (value << 1) | (regs[rF] & FLAG_C) ) & 0xff;
+			regs[rF] = ( rltemp >> 7 ) | sz53pTable[value];
+			memory.write(addr, value);
+			tstates =+ 23;
+		}
+	}
 	function RL_R(r) {
 		return function() {
 			var rltemp = regs[r];
@@ -991,6 +1019,19 @@ JSSpeccy.Z80 = function(opts) {
 			regs[rF] = (value & FLAG_C) | sz53pTable[value];
 			memory.write(regPairs[rpHL], value);
 			tstates += 15;
+		}
+	}
+	function RLC_iRRpNNi(rp) {
+		return function() {
+			var offset = memory.read(regPairs[rpPC]++);
+			if (offset & 0x80) offset -= 0x100;
+			var addr = (regPairs[rp] + offset) & 0xffff;
+			
+			var value = memory.read(addr);
+			value = ( (value << 1) | (value >> 7) ) & 0xff;
+			regs[rF] = (value & FLAG_C) | sz53pTable[value];
+			memory.write(addr, value);
+			tstates += 23;
 		}
 	}
 	function RLC_R(r) {
@@ -1017,6 +1058,20 @@ JSSpeccy.Z80 = function(opts) {
 			tstates += 15;
 		}
 	}
+	function RR_iRRpNNi(rp) {
+		return function() {
+			var offset = memory.read(regPairs[rpPC]++);
+			if (offset & 0x80) offset -= 0x100;
+			var addr = (regPairs[rp] + offset) & 0xffff;
+			
+			var value = memory.read(addr);
+			var rrtemp = value;
+			value = ( (value >> 1) | ( regs[rF] << 7 ) ) & 0xff;
+			regs[rF] = ( rrtemp & FLAG_C ) | sz53pTable[value];
+			memory.write(addr, value);
+			tstates += 15;
+		}
+	}
 	function RR_R(r) {
 		return function() {
 			var rrtemp = regs[r];
@@ -1033,6 +1088,20 @@ JSSpeccy.Z80 = function(opts) {
 			regs[rF] |= sz53pTable[value];
 			memory.write(regPairs[rpHL], value);
 			tstates += 15;
+		}
+	}
+	function RRC_iRRpNNi(rp) {
+		return function() {
+			var offset = memory.read(regPairs[rpPC]++);
+			if (offset & 0x80) offset -= 0x100;
+			var addr = (regPairs[rp] + offset) & 0xffff;
+			
+			var value = memory.read(addr);
+			regs[rF] = value & FLAG_C;
+			value = ( (value >> 1) | (value << 7) ) & 0xff;
+			regs[rF] |= sz53pTable[value];
+			memory.write(addr, value);
+			tstates += 23;
 		}
 	}
 	function RRC_R(r) {
@@ -1076,6 +1145,21 @@ JSSpeccy.Z80 = function(opts) {
 			regs[rA] = sbctemp;
 			regs[rF] = ( sbctemp & 0x100 ? FLAG_C : 0 ) | FLAG_N | halfcarrySubTable[lookup & 0x07] | overflowSubTable[lookup >> 4] | sz53Table[regs[rA]];
 			tstates += 7;
+		}
+	}
+	function SBC_A_iRRpNNi(rp) {
+		return function() {
+			var offset = memory.read(regPairs[rpPC]++);
+			if (offset & 0x80) offset -= 0x100;
+			var addr = (regPairs[rp] + offset) & 0xffff;
+			
+			var val = memory.read(addr);
+			
+			var sbctemp = regs[rA] - val - ( regs[rF] & FLAG_C );
+			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (val & 0x88) >> 2 ) | ( (sbctemp & 0x88) >> 1 );
+			regs[rA] = sbctemp;
+			regs[rF] = ( sbctemp & 0x100 ? FLAG_C : 0 ) | FLAG_N | halfcarrySubTable[lookup & 0x07] | overflowSubTable[lookup >> 4] | sz53Table[regs[rA]];
+			tstates += 19;
 		}
 	}
 	function SBC_A_N() {
@@ -1167,6 +1251,20 @@ JSSpeccy.Z80 = function(opts) {
 			tstates += 15;
 		}
 	}
+	function SLA_iRRpNNi(rp) {
+		return function() {
+			var offset = memory.read(regPairs[rpPC]++);
+			if (offset & 0x80) offset -= 0x100;
+			var addr = (regPairs[rp] + offset) & 0xffff;
+			
+			var value = memory.read(addr);
+			regs[rF] = value >> 7;
+			value = (value << 1) & 0xff;
+			regs[rF] |= sz53pTable[value];
+			memory.write(addr, value);
+			tstates += 23;
+		}
+	}
 	function SLA_R(r) {
 		return function() {
 			regs[rF] = regs[r] >> 7;
@@ -1185,6 +1283,20 @@ JSSpeccy.Z80 = function(opts) {
 			tstates += 15;
 		}
 	}
+	function SRA_iRRpNNi(rp) {
+		return function() {
+			var offset = memory.read(regPairs[rpPC]++);
+			if (offset & 0x80) offset -= 0x100;
+			var addr = (regPairs[rp] + offset) & 0xffff;
+			
+			var value = memory.read(addr);
+			regs[rF] = value & FLAG_C;
+			value = ( (value & 0x80) | (value >> 1) ) & 0xff;
+			regs[rF] |= sz53pTable[value];
+			memory.write(addr, value);
+			tstates += 15;
+		}
+	}
 	function SRA_R(r) {
 		return function() {
 			regs[rF] = regs[r] & FLAG_C;
@@ -1200,6 +1312,20 @@ JSSpeccy.Z80 = function(opts) {
 			value >>= 1;
 			regs[rF] |= sz53pTable[value];
 			memory.write(regPairs[rpHL], value);
+			tstates += 15;
+		}
+	}
+	function SRL_iRRpNNi(rp) {
+		return function() {
+			var offset = memory.read(regPairs[rpPC]++);
+			if (offset & 0x80) offset -= 0x100;
+			var addr = (regPairs[rp] + offset) & 0xffff;
+			
+			var value = memory.read(addr);
+			regs[rF] = value & FLAG_C;
+			value >>= 1;
+			regs[rF] |= sz53pTable[value];
+			memory.write(addr, value);
 			tstates += 15;
 		}
 	}
@@ -1548,6 +1674,20 @@ JSSpeccy.Z80 = function(opts) {
 	function generateDDFDOpcodeSet(rp, rh, rl) {
 		var ddcbOpcodeRunners = {
 			
+			0x06: /* RLC (IX+nn) */ RLC_iRRpNNi(rp),
+			
+			0x0E: /* RRC (IX+nn) */ RRC_iRRpNNi(rp),
+			
+			0x16: /* RL (IX+nn) */ RL_iRRpNNi(rp),
+			
+			0x1E: /* RR (IX+nn) */ RR_iRRpNNi(rp),
+			
+			0x26: /* SLA (IX+nn) */ SLA_iRRpNNi(rp),
+			
+			0x2E: /* SRA (IX+nn) */ SRA_iRRpNNi(rp),
+			
+			0x3E: /* SRL (IX+nn) */ SRL_iRRpNNi(rp),
+			
 			0x46: /* BIT 0,(IX+nn) */ BIT_N_iRRpNNi(0, rp),
 			
 			0x4E: /* BIT 1,(IX+nn) */ BIT_N_iRRpNNi(1, rp),
@@ -1647,7 +1787,11 @@ JSSpeccy.Z80 = function(opts) {
 			
 			0x86: /* ADD A,(IX+nn) */ ADD_A_iRRpNNi(rp),
 			
+			0x8E: /* ADC A,(IX+nn) */ ADC_A_iRRpNNi(rp),
+			
 			0x96: /* SUB A,(IX+dd) */ SUB_iRRpNNi(rp),
+			
+			0x9E: /* SBC A,(IX+dd) */ SBC_A_iRRpNNi(rp),
 			
 			0xA6: /* AND (IX+dd) */ AND_iRRpNNi(rp),
 			
