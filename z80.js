@@ -754,6 +754,7 @@ JSSpeccy.Z80 = function(opts) {
 		} else {
 			var tstatesToAdd = 4;
 			if (r1 == rIXH || r1 == rIXL || r1 == rIYH || r1 == rIYL) tstatesToAdd = 8;
+			if (r2 == rIXH || r2 == rIXL || r2 == rIYH || r2 == rIYL) tstatesToAdd = 8;
 			return function() {
 				regs[r1] = regs[r2];
 				tstates += tstatesToAdd;
@@ -1762,19 +1763,38 @@ JSSpeccy.Z80 = function(opts) {
 			
 			0x39: /* ADD IX,SP */  ADD_RR_RR(rp, rpSP),
 			
+			0x44: /* LD B,IXh */   LD_R_R(rB, rh),
+			0x45: /* LD B,IXl */   LD_R_R(rB, rl),
 			0x46: /* LD B,(IX+nn) */ LD_R_iRRpNNi(rB, rp),
 			
+			0x4C: /* LD C,IXh */   LD_R_R(rC, rh),
+			0x4D: /* LD C,IXl */   LD_R_R(rC, rl),
 			0x4E: /* LD C,(IX+nn) */ LD_R_iRRpNNi(rC, rp),
 			
+			0x54: /* LD D,IXh */   LD_R_R(rD, rh),
+			0x55: /* LD D,IXl */   LD_R_R(rD, rl),
 			0x56: /* LD D,(IX+nn) */ LD_R_iRRpNNi(rD, rp),
 			
+			0x5C: /* LD E,IXh */   LD_R_R(rE, rh),
+			0x5D: /* LD E,IXl */   LD_R_R(rE, rl),
 			0x5E: /* LD E,(IX+nn) */ LD_R_iRRpNNi(rE, rp),
 			
+			0x60: /* LD IXh,B */   LD_R_R(rh, rB),
+			0x61: /* LD IXh,C */   LD_R_R(rh, rC),
+			0x62: /* LD IXh,D */   LD_R_R(rh, rD),
+			0x63: /* LD IXh,E */   LD_R_R(rh, rE),
+			0x64: /* LD IXh,IXh */ LD_R_R(rh, rh),
+			0x65: /* LD IXh,IXl */ LD_R_R(rh, rl),
 			0x66: /* LD H,(IX+nn) */ LD_R_iRRpNNi(rH, rp),
-			0x67: /* LD IXh,A */     LD_R_R(rh, rA),
-			
+			0x67: /* LD IXh,A */   LD_R_R(rh, rA),
+			0x68: /* LD IXl,B */   LD_R_R(rl, rB),
+			0x69: /* LD IXl,C */   LD_R_R(rl, rC),
+			0x6A: /* LD IXl,D */   LD_R_R(rl, rD),
+			0x6B: /* LD IXl,E */   LD_R_R(rl, rE),
+			0x6C: /* LD IXl,IXh */ LD_R_R(rl, rh),
+			0x6D: /* LD IXl,IXl */ LD_R_R(rl, rl),
 			0x6E: /* LD L,(IX+nn) */ LD_R_iRRpNNi(rL, rp),
-			0x6F: /* LD IXl,A */     LD_R_R(rl, rA),
+			0x6F: /* LD IXl,A */   LD_R_R(rl, rA),
 			0x70: /* LD (IX+nn),B */ LD_iRRpNNi_R(rp, rB),
 			0x71: /* LD (IX+nn),C */ LD_iRRpNNi_R(rp, rC),
 			0x72: /* LD (IX+nn),D */ LD_iRRpNNi_R(rp, rD),
@@ -1783,6 +1803,8 @@ JSSpeccy.Z80 = function(opts) {
 			0x75: /* LD (IX+nn),L */ LD_iRRpNNi_R(rp, rL),
 			0x77: /* LD (IX+nn),A */ LD_iRRpNNi_R(rp, rA),
 			
+			0x7C: /* LD A,IXh */   LD_R_R(rA, rh),
+			0x7D: /* LD A,IXl */   LD_R_R(rA, rl),
 			0x7E: /* LD A,(IX+nn) */ LD_R_iRRpNNi(rA, rp),
 			
 			0x86: /* ADD A,(IX+nn) */ ADD_A_iRRpNNi(rp),
