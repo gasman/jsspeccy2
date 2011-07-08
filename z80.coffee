@@ -757,7 +757,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			tstatesToAdd = 4
 		"""
 			regs[#{r1}] = regs[#{r2}];
-			tstates += 9;
+			tstates += #{tstatesToAdd};
 		"""
 	
 	LD_RR_iNNi = (rp, shifted) ->
@@ -1966,7 +1966,7 @@ window.JSSpeccy.Z80 = (opts) ->
 		0x50: op( LD_R_R(rD, rB) )        # LD D,B
 		0x51: op( LD_R_R(rD, rC) )        # LD D,C
 		0x52: op( LD_R_R(rD, rD) )        # LD D,D
-		0x53: op( LD_R_R(rD, rL) )        # LD D,L
+		0x53: op( LD_R_R(rD, rE) )        # LD D,E
 		0x54: op( LD_R_R(rD, rH) )        # LD D,H
 		0x55: op( LD_R_R(rD, rL) )        # LD D,L
 		0x56: op( LD_R_iRRi(rD, rpHL) )        # LD D,(HL)
