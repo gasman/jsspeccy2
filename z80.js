@@ -984,11 +984,8 @@ JSSpeccy.Z80 = function(opts) {
 		}
 	}
 	function RL_iRRpNNi(rp) {
-		return function() {
-			var offset = memory.read(regPairs[rpPC]++);
-			if (offset & 0x80) offset -= 0x100;
+		return function(offset) {
 			var addr = (regPairs[rp] + offset) & 0xffff;
-			
 			var value = memory.read(addr);
 			var rltemp = value;
 			value = ( (value << 1) | (regs[rF] & FLAG_C) ) & 0xff;
@@ -1023,11 +1020,8 @@ JSSpeccy.Z80 = function(opts) {
 		}
 	}
 	function RLC_iRRpNNi(rp) {
-		return function() {
-			var offset = memory.read(regPairs[rpPC]++);
-			if (offset & 0x80) offset -= 0x100;
+		return function(offset) {
 			var addr = (regPairs[rp] + offset) & 0xffff;
-			
 			var value = memory.read(addr);
 			value = ( (value << 1) | (value >> 7) ) & 0xff;
 			regs[rF] = (value & FLAG_C) | sz53pTable[value];
@@ -1060,11 +1054,8 @@ JSSpeccy.Z80 = function(opts) {
 		}
 	}
 	function RR_iRRpNNi(rp) {
-		return function() {
-			var offset = memory.read(regPairs[rpPC]++);
-			if (offset & 0x80) offset -= 0x100;
+		return function(offset) {
 			var addr = (regPairs[rp] + offset) & 0xffff;
-			
 			var value = memory.read(addr);
 			var rrtemp = value;
 			value = ( (value >> 1) | ( regs[rF] << 7 ) ) & 0xff;
@@ -1092,11 +1083,8 @@ JSSpeccy.Z80 = function(opts) {
 		}
 	}
 	function RRC_iRRpNNi(rp) {
-		return function() {
-			var offset = memory.read(regPairs[rpPC]++);
-			if (offset & 0x80) offset -= 0x100;
+		return function(offset) {
 			var addr = (regPairs[rp] + offset) & 0xffff;
-			
 			var value = memory.read(addr);
 			regs[rF] = value & FLAG_C;
 			value = ( (value >> 1) | (value << 7) ) & 0xff;
@@ -1253,11 +1241,8 @@ JSSpeccy.Z80 = function(opts) {
 		}
 	}
 	function SLA_iRRpNNi(rp) {
-		return function() {
-			var offset = memory.read(regPairs[rpPC]++);
-			if (offset & 0x80) offset -= 0x100;
+		return function(offset) {
 			var addr = (regPairs[rp] + offset) & 0xffff;
-			
 			var value = memory.read(addr);
 			regs[rF] = value >> 7;
 			value = (value << 1) & 0xff;
@@ -1285,11 +1270,8 @@ JSSpeccy.Z80 = function(opts) {
 		}
 	}
 	function SRA_iRRpNNi(rp) {
-		return function() {
-			var offset = memory.read(regPairs[rpPC]++);
-			if (offset & 0x80) offset -= 0x100;
+		return function(offset) {
 			var addr = (regPairs[rp] + offset) & 0xffff;
-			
 			var value = memory.read(addr);
 			regs[rF] = value & FLAG_C;
 			value = ( (value & 0x80) | (value >> 1) ) & 0xff;
@@ -1317,11 +1299,8 @@ JSSpeccy.Z80 = function(opts) {
 		}
 	}
 	function SRL_iRRpNNi(rp) {
-		return function() {
-			var offset = memory.read(regPairs[rpPC]++);
-			if (offset & 0x80) offset -= 0x100;
+		return function(offset) {
 			var addr = (regPairs[rp] + offset) & 0xffff;
-			
 			var value = memory.read(addr);
 			regs[rF] = value & FLAG_C;
 			value >>= 1;
