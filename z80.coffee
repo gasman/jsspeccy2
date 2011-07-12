@@ -1688,13 +1688,15 @@ window.JSSpeccy.Z80 = (opts) ->
 			0x21: op( LD_RR_NN(rp) )        # LD IX,nnnn
 			0x22: op( LD_iNNi_RR(rp) )        # LD (nnnn),IX
 			0x23: op( INC_RR(rp) )        # INC IX
-			
+			0x24: op( INC_R(rh) )         # INC IXh
+			0x25: op( DEC_R(rh) )         # DEC IXh
 			0x26: op( LD_R_N(rh) )        # LD IXh, nn
 			
 			0x29: op( ADD_RR_RR(rp, rp) )        # ADD IX,IX
 			0x2A: op( LD_RR_iNNi(rp) )        # LD IX,(nnnn)
 			0x2B: op( DEC_RR(rp) )        # DEC IX
-			
+			0x2C: op( INC_R(rl) )         # INC IXl
+			0x2D: op( DEC_R(rl) )         # DEC IXl
 			0x2E: op( LD_R_N(rl) )        # LD IXl, nn
 			
 			0x34: op( INC_iRRpNNi(rp) )        # INC (IX+nn)
@@ -1747,20 +1749,36 @@ window.JSSpeccy.Z80 = (opts) ->
 			0x7D: op( LD_R_R(rA, rl) )        # LD A,IXl
 			0x7E: op( LD_R_iRRpNNi(rA, rp) )        # LD A,(IX+nn)
 			
+			0x84: op( ADD_A_R(rh) )           # ADD A,IXh
+			0x85: op( ADD_A_R(rl) )           # ADD A,IXl
 			0x86: op( ADD_A_iRRpNNi(rp) )        # ADD A,(IX+nn)
 			
+			0x8C: op( ADC_A_R(rh) )           # ADC A,IXh
+			0x8D: op( ADC_A_R(rl) )           # ADC A,IXl
 			0x8E: op( ADC_A_iRRpNNi(rp) )        # ADC A,(IX+nn)
 			
+			0x94: op( SUB_R(rh) )           # SUB IXh
+			0x95: op( SUB_R(rl) )           # SUB IXl
 			0x96: op( SUB_iRRpNNi(rp) )        # SUB A,(IX+dd)
 			
+			0x9C: op( SBC_A_R(rh) )           # SBC IXh
+			0x9D: op( SBC_A_R(rl) )           # SBC IXl
 			0x9E: op( SBC_A_iRRpNNi(rp) )        # SBC A,(IX+dd)
 			
+			0xA4: op( AND_R(rh) )           # AND IXh
+			0xA5: op( AND_R(rl) )           # AND IXl
 			0xA6: op( AND_iRRpNNi(rp) )        # AND (IX+dd)
 			
+			0xAC: op( XOR_R(rh) )           # XOR IXh
+			0xAD: op( XOR_R(rl) )           # XOR IXl
 			0xAE: op( XOR_iRRpNNi(rp) )        # XOR A,(IX+dd)
 			
+			0xB4: op( OR_R(rh) )           # OR IXh
+			0xB5: op( OR_R(rl) )           # OR IXl
 			0xB6: op( OR_iRRpNNi(rp) )        # OR A,(IX+dd)
 			
+			0xBC: op( CP_R(rh) )           # CP IXh
+			0xBD: op( CP_R(rl) )           # CP IXl
 			0xBE: op( CP_iRRpNNi(rp) )        # CP (IX+dd)
 			
 			0xCB: op ( SHIFT(prefix + 'CB') )        # shift code
