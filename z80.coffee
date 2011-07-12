@@ -1209,25 +1209,27 @@ window.JSSpeccy.Z80 = (opts) ->
 			tstates += 8;
 		"""
 	
-	SHIFT = (opcodeTable) -> # returns a function, NOT a string
+	SHIFT = (prefix) ->
 		# Fake instruction for CB/ED-shifted opcodes - passes control to a secondary opcode table
-		return () ->
+		"""
 			opcode = memory.read(regPairs[rpPC]++)
-			if !opcodeTable[opcode]
-				console.log(regPairs[rpPC], opcodeTable)
-			opcodeTable[opcode]();
+			if !OPCODE_RUNNERS_#{prefix}[opcode]
+				console.log(regPairs[rpPC], '#{prefix}')
+			OPCODE_RUNNERS_#{prefix}[opcode]();
+		"""
 	
-	SHIFT_DDCB = (opcodeTable) -> # returns a function, NOT a string
+	SHIFT_DDCB = (prefix) ->
 		# like SHIFT, but with the extra quirk that we have to pull an offset parameter from PC
 		# *before* the final opcode to tell us what to do
-		return () ->
+		"""
 			offset = memory.read(regPairs[rpPC]++)
 			if (offset & 0x80)
 				offset -= 0x100
 			opcode = memory.read(regPairs[rpPC]++)
-			if !opcodeTable[opcode]
-				console.log(regPairs[rpPC], opcodeTable)
-			opcodeTable[opcode](offset)
+			if !OPCODE_RUNNERS_#{prefix}[opcode]
+				console.log(regPairs[rpPC], '#{prefix}')
+			OPCODE_RUNNERS_#{prefix}[opcode](offset)
+		"""
 	
 	SLA_iHLi = () ->
 		"""
@@ -1653,10 +1655,17 @@ window.JSSpeccy.Z80 = (opts) ->
 		0x100: 'cb'
 	}
 	
-	# Generate the opcode runner lookup table for either the DD or FD set, acting on the
-	# specified register pair (IX or IY)
-	generateddcbOpcodeSet = (rp, rh, rl) ->
-		ddcbOpcodeRunners = {
+	# Generate the opcode runner lookup table for either the DDCB or FDCB set
+	generateddfdcbOpcodeSet = (prefix) ->
+		if prefix == 'DDCB'
+			rp = 'IX'
+			rh = 'IXH'
+			rl = 'IXL'
+		else # prefix == 'FDCB'
+			rp = 'IY'
+			rh = 'IYH'
+			rl = 'IYL'
+		return {
 			
 			0x06: ddcbOp( RLC_iRRpNNi(rp) )        # RLC (IX+nn)
 			
@@ -1722,7 +1731,21 @@ window.JSSpeccy.Z80 = (opts) ->
 			
 			0x100: 'ddcb'
 		}
-		
+	
+	OPCODE_RUNNERS_DDCB = generateddfdcbOpcodeSet('DDCB')
+	OPCODE_RUNNERS_FDCB = generateddfdcbOpcodeSet('FDCB')
+	
+	# Generate the opcode runner lookup table for either the DD or FD set, acting on the
+	# specified register pair (IX or IY)
+	generateddfdOpcodeSet = (prefix) ->
+		if prefix == 'DD'
+			rp = 'IX'
+			rh = 'IXH'
+			rl = 'IXL'
+		else # prefix == 'FD'
+			rp = 'IY'
+			rh = 'IYH'
+			rl = 'IYL'
 		return {
 			0x09: op( ADD_RR_RR(rp, rpBC) )        # ADD IX,BC
 			
@@ -1806,7 +1829,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			
 			0xBE: op( CP_iRRpNNi(rp) )        # CP (IX+dd)
 			
-			0xCB: SHIFT_DDCB(ddcbOpcodeRunners),        # shift code
+			0xCB: op ( SHIFT_DDCB(prefix + 'CB') )        # shift code
 			
 			0xE1: op( POP_RR(rp) )        # POP IX
 			
@@ -1821,7 +1844,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			0x100: 'dd'
 		}
 	
-	OPCODE_RUNNERS_DD = generateddcbOpcodeSet(rpIX, rIXH, rIXL)
+	OPCODE_RUNNERS_DD = generateddfdOpcodeSet(rpIX, rIXH, rIXL)
 	
 	OPCODE_RUNNERS_ED = {
 		
@@ -1880,7 +1903,7 @@ window.JSSpeccy.Z80 = (opts) ->
 		0x100: 'ed'
 	}
 	
-	OPCODE_RUNNERS_FD = generateddcbOpcodeSet(rpIY, rIYH, rIYL)
+	OPCODE_RUNNERS_FD = generateddfdOpcodeSet(rpIY, rIYH, rIYL)
 	
 	OPCODE_RUNNERS = {
 		0x00: op( NOP() )        # NOP
@@ -2086,7 +2109,7 @@ window.JSSpeccy.Z80 = (opts) ->
 		0xC8: op( RET_C(FLAG_Z, true) )        # RET Z
 		0xC9: op( RET() )        # RET
 		0xCA: op( JP_C_NN(FLAG_Z, true) )        # JP Z,nnnn
-		0xCB: SHIFT(OPCODE_RUNNERS_CB)        # shift code
+		0xCB: op( SHIFT('CB') )        # shift code
 		0xCC: op( CALL_C_NN(FLAG_Z, true) )        # CALL Z,nnnn
 		0xCD: op( CALL_NN() )        # CALL nnnn
 		0xCE: op( ADC_A_N() )        # ADC A,nn
@@ -2104,7 +2127,7 @@ window.JSSpeccy.Z80 = (opts) ->
 		0xDA: op( JP_C_NN(FLAG_C, true) )        # JP C,nnnn
 		0xDB: op( IN_A_N() )        # IN A,(nn)
 		0xDC: op( CALL_C_NN(FLAG_C, true) )        # CALL C,nnnn
-		0xDD: SHIFT(OPCODE_RUNNERS_DD)        # shift code
+		0xDD: op( SHIFT('DD') )        # shift code
 		0xDE: op( SBC_A_N() )        # SBC A,nn
 		0xDF: op( RST(0x0018) )        # RST 0x18
 		0xE0: op( RET_C(FLAG_P, false) )        # RET PO
@@ -2120,7 +2143,7 @@ window.JSSpeccy.Z80 = (opts) ->
 		0xEA: op( JP_C_NN(FLAG_P, true) )        # JP PE,nnnn
 		0xEB: op( EX_RR_RR(rpDE, rpHL) )        # EX DE,HL
 		0xEC: op( CALL_C_NN(FLAG_P, true) )        # CALL PE,nnnn
-		0xED: SHIFT(OPCODE_RUNNERS_ED)        # shift code
+		0xED: op( SHIFT('ED') )        # shift code
 		0xEE: op( XOR_N() )        # XOR nn
 		0xEF: op( RST(0x0028) )        # RST 0x28
 		0xF0: op( RET_C(FLAG_S, false) )        # RET P
@@ -2136,7 +2159,7 @@ window.JSSpeccy.Z80 = (opts) ->
 		0xFA: op( JP_C_NN(FLAG_S, true) )        # JP M,nnnn
 		0xFB: op( EI() )        # EI
 		0xFC: op( CALL_C_NN(FLAG_S, true) )        # CALL M,nnnn
-		0xFD: SHIFT(OPCODE_RUNNERS_FD)        # shift code
+		0xFD: op( SHIFT('FD') )        # shift code
 		0xFE: op( CP_N() )        # CP nn
 		0xFF: op( RST(0x0038) )        # RST 0x38
 		0x100: 0
