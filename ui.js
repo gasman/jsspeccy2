@@ -28,6 +28,17 @@ JSSpeccy.UI = function(opts) {
 		return false;
 	}
 	
+	var stopStartButton = document.createElement('button');
+	container.appendChild(stopStartButton);
+	stopStartButton.innerText = 'stop / start';
+	stopStartButton.onclick = function() {
+		if (controller.isRunning) {
+			controller.stop();
+		} else {
+			controller.start();
+		}
+	}
+	
 	var resetButton = document.createElement('button');
 	container.appendChild(resetButton);
 	resetButton.innerText = 'reset';

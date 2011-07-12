@@ -36,10 +36,22 @@ function JSSpeccy(container, opts) {
 		model: JSSpeccy.Spectrum.MODEL_128K
 	})
 	
+	controller.isRunning = false;
+	
 	function tick() {
+		if (!controller.isRunning) return;
 		spectrum.runFrame();
 		setTimeout(tick, 20);
 	}
 	
-	tick();
+	controller.start = function() {
+		controller.isRunning = true;
+		tick();
+	}
+	controller.stop = function() {
+		controller.isRunning = false;
+	}
+	if (!('autostart' in opts) || opts['autostart']) {
+		controller.start();
+	}
 }

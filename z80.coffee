@@ -434,7 +434,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			value = (value - 1) & 0xff;
 			memory.write(regPairs[rpHL], value);
 			regs[rF] |= (value == 0x7f ? FLAG_V : 0) | sz53Table[value];
-			tstates += 7;
+			tstates += 11;
 		"""
 	
 	DEC_iRRpNNi = (rp) ->
@@ -490,7 +490,7 @@ window.JSSpeccy.Z80 = (opts) ->
 	EI = () ->
 		"""
 			iff1 = iff2 = 1;
-			/* TODO: block interrupts from being triggered immediately after an EI */
+			interruptible = false;
 			tstates += 4;
 		"""
 	
@@ -556,7 +556,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			value = (value + 1) & 0xff;
 			memory.write(regPairs[rpHL], value);
 			regs[rF] = (regs[rF] & FLAG_C) | ( value == 0x80 ? FLAG_V : 0 ) | ( value & 0x0f ? 0 : FLAG_H ) | sz53Table[value];
-			tstates += 7;
+			tstates += 11;
 		"""
 	
 	INC_iRRpNNi = (rp) ->
@@ -2168,10 +2168,17 @@ window.JSSpeccy.Z80 = (opts) ->
 					regPairs[rpPC] = (h<<8) | l
 					tstates += 19
 	
+	interruptible = true
+	interruptPending = false
+	
 	self.runFrame = ->
 		display.startFrame()
-		z80Interrupt()
+		interruptPending = true
 		while tstates < display.frameLength
+			if interruptPending && interruptible
+				z80Interrupt()
+				interruptPending = false
+			interruptible = true # unless overridden by opcode
 			opcode = memory.read(regPairs[rpPC]++)
 			OPCODE_RUNNERS[opcode]()
 			while display.nextEventTime != null && display.nextEventTime <= tstates
