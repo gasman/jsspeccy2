@@ -5,7 +5,8 @@ Foreword to version 2.x
 -----------------------
 When I started this project in 2009, writing an emulator in Javascript was a
 silly idea. Now, thanks to advances in Javascript engines, and new APIs
-emerging from HTML5 and WebGL, it has become a significantly less silly idea.
+emerging from HTML5 and WebGL, it has become a significantly less silly idea,
+which means that the time is right for a more serious attempt at the job.
 
 What's new?
 -----------
@@ -24,10 +25,19 @@ Everything, basically... it's a ground-up rewrite. In particular:
 
 [0] https://developer.mozilla.org/en/javascript_typed_arrays
 
+Building
+--------
+perl and CoffeeScript[1] are required. To build:
+
+    make
+
+[1] http://jashkenas.github.com/coffee-script/
+
 Browser support
 ---------------
-I've only tested on Chrome so far. Support for typed arrays and the PixelData
-API are absolutely required, and it'll almost certainly stay that way.
+Tested successfully on Chrome 12 and Firefox 5. Support for typed arrays and
+the PixelData API are absolutely required, and it'll almost certainly stay that
+way.
 
 Matt Westcott
 <matt@west.co.tt> - http://matt.west.co.tt/ - @westdotcodottt
