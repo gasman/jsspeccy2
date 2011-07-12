@@ -147,7 +147,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (val & 0x88) >> 2 ) | ( (adctemp & 0x88) >> 1 );
 			regs[rA] = adctemp;
 			regs[rF] = ( adctemp & 0x100 ? FLAG_C : 0 ) | halfcarryAddTable[lookup & 0x07] | overflowAddTable[lookup >> 4] | sz53Table[regs[rA]];
-			tstates += 7;
+			tstates += 3;
 		"""
 	
 	ADC_A_iRRpNNi = (rp) ->
@@ -161,7 +161,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (val & 0x88) >> 2 ) | ( (adctemp & 0x88) >> 1 );
 			regs[rA] = adctemp;
 			regs[rF] = ( adctemp & 0x100 ? FLAG_C : 0 ) | halfcarryAddTable[lookup & 0x07] | overflowAddTable[lookup >> 4] | sz53Table[regs[rA]];
-			tstates += 19;
+			tstates += 11;
 		"""
 	
 	ADC_A_N = () ->
@@ -171,7 +171,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (val & 0x88) >> 2 ) | ( (adctemp & 0x88) >> 1 );
 			regs[rA] = adctemp;
 			regs[rF] = ( adctemp & 0x100 ? FLAG_C : 0 ) | halfcarryAddTable[lookup & 0x07] | overflowAddTable[lookup >> 4] | sz53Table[regs[rA]];
-			tstates += 4;
+			tstates += 3;
 		"""
 	
 	ADC_A_R = (r) ->
@@ -180,7 +180,6 @@ window.JSSpeccy.Z80 = (opts) ->
 			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (regs[#{r}] & 0x88) >> 2 ) | ( (adctemp & 0x88) >> 1 );
 			regs[rA] = adctemp;
 			regs[rF] = ( adctemp & 0x100 ? FLAG_C : 0 ) | halfcarryAddTable[lookup & 0x07] | overflowAddTable[lookup >> 4] | sz53Table[regs[rA]];
-			tstates += 4;
 		"""
 	
 	ADD_A_iHLi = () ->
@@ -190,7 +189,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (val & 0x88) >> 2 ) | ( (addtemp & 0x88) >> 1 );
 			regs[rA] = addtemp;
 			regs[rF] = ( addtemp & 0x100 ? FLAG_C : 0 ) | halfcarryAddTable[lookup & 0x07] | overflowAddTable[lookup >> 4] | sz53Table[regs[rA]];
-			tstates += 7;
+			tstates += 3;
 		"""
 	
 	ADD_A_iRRpNNi = (rp) ->
@@ -204,7 +203,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (val & 0x88) >> 2 ) | ( (addtemp & 0x88) >> 1 );
 			regs[rA] = addtemp;
 			regs[rF] = ( addtemp & 0x100 ? FLAG_C : 0 ) | halfcarryAddTable[lookup & 0x07] | overflowAddTable[lookup >> 4] | sz53Table[regs[rA]];
-			tstates += 19;
+			tstates += 11;
 		"""
 	
 	ADD_A_N = () ->
@@ -214,7 +213,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (val & 0x88) >> 2 ) | ( (addtemp & 0x88) >> 1 );
 			regs[rA] = addtemp;
 			regs[rF] = ( addtemp & 0x100 ? FLAG_C : 0 ) | halfcarryAddTable[lookup & 0x07] | overflowAddTable[lookup >> 4] | sz53Table[regs[rA]];
-			tstates += 7;
+			tstates += 3;
 		"""
 	
 	ADD_A_R = (r) ->
@@ -223,17 +222,15 @@ window.JSSpeccy.Z80 = (opts) ->
 			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (regs[#{r}] & 0x88) >> 2 ) | ( (addtemp & 0x88) >> 1 );
 			regs[rA] = addtemp;
 			regs[rF] = ( addtemp & 0x100 ? FLAG_C : 0 ) | halfcarryAddTable[lookup & 0x07] | overflowAddTable[lookup >> 4] | sz53Table[regs[rA]];
-			tstates += 4;
 		"""
 	
 	ADD_RR_RR = (rp1, rp2) ->
-		tstatesToAdd = if rp1 == rpHL then 11 else 15
 		"""
 			var add16temp = regPairs[#{rp1}] + regPairs[#{rp2}];
 			var lookup = ( (regPairs[#{rp1}] & 0x0800) >> 11 ) | ( (regPairs[#{rp2}] & 0x0800) >> 10 ) | ( (add16temp & 0x0800) >>  9 );
 			regPairs[#{rp1}] = add16temp;
 			regs[rF] = ( regs[rF] & ( FLAG_V | FLAG_Z | FLAG_S ) ) | ( add16temp & 0x10000 ? FLAG_C : 0 ) | ( ( add16temp >> 8 ) & ( FLAG_3 | FLAG_5 ) ) | halfcarryAddTable[lookup];
-			tstates += #{tstatesToAdd};
+			tstates += 7;
 		"""
 	
 	AND_iHLi = () ->
@@ -241,7 +238,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			var val = memory.read(regPairs[rpHL]);
 			regs[rA] &= val;
 			regs[rF] = FLAG_H | sz53pTable[regs[rA]];
-			tstates += 7;
+			tstates += 3;
 		"""
 	
 	AND_iRRpNNi = (rp) ->
@@ -253,7 +250,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			var val = memory.read(addr);
 			regs[rA] &= val;
 			regs[rF] = FLAG_H | sz53pTable[regs[rA]];
-			tstates += 19;
+			tstates += 11;
 		"""
 	
 	AND_N = () ->
@@ -261,14 +258,13 @@ window.JSSpeccy.Z80 = (opts) ->
 			var val = memory.read(regPairs[rpPC]++);
 			regs[rA] &= val;
 			regs[rF] = FLAG_H | sz53pTable[regs[rA]];
-			tstates += 7;
+			tstates += 3;
 		"""
 	
 	AND_R = (r) ->
 		"""
 			regs[rA] &= regs[#{r}];
 			regs[rF] = FLAG_H | sz53pTable[regs[rA]];
-			tstates += 4;
 		"""
 	
 	BIT_N_iRRpNNi = (bit, rp) -> # requires 'offset'
@@ -278,7 +274,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			regs[rF] = ( regs[rF] & FLAG_C ) | FLAG_H | ( ( addr >> 8 ) & ( FLAG_3 | FLAG_5 ) );
 			if( ! ( (value) & ( 0x01 << (#{bit}) ) ) ) regs[rF] |= FLAG_P | FLAG_Z;
 			if( (#{bit}) == 7 && (value) & 0x80 ) regs[rF] |= FLAG_S;
-			tstates += 20;
+			tstates += 12;
 		"""
 	
 	BIT_N_iHLi = (bit) ->
@@ -288,7 +284,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			regs[rF] = ( regs[rF] & FLAG_C ) | FLAG_H | ( value & ( FLAG_3 | FLAG_5 ) );
 			if( ! ( (value) & ( 0x01 << (#{bit}) ) ) ) regs[rF] |= FLAG_P | FLAG_Z;
 			if( (#{bit}) == 7 && (value) & 0x80 ) regs[rF] |= FLAG_S;
-			tstates += 12;
+			tstates += 4;
 		"""
 	
 	BIT_N_R = (bit, r) ->
@@ -296,7 +292,6 @@ window.JSSpeccy.Z80 = (opts) ->
 			regs[rF] = ( regs[rF] & FLAG_C ) | FLAG_H | ( regs[#{r}] & ( FLAG_3 | FLAG_5 ) );
 			if( ! ( regs[#{r}] & ( 0x01 << (#{bit}) ) ) ) regs[rF] |= FLAG_P | FLAG_Z;
 			if( (#{bit}) == 7 && regs[#{r}] & 0x80 ) regs[rF] |= FLAG_S;
-			tstates += 8;
 		"""
 	
 	CALL_C_NN = (flag, sense) ->
@@ -309,10 +304,10 @@ window.JSSpeccy.Z80 = (opts) ->
 					memory.write(--regPairs[rpSP], regPairs[rpPC] >> 8);
 					memory.write(--regPairs[rpSP], regPairs[rpPC] & 0xff);
 					regPairs[rpPC] = (h<<8) | l;
-					tstates += 17;
+					tstates += 13;
 				} else {
 					regPairs[rpPC] += 2; /* skip past address bytes */
-					tstates += 10;
+					tstates += 6;
 				}
 			"""
 		else
@@ -320,14 +315,14 @@ window.JSSpeccy.Z80 = (opts) ->
 			"""
 				if (regs[rF] & #{flag}) {
 					regPairs[rpPC] += 2; /* skip past address bytes */
-					tstates += 10;
+					tstates += 6;
 				} else {
 					var l = memory.read(regPairs[rpPC]++);
 					var h = memory.read(regPairs[rpPC]++);
 					memory.write(--regPairs[rpSP], regPairs[rpPC] >> 8);
 					memory.write(--regPairs[rpSP], regPairs[rpPC] & 0xff);
 					regPairs[rpPC] = (h<<8) | l;
-					tstates += 17;
+					tstates += 13;
 				}
 			"""
 	
@@ -338,13 +333,12 @@ window.JSSpeccy.Z80 = (opts) ->
 			memory.write(--regPairs[rpSP], regPairs[rpPC] >> 8);
 			memory.write(--regPairs[rpSP], regPairs[rpPC] & 0xff);
 			regPairs[rpPC] = (h<<8) | l;
-			tstates += 17;
+			tstates += 13;
 		"""
 	
 	CCF = () ->
 		"""
 			regs[rF] = ( regs[rF] & (FLAG_P | FLAG_Z | FLAG_S) ) | ( (regs[rF] & FLAG_C) ? FLAG_H : FLAG_C ) | ( regs[rA] & (FLAG_3 | FLAG_5) );
-			tstates += 4;
 		"""
 	
 	CP_iRRpNNi = (rp) ->
@@ -357,7 +351,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			var cptemp = regs[rA] - val;
 			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (val & 0x88) >> 2 ) | ( (cptemp & 0x88) >> 1 );
 			regs[rF] = ( cptemp & 0x100 ? FLAG_C : ( cptemp ? 0 : FLAG_Z ) ) | FLAG_N | halfcarrySubTable[lookup & 0x07] | overflowSubTable[lookup >> 4] | ( val & ( FLAG_3 | FLAG_5 ) ) | ( cptemp & FLAG_S );
-			tstates += 19;
+			tstates += 11;
 		"""
 	
 	CP_iHLi = () ->
@@ -366,7 +360,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			var cptemp = regs[rA] - val;
 			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (val & 0x88) >> 2 ) | ( (cptemp & 0x88) >> 1 );
 			regs[rF] = ( cptemp & 0x100 ? FLAG_C : ( cptemp ? 0 : FLAG_Z ) ) | FLAG_N | halfcarrySubTable[lookup & 0x07] | overflowSubTable[lookup >> 4] | ( val & ( FLAG_3 | FLAG_5 ) ) | ( cptemp & FLAG_S );
-			tstates += 7;
+			tstates += 3;
 		"""
 	
 	CP_N = () ->
@@ -375,7 +369,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			var cptemp = regs[rA] - val;
 			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (val & 0x88) >> 2 ) | ( (cptemp & 0x88) >> 1 );
 			regs[rF] = ( cptemp & 0x100 ? FLAG_C : ( cptemp ? 0 : FLAG_Z ) ) | FLAG_N | halfcarrySubTable[lookup & 0x07] | overflowSubTable[lookup >> 4] | ( val & ( FLAG_3 | FLAG_5 ) ) | ( cptemp & FLAG_S );
-			tstates += 7;
+			tstates += 3;
 		"""
 	
 	CP_R = (r) ->
@@ -383,7 +377,6 @@ window.JSSpeccy.Z80 = (opts) ->
 			var cptemp = regs[rA] - regs[#{r}];
 			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (regs[#{r}] & 0x88) >> 2 ) | ( (cptemp & 0x88) >> 1 );
 			regs[rF] = ( cptemp & 0x100 ? FLAG_C : ( cptemp ? 0 : FLAG_Z ) ) | FLAG_N | halfcarrySubTable[lookup & 0x07] | overflowSubTable[lookup >> 4] | ( regs[#{r}] & ( FLAG_3 | FLAG_5 ) ) | ( cptemp & FLAG_S );
-			tstates += 4;
 		"""
 	
 	CPDR = () ->
@@ -400,7 +393,7 @@ window.JSSpeccy.Z80 = (opts) ->
 				tstates += 5;
 			}
 			regPairs[rpHL]--;
-			tstates += 16;
+			tstates += 8;
 		"""
 	
 	CPIR = () ->
@@ -417,14 +410,13 @@ window.JSSpeccy.Z80 = (opts) ->
 				tstates += 5;
 			}
 			regPairs[rpHL]++;
-			tstates += 16;
+			tstates += 8;
 		"""
 	
 	CPL = () ->
 		"""
 			regs[rA] ^= 0xff;
 			regs[rF] = ( regs[rF] & (FLAG_C | FLAG_P | FLAG_Z | FLAG_S) ) | ( regs[rA] & (FLAG_3 | FLAG_5) ) | (FLAG_N | FLAG_H);
-			tstates += 4;
 		"""
 	
 	DEC_iHLi = () ->
@@ -434,7 +426,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			value = (value - 1) & 0xff;
 			memory.write(regPairs[rpHL], value);
 			regs[rF] |= (value == 0x7f ? FLAG_V : 0) | sz53Table[value];
-			tstates += 11;
+			tstates += 7;
 		"""
 	
 	DEC_iRRpNNi = (rp) ->
@@ -448,7 +440,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			value = (value - 1) & 0xff;
 			memory.write(addr, value);
 			regs[rF] |= (value == 0x7f ? FLAG_V : 0) | sz53Table[value];
-			tstates += 23;
+			tstates += 15;
 		"""
 	
 	DEC_R = (r) ->
@@ -456,20 +448,17 @@ window.JSSpeccy.Z80 = (opts) ->
 			regs[rF] = (regs[rF] & FLAG_C ) | ( regs[#{r}] & 0x0f ? 0 : FLAG_H ) | FLAG_N;
 			regs[#{r}]--;
 			regs[rF] |= (regs[#{r}] == 0x7f ? FLAG_V : 0) | sz53Table[regs[#{r}]];
-			tstates += 4;
 		"""
 	
 	DEC_RR = (rp) ->
-		tstatesToAdd = if (rp == rpIX || rp == rpIY) then 10 else 6
 		"""
 			regPairs[#{rp}]--;
-			tstates += #{tstatesToAdd};
+			tstates += 2;
 		"""
 	
 	DI = () ->
 		"""
 			iff1 = iff2 = 0;
-			tstates += 4;
 		"""
 	
 	DJNZ_N = () ->
@@ -479,11 +468,11 @@ window.JSSpeccy.Z80 = (opts) ->
 				/* take branch */
 				var offset = memory.read(regPairs[rpPC]++);
 				regPairs[rpPC] += (offset & 0x80 ? offset - 0x100 : offset);
-				tstates += 13;
+				tstates += 9;
 			} else {
 				/* do not take branch */
 				regPairs[rpPC]++; /* skip past offset byte */
-				tstates += 8;
+				tstates += 4;
 			}
 		"""
 	
@@ -491,18 +480,16 @@ window.JSSpeccy.Z80 = (opts) ->
 		"""
 			iff1 = iff2 = 1;
 			interruptible = false;
-			tstates += 4;
 		"""
 	
 	EX_iSPi_RR = (rp) ->
-		tstatesToAdd = if (rp == rpHL) then 19 else 23
 		"""
 			var l = memory.read(regPairs[rpSP]);
 			var h = memory.read((regPairs[rpSP] + 1) & 0xffff);
 			memory.write(regPairs[rpSP], regPairs[#{rp}] & 0xff);
 			memory.write((regPairs[rpSP] + 1) & 0xffff, regPairs[#{rp}] >> 8);
 			regPairs[#{rp}] = (h<<8) | l;
-			tstates += #{tstatesToAdd};
+			tstates += 15;
 		"""
 	
 	EX_RR_RR = (rp1, rp2) ->
@@ -510,7 +497,6 @@ window.JSSpeccy.Z80 = (opts) ->
 			var temp = regPairs[#{rp1}];
 			regPairs[#{rp1}] = regPairs[#{rp2}];
 			regPairs[#{rp2}] = temp;
-			tstates += 4;
 		"""
 	
 	EXX = () ->
@@ -519,34 +505,31 @@ window.JSSpeccy.Z80 = (opts) ->
 			wordtemp = regPairs[rpBC]; regPairs[rpBC] = regPairs[rpBC_]; regPairs[rpBC_] = wordtemp;
 			wordtemp = regPairs[rpDE]; regPairs[rpDE] = regPairs[rpDE_]; regPairs[rpDE_] = wordtemp;
 			wordtemp = regPairs[rpHL]; regPairs[rpHL] = regPairs[rpHL_]; regPairs[rpHL_] = wordtemp;
-			tstates += 4;
 		"""
 	
 	HALT = () ->
 		"""
 			halted = true;
 			regPairs[rpPC]--;
-			tstates += 4;
 		"""
 	
 	IM = (val) ->
 		"""
 			im = #{val};
-			tstates += 8;
 		"""
 	
 	IN_A_N = () ->
 		"""
 			var val = memory.read(regPairs[rpPC]++);
 			regs[rA] = ioBus.read( (regs[rA] << 8) | val );
-			tstates += 11;
+			tstates += 7;
 		"""
 	
 	IN_R_iCi = (r) ->
 		"""
 			regs[#{r}] = ioBus.read(regPairs[rpBC]);
 			regs[rF] = (regs[rF] & FLAG_C) | sz53pTable[regs[#{r}]];
-			tstates += 12;
+			tstates += 4;
 		"""
 	
 	INC_iHLi = () ->
@@ -556,7 +539,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			value = (value + 1) & 0xff;
 			memory.write(regPairs[rpHL], value);
 			regs[rF] = (regs[rF] & FLAG_C) | ( value == 0x80 ? FLAG_V : 0 ) | ( value & 0x0f ? 0 : FLAG_H ) | sz53Table[value];
-			tstates += 11;
+			tstates += 7;
 		"""
 	
 	INC_iRRpNNi = (rp) ->
@@ -569,21 +552,19 @@ window.JSSpeccy.Z80 = (opts) ->
 			value = (value + 1) & 0xff;
 			memory.write(addr, value);
 			regs[rF] = (regs[rF] & FLAG_C) | ( value == 0x80 ? FLAG_V : 0 ) | ( value & 0x0f ? 0 : FLAG_H ) | sz53Table[value];
-			tstates += 23;
+			tstates += 15;
 		"""
 	
 	INC_R = (r) ->
 		"""
 			regs[#{r}]++;
 			regs[rF] = (regs[rF] & FLAG_C) | ( regs[#{r}] == 0x80 ? FLAG_V : 0 ) | ( regs[#{r}] & 0x0f ? 0 : FLAG_H ) | sz53Table[regs[#{r}]];
-			tstates += 4;
 		"""
 	
 	INC_RR = (rp) ->
-		tstatesToAdd = if (rp == rpIX || rp == rpIY) then 10 else 6
 		"""
 			regPairs[#{rp}]++;
-			tstates += #{tstatesToAdd};
+			tstates += 2;
 		"""
 	
 	JP_C_NN = (flag, sense) ->
@@ -597,7 +578,7 @@ window.JSSpeccy.Z80 = (opts) ->
 				} else {
 					regPairs[rpPC] += 2; /* skip past address bytes */
 				}
-				tstates += 10;
+				tstates += 6;
 			"""
 		else
 			# branch if flag reset
@@ -609,14 +590,12 @@ window.JSSpeccy.Z80 = (opts) ->
 					var h = memory.read(regPairs[rpPC]++);
 					regPairs[rpPC] = (h<<8) | l;
 				}
-				tstates += 10;
+				tstates += 6;
 			"""
 	
 	JP_RR = (rp) ->
-		tstatesToAdd = if rp == rpHL then 4 else 8
 		"""
 			regPairs[rpPC] = regPairs[#{rp}];
-			tstates += #{tstatesToAdd};
 		"""
 	
 	JP_NN = () ->
@@ -624,7 +603,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			var l = memory.read(regPairs[rpPC]++);
 			var h = memory.read(regPairs[rpPC]++);
 			regPairs[rpPC] = (h<<8) | l;
-			tstates += 10;
+			tstates += 6;
 		"""
 	
 	JR_C_N = (flag, sense) ->
@@ -634,10 +613,10 @@ window.JSSpeccy.Z80 = (opts) ->
 				if (regs[rF] & #{flag}) {
 					var offset = memory.read(regPairs[rpPC]++);
 					regPairs[rpPC] += (offset & 0x80 ? offset - 0x100 : offset);
-					tstates += 12;
+					tstates += 8;
 				} else {
 					regPairs[rpPC]++; /* skip past offset byte */
-					tstates += 7;
+					tstates += 3;
 				}
 			"""
 		else
@@ -645,11 +624,11 @@ window.JSSpeccy.Z80 = (opts) ->
 			"""
 				if (regs[rF] & #{flag}) {
 					regPairs[rpPC]++; /* skip past offset byte */
-					tstates += 7;
+					tstates += 3;
 				} else {
 					var offset = memory.read(regPairs[rpPC]++);
 					regPairs[rpPC] += (offset & 0x80 ? offset - 0x100 : offset);
-					tstates += 12;
+					tstates += 8;
 				}
 			"""
 	
@@ -657,7 +636,7 @@ window.JSSpeccy.Z80 = (opts) ->
 		"""
 			var offset = memory.read(regPairs[rpPC]++);
 			regPairs[rpPC] += (offset & 0x80 ? offset - 0x100 : offset);
-			tstates += 12;
+			tstates += 8;
 		"""
 	
 	LD_A_iNNi = () ->
@@ -666,7 +645,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			var h = memory.read(regPairs[rpPC]++);
 			var addr = (h<<8) | l;
 			regs[rA] = memory.read(addr);
-			tstates += 13;
+			tstates += 9;
 		"""
 	
 	LD_iNNi_A = () ->
@@ -675,31 +654,30 @@ window.JSSpeccy.Z80 = (opts) ->
 			var h = memory.read(regPairs[rpPC]++);
 			var addr = (h<<8) | l;
 			memory.write(addr, regs[rA]);
-			tstates += 13;
+			tstates += 9;
 		"""
 	
 	LD_iNNi_RR = (rp) ->
-		tstatesToAdd = if rp == rpHL then 16 else 20
 		"""
 			var l = memory.read(regPairs[rpPC]++);
 			var h = memory.read(regPairs[rpPC]++);
 			var addr = (h<<8) | l;
 			memory.write(addr, regPairs[#{rp}] & 0xff);
 			memory.write((addr + 1) & 0xffff, regPairs[#{rp}] >> 8);
-			tstates += #{tstatesToAdd};
+			tstates += 12;
 		"""
 	
 	LD_iRRi_N = (rp) ->
 		"""
 			var n = memory.read(regPairs[rpPC]++);
 			memory.write(regPairs[#{rp}], n);
-			tstates += 10;
+			tstates += 6;
 		"""
 	
 	LD_iRRi_R = (rp, r) ->
 		"""
 			memory.write(regPairs[#{rp}], regs[#{r}]);
-			tstates += 7;
+			tstates += 3;
 		"""
 	
 	LD_iRRpNNi_N = (rp) ->
@@ -710,7 +688,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			
 			var val = memory.read(regPairs[rpPC]++);
 			memory.write(addr, val);
-			tstates += 19;
+			tstates += 11;
 		"""
 	
 	LD_iRRpNNi_R = (rp, r) ->
@@ -720,13 +698,13 @@ window.JSSpeccy.Z80 = (opts) ->
 			var addr = (regPairs[#{rp}] + offset) & 0xffff;
 			
 			memory.write(addr, regs[#{r}]);
-			tstates += 19;
+			tstates += 11;
 		"""
 	
 	LD_R_iRRi = (r, rp) ->
 		"""
 			regs[#{r}] = memory.read(regPairs[#{rp}]);
-			tstates += 7;
+			tstates += 3;
 		"""
 	
 	LD_R_iRRpNNi = (r, rp) ->
@@ -736,32 +714,27 @@ window.JSSpeccy.Z80 = (opts) ->
 			var addr = (regPairs[#{rp}] + offset) & 0xffff;
 			
 			regs[#{r}] = memory.read(addr);
-			tstates += 19;
+			tstates += 11;
 		"""
 	
 	LD_R_N = (r) ->
-		tstatesToAdd = if (r == rIXH || r == rIXL || r == rIYH || r == rIYL) then 11 else 7
 		"""
 			regs[#{r}] = memory.read(regPairs[rpPC]++);
-			tstates += #{tstatesToAdd};
+			tstates += 3;
 		"""
 	
 	LD_R_R = (r1, r2) ->
-		if (r1 == rIXH || r1 == rIXL || r1 == rIYH || r1 == rIYL)
-			tstatesToAdd = 8
-		else if (r2 == rIXH || r2 == rIXL || r2 == rIYH || r2 == rIYL)
-			tstatesToAdd = 8
-		else if r1 == rI && r2 == rA
-			tstatesToAdd = 9
+		if r1 == rI || r2 == rI || r1 == rR || r2 == rR
+			"""
+				regs[#{r1}] = regs[#{r2}];
+				tstates += 9;
+			"""
 		else
-			tstatesToAdd = 4
-		"""
-			regs[#{r1}] = regs[#{r2}];
-			tstates += #{tstatesToAdd};
-		"""
+			"""
+				regs[#{r1}] = regs[#{r2}];
+			"""
 	
 	LD_RR_iNNi = (rp, shifted) ->
-		tstatesToAdd = if (rp == rpHL && !shifted) then 16 else 20
 		"""
 			var l = memory.read(regPairs[rpPC]++);
 			var h = memory.read(regPairs[rpPC]++);
@@ -769,24 +742,22 @@ window.JSSpeccy.Z80 = (opts) ->
 			l = memory.read(addr);
 			h = memory.read((addr + 1) & 0xffff);
 			regPairs[#{rp}] = (h<<8) | l;
-			tstates += #{tstatesToAdd};
+			tstates += 12;
 		"""
 	
 	LD_RR_NN = (rp) ->
-		tstatesToAdd = if (rp == rpIX || rp == rpIY) then 14 else 10
 		"""
 			var l = memory.read(regPairs[rpPC]++);
 			var h = memory.read(regPairs[rpPC]++);
 			regPairs[#{rp}] = (h<<8) | l;
-			tstates += #{tstatesToAdd};
+			tstates += 6;
 		"""
 	
 	LD_RR_RR = (rp1, rp2) ->
 		# only used for LD SP,HL/IX/IY
-		tstatesToAdd = if rp2 == rpHL then 6 else 10
 		"""
 			regPairs[#{rp1}] = regPairs[#{rp2}];
-			tstates += #{tstatesToAdd};
+			tstates += 2;
 		"""
 	
 	LDDR = () ->
@@ -798,9 +769,9 @@ window.JSSpeccy.Z80 = (opts) ->
 			regs[rF] = ( regs[rF] & ( FLAG_C | FLAG_Z | FLAG_S ) ) | ( regPairs[rpBC] ? FLAG_V : 0 ) | ( bytetemp & FLAG_3 ) | ( (bytetemp & 0x02) ? FLAG_5 : 0 );
 			if (regPairs[rpBC]) {
 				regPairs[rpPC]-=2;
-				tstates += 21;
+				tstates += 13;
 			} else {
-				tstates += 16;
+				tstates += 8;
 			}
 			regPairs[rpHL]--; regPairs[rpDE]--;
 		"""
@@ -813,7 +784,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			regPairs[rpDE]++; regPairs[rpHL]++;
 			bytetemp = (bytetemp + regs[rA]) & 0xff;
 			regs[rF] = ( regs[rF] & (FLAG_C | FLAG_Z | FLAG_S) ) | ( regPairs[rpBC] ? FLAG_V : 0 ) | (bytetemp & FLAG_3) | ( (bytetemp & 0x02) ? FLAG_5 : 0 );
-			tstates += 16;
+			tstates += 8;
 		"""
 	
 	LDIR = () ->
@@ -825,9 +796,9 @@ window.JSSpeccy.Z80 = (opts) ->
 			regs[rF] = ( regs[rF] & ( FLAG_C | FLAG_Z | FLAG_S ) ) | ( regPairs[rpBC] ? FLAG_V : 0 ) | ( bytetemp & FLAG_3 ) | ( (bytetemp & 0x02) ? FLAG_5 : 0 );
 			if (regPairs[rpBC]) {
 				regPairs[rpPC]-=2;
-				tstates += 21;
+				tstates += 13;
 			} else {
-				tstates += 16;
+				tstates += 8;
 			}
 			regPairs[rpHL]++; regPairs[rpDE]++;
 		"""
@@ -839,12 +810,10 @@ window.JSSpeccy.Z80 = (opts) ->
 			var lookup = ( (val & 0x88) >> 2 ) | ( (subtemp & 0x88) >> 1 );
 			regs[rA] = subtemp;
 			regs[rF] = ( subtemp & 0x100 ? FLAG_C : 0 ) | FLAG_N | halfcarrySubTable[lookup & 0x07] | overflowSubTable[lookup >> 4] | sz53Table[regs[rA]];
-			tstates += 8;
 		"""
 	
 	NOP = () ->
 		"""
-			tstates += 4;
 		"""
 	
 	OR_iHLi = () ->
@@ -852,7 +821,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			var val = memory.read(regPairs[rpHL]);
 			regs[rA] |= val;
 			regs[rF] = sz53pTable[regs[rA]];
-			tstates += 7;
+			tstates += 3;
 		"""
 	
 	OR_iRRpNNi = (rp) ->
@@ -864,7 +833,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			var val = memory.read(addr);
 			regs[rA] |= val;
 			regs[rF] = sz53pTable[regs[rA]];
-			tstates += 19;
+			tstates += 11;
 		"""
 	
 	OR_N = () ->
@@ -872,44 +841,41 @@ window.JSSpeccy.Z80 = (opts) ->
 			var val = memory.read(regPairs[rpPC]++);
 			regs[rA] |= val;
 			regs[rF] = sz53pTable[regs[rA]];
-			tstates += 7;
+			tstates += 3;
 		"""
 	
 	OR_R = (r) ->
 		"""
 			regs[rA] |= regs[#{r}];
 			regs[rF] = sz53pTable[regs[rA]];
-			tstates += 4;
 		"""
 	
 	OUT_iCi_R = (r) ->
 		"""
 			ioBus.write(regPairs[rpBC], regs[#{r}]);
-			tstates += 12;
+			tstates += 4;
 		"""
 	
 	OUT_iNi_A = () ->
 		"""
 			var port = memory.read(regPairs[rpPC]++);
 			ioBus.write( (regs[rA] << 8) | port, regs[rA]);
-			tstates += 11;
+			tstates += 7;
 		"""
 	
 	POP_RR = (rp) ->
-		tstatesToAdd = if (rp == rpIX || rp == rpIY) then 14 else 10
 		"""
 			var l = memory.read(regPairs[rpSP]++);
 			var h = memory.read(regPairs[rpSP]++);
 			regPairs[#{rp}] = (h<<8) | l;
-			tstates += #{tstatesToAdd};
+			tstates += 6;
 		"""
 	
 	PUSH_RR = (rp) ->
-		tstatesToAdd = if (rp == rpIX || rp == rpIY) then 15 else 11
 		"""
 			memory.write(--regPairs[rpSP], regPairs[#{rp}] >> 8);
 			memory.write(--regPairs[rpSP], regPairs[#{rp}] & 0xff);
-			tstates += #{tstatesToAdd};
+			tstates += 7;
 		"""
 	
 	RES_N_iHLi = (bit) ->
@@ -918,7 +884,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			var addr = regPairs[rpHL];
 			var value = memory.read(addr);
 			memory.write(addr, value & #{hexMask});
-			tstates += 15;
+			tstates += 7;
 		"""
 	
 	RES_N_iRRpNNi = (bit, rp) -> # expects 'offset'
@@ -927,14 +893,13 @@ window.JSSpeccy.Z80 = (opts) ->
 			var addr = (regPairs[#{rp}] + offset) & 0xffff;
 			var value = memory.read(addr);
 			memory.write(addr, value & #{hexMask});
-			tstates += 23;
+			tstates += 15;
 		"""
 	
 	RES_N_R = (bit, r) ->
 		hexMask = 0xff ^ (1 << bit)
 		"""
 			regs[#{r}] &= #{hexMask};
-			tstates += 8;
 		"""
 	
 	RET = () ->
@@ -942,7 +907,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			var l = memory.read(regPairs[rpSP]++);
 			var h = memory.read(regPairs[rpSP]++);
 			regPairs[rpPC] = (h<<8) | l;
-			tstates += 10;
+			tstates += 6;
 		"""
 	
 	RET_C = (flag, sense) ->
@@ -953,21 +918,21 @@ window.JSSpeccy.Z80 = (opts) ->
 					var l = memory.read(regPairs[rpSP]++);
 					var h = memory.read(regPairs[rpSP]++);
 					regPairs[rpPC] = (h<<8) | l;
-					tstates += 11;
+					tstates += 7;
 				} else {
-					tstates += 5;
+					tstates += 1;
 				}
 			"""
 		else
 			# branch if flag reset
 			"""
 				if (regs[rF] & #{flag}) {
-					tstates += 5;
+					tstates += 1;
 				} else {
 					var l = memory.read(regPairs[rpSP]++);
 					var h = memory.read(regPairs[rpSP]++);
 					regPairs[rpPC] = (h<<8) | l;
-					tstates += 11;
+					tstates += 7;
 				}
 			"""
 	
@@ -978,7 +943,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			value = ( (value << 1) | (regs[rF] & FLAG_C) ) & 0xff;
 			regs[rF] = ( rltemp >> 7 ) | sz53pTable[value];
 			memory.write(regPairs[rpHL], value);
-			tstates =+ 15;
+			tstates =+ 7;
 		"""
 	
 	RL_iRRpNNi = (rp) -> # expects 'offset'
@@ -989,7 +954,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			value = ( (value << 1) | (regs[rF] & FLAG_C) ) & 0xff;
 			regs[rF] = ( rltemp >> 7 ) | sz53pTable[value];
 			memory.write(addr, value);
-			tstates =+ 23;
+			tstates =+ 15;
 		"""
 	
 	RL_R = (r) ->
@@ -997,7 +962,6 @@ window.JSSpeccy.Z80 = (opts) ->
 			var rltemp = regs[#{r}];
 			regs[#{r}] = ( regs[#{r}]<<1 ) | ( regs[rF] & FLAG_C );
 			regs[rF] = ( rltemp >> 7 ) | sz53pTable[regs[#{r}]];
-			tstates =+ 8;
 		"""
 	
 	RLA = () ->
@@ -1005,7 +969,6 @@ window.JSSpeccy.Z80 = (opts) ->
 			var bytetemp = regs[rA];
 			regs[rA] = (regs[rA] << 1) | (regs[rF] & FLAG_C);
 			regs[rF] = ( regs[rF] & (FLAG_P | FLAG_Z | FLAG_S) ) | ( regs[rA] & (FLAG_3 | FLAG_5) ) | (bytetemp >> 7);
-			tstates += 4;
 		"""
 	
 	RLC_iHLi = () ->
@@ -1014,7 +977,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			value = ( (value << 1) | (value >> 7) ) & 0xff;
 			regs[rF] = (value & FLAG_C) | sz53pTable[value];
 			memory.write(regPairs[rpHL], value);
-			tstates += 15;
+			tstates += 7;
 		"""
 	
 	RLC_iRRpNNi = (rp) -> # expects 'offset'
@@ -1024,21 +987,19 @@ window.JSSpeccy.Z80 = (opts) ->
 			value = ( (value << 1) | (value >> 7) ) & 0xff;
 			regs[rF] = (value & FLAG_C) | sz53pTable[value];
 			memory.write(addr, value);
-			tstates += 23;
+			tstates += 15;
 		"""
 	
 	RLC_R = (r) ->
 		"""
 			regs[#{r}] = ( regs[#{r}]<<1 ) | ( regs[#{r}]>>7 );
 			regs[rF] = ( regs[#{r}] & FLAG_C ) | sz53pTable[regs[#{r}]];
-			tstates += 8;
 		"""
 	
 	RLCA = () ->
 		"""
 			regs[rA] = (regs[rA] << 1) | (regs[rA] >> 7);
 			regs[rF] = ( regs[rF] & ( FLAG_P | FLAG_Z | FLAG_S ) ) | ( regs[rA] & ( FLAG_C | FLAG_3 | FLAG_5) );
-			tstates += 4;
 		"""
 	
 	RR_iHLi = () ->
@@ -1048,7 +1009,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			value = ( (value >> 1) | ( regs[rF] << 7 ) ) & 0xff;
 			regs[rF] = ( rrtemp & FLAG_C ) | sz53pTable[value];
 			memory.write(regPairs[rpHL], value);
-			tstates += 15;
+			tstates += 7;
 		"""
 	
 	RR_iRRpNNi = (rp) -> # expects 'offset'
@@ -1067,7 +1028,6 @@ window.JSSpeccy.Z80 = (opts) ->
 			var rrtemp = regs[#{r}];
 			regs[#{r}] = ( regs[#{r}]>>1 ) | ( regs[rF] << 7 );
 			regs[rF] = ( rrtemp & FLAG_C ) | sz53pTable[regs[#{r}]];
-			tstates += 8;
 		"""
 	
 	RRC_iHLi = () ->
@@ -1077,7 +1037,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			value = ( (value >> 1) | (value << 7) ) & 0xff;
 			regs[rF] |= sz53pTable[value];
 			memory.write(regPairs[rpHL], value);
-			tstates += 15;
+			tstates += 7;
 		"""
 	
 	RRC_iRRpNNi = (rp) ->
@@ -1088,7 +1048,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			value = ( (value >> 1) | (value << 7) ) & 0xff;
 			regs[rF] |= sz53pTable[value];
 			memory.write(addr, value);
-			tstates += 23;
+			tstates += 15;
 		"""
 	
 	RRC_R = (r) ->
@@ -1096,7 +1056,6 @@ window.JSSpeccy.Z80 = (opts) ->
 			regs[rF] = regs[#{r}] & FLAG_C;
 			regs[#{r}] = ( regs[#{r}] >> 1 ) | ( regs[#{r}] <<7 );
 			regs[rF] |= sz53pTable[regs[#{r}]];
-			tstates += 8;
 		"""
 	
 	RRCA = () ->
@@ -1104,7 +1063,6 @@ window.JSSpeccy.Z80 = (opts) ->
 			regs[rF] = ( regs[rF] & (FLAG_P | FLAG_Z | FLAG_S) ) | (regs[rA] & FLAG_C);
 			regs[rA] = ( regs[rA] >> 1) | ( regs[rA] << 7 );
 			regs[rF] |= ( regs[rA] & (FLAG_3 | FLAG_5) );
-			tstates += 4;
 		"""
 	
 	RRA = () ->
@@ -1112,7 +1070,6 @@ window.JSSpeccy.Z80 = (opts) ->
 			var bytetemp = regs[rA];
 			regs[rA] = ( bytetemp >> 1 ) | ( regs[rF] << 7 );
 			regs[rF] = ( regs[rF] & (FLAG_P | FLAG_Z | FLAG_S) ) | ( regs[rA] & (FLAG_3 | FLAG_5) ) | (bytetemp & FLAG_C);
-			tstates += 4;
 		"""
 	
 	RST = (addr) ->
@@ -1120,7 +1077,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			memory.write(--regPairs[rpSP], regPairs[rpPC] >> 8);
 			memory.write(--regPairs[rpSP], regPairs[rpPC] & 0xff);
 			regPairs[rpPC] = #{addr};
-			tstates += 11;
+			tstates += 7;
 		"""
 	
 	SBC_A_iHLi = () ->
@@ -1131,7 +1088,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (val & 0x88) >> 2 ) | ( (sbctemp & 0x88) >> 1 );
 			regs[rA] = sbctemp;
 			regs[rF] = ( sbctemp & 0x100 ? FLAG_C : 0 ) | FLAG_N | halfcarrySubTable[lookup & 0x07] | overflowSubTable[lookup >> 4] | sz53Table[regs[rA]];
-			tstates += 7;
+			tstates += 3;
 		"""
 	
 	SBC_A_iRRpNNi = (rp) ->
@@ -1146,7 +1103,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (val & 0x88) >> 2 ) | ( (sbctemp & 0x88) >> 1 );
 			regs[rA] = sbctemp;
 			regs[rF] = ( sbctemp & 0x100 ? FLAG_C : 0 ) | FLAG_N | halfcarrySubTable[lookup & 0x07] | overflowSubTable[lookup >> 4] | sz53Table[regs[rA]];
-			tstates += 19;
+			tstates += 11;
 		"""
 	
 	SBC_A_N = () ->
@@ -1157,7 +1114,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (val & 0x88) >> 2 ) | ( (sbctemp & 0x88) >> 1 );
 			regs[rA] = sbctemp;
 			regs[rF] = ( sbctemp & 0x100 ? FLAG_C : 0 ) | FLAG_N | halfcarrySubTable[lookup & 0x07] | overflowSubTable[lookup >> 4] | sz53Table[regs[rA]];
-			tstates += 7;
+			tstates += 3;
 		"""
 	
 	SBC_A_R = (r) ->
@@ -1166,7 +1123,6 @@ window.JSSpeccy.Z80 = (opts) ->
 			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (regs[#{r}] & 0x88) >> 2 ) | ( (sbctemp & 0x88) >> 1 );
 			regs[rA] = sbctemp;
 			regs[rF] = ( sbctemp & 0x100 ? FLAG_C : 0 ) | FLAG_N | halfcarrySubTable[lookup & 0x07] | overflowSubTable[lookup >> 4] | sz53Table[regs[rA]];
-			tstates += 4;
 		"""
 	
 	SBC_HL_RR = (rp) ->
@@ -1175,13 +1131,12 @@ window.JSSpeccy.Z80 = (opts) ->
 			var lookup = ( (regPairs[rpHL] & 0x8800) >> 11 ) | ( (regPairs[#{rp}] & 0x8800) >> 10 ) | ( (sub16temp & 0x8800) >>  9 );
 			regPairs[rpHL] = sub16temp;
 			regs[rF] = ( sub16temp & 0x10000 ? FLAG_C : 0 ) | FLAG_N | overflowSubTable[lookup >> 4] | ( regs[rH] & ( FLAG_3 | FLAG_5 | FLAG_S ) ) | halfcarrySubTable[lookup&0x07] | ( regPairs[rpHL] ? 0 : FLAG_Z);
-			tstates += 15;
+			tstates += 7;
 		"""
 	
 	SCF = () ->
 		"""
 			regs[rF] = ( regs[rF] & (FLAG_P | FLAG_Z | FLAG_S) ) | ( regs[rA] & (FLAG_3 | FLAG_5) ) | FLAG_C;
-			tstates += 4;
 		"""
 	
 	SET_N_iHLi = (bit) ->
@@ -1190,7 +1145,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			var addr = regPairs[rpHL];
 			var value = memory.read(addr);
 			memory.write(addr, value | #{hexMask});
-			tstates += 15;
+			tstates += 7;
 		"""
 	
 	SET_N_iRRpNNi = (bit, rp) -> # expects 'offset'
@@ -1199,19 +1154,17 @@ window.JSSpeccy.Z80 = (opts) ->
 			var addr = (regPairs[#{rp}] + offset) & 0xffff;
 			var value = memory.read(addr);
 			memory.write(addr, value | #{hexMask});
-			tstates += 23;
+			tstates += 15;
 		"""
 	
 	SET_N_R = (bit, r) ->
 		hexMask = 1 << bit
 		"""
 			regs[#{r}] |= #{hexMask};
-			tstates += 8;
 		"""
 	
 	SHIFT = (prefix) ->
 		# Fake instruction for shifted opcodes - passes control to a secondary opcode table
-		# TODO: increment tstates by 4 at this point, rather than including that in the child opcode's count
 		"""
 			opcodePrefix = '#{prefix}';
 			interruptible = false;
@@ -1224,7 +1177,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			value = (value << 1) & 0xff;
 			regs[rF] |= sz53pTable[value];
 			memory.write(regPairs[rpHL], value);
-			tstates += 15;
+			tstates += 7;
 		"""
 	
 	SLA_iRRpNNi = (rp) -> # expects 'offset'
@@ -1235,7 +1188,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			value = (value << 1) & 0xff;
 			regs[rF] |= sz53pTable[value];
 			memory.write(addr, value);
-			tstates += 23;
+			tstates += 15;
 		"""
 	
 	SLA_R = (r) ->
@@ -1243,7 +1196,6 @@ window.JSSpeccy.Z80 = (opts) ->
 			regs[rF] = regs[#{r}] >> 7;
 			regs[#{r}] <<= 1;
 			regs[rF] |= sz53pTable[regs[#{r}]];
-			tstates += 8;
 		"""
 	
 	SRA_iHLi = () ->
@@ -1253,7 +1205,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			value = ( (value & 0x80) | (value >> 1) ) & 0xff;
 			regs[rF] |= sz53pTable[value];
 			memory.write(regPairs[rpHL], value);
-			tstates += 15;
+			tstates += 7;
 		"""
 	
 	SRA_iRRpNNi = (rp) -> # expects 'offset'
@@ -1272,7 +1224,6 @@ window.JSSpeccy.Z80 = (opts) ->
 			regs[rF] = regs[#{r}] & FLAG_C;
 			regs[#{r}] = (regs[#{r}] & 0x80) | (regs[#{r}] >> 1);
 			regs[rF] |= sz53pTable[regs[#{r}]];
-			tstates += 8;
 		"""
 	
 	SRL_iHLi = () ->
@@ -1282,7 +1233,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			value >>= 1;
 			regs[rF] |= sz53pTable[value];
 			memory.write(regPairs[rpHL], value);
-			tstates += 15;
+			tstates += 7;
 		"""
 	
 	SRL_iRRpNNi = (rp) -> # expects 'offset'
@@ -1301,7 +1252,6 @@ window.JSSpeccy.Z80 = (opts) ->
 			regs[rF] = regs[#{r}] & FLAG_C;
 			regs[#{r}] >>= 1;
 			regs[rF] |= sz53pTable[regs[#{r}]];
-			tstates += 8;
 		"""
 	
 	SUB_iHLi = () ->
@@ -1311,7 +1261,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (val & 0x88) >> 2 ) | ( (subtemp & 0x88) >> 1 );
 			regs[rA] = subtemp;
 			regs[rF] = ( subtemp & 0x100 ? FLAG_C : 0 ) | FLAG_N | halfcarrySubTable[lookup & 0x07] | overflowSubTable[lookup >> 4] | sz53Table[regs[rA]];
-			tstates += 7;
+			tstates += 3;
 		"""
 	
 	SUB_iRRpNNi = (rp) ->
@@ -1325,7 +1275,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (val & 0x88) >> 2 ) | ( (subtemp & 0x88) >> 1 );
 			regs[rA] = subtemp;
 			regs[rF] = ( subtemp & 0x100 ? FLAG_C : 0 ) | FLAG_N | halfcarrySubTable[lookup & 0x07] | overflowSubTable[lookup >> 4] | sz53Table[regs[rA]];
-			tstates += 19;
+			tstates += 11;
 		"""
 	
 	SUB_N = () ->
@@ -1335,7 +1285,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (val & 0x88) >> 2 ) | ( (subtemp & 0x88) >> 1 );
 			regs[rA] = subtemp;
 			regs[rF] = ( subtemp & 0x100 ? FLAG_C : 0 ) | FLAG_N | halfcarrySubTable[lookup & 0x07] | overflowSubTable[lookup >> 4] | sz53Table[regs[rA]];
-			tstates += 7;
+			tstates += 3;
 		"""
 	
 	SUB_R = (r) ->
@@ -1344,7 +1294,6 @@ window.JSSpeccy.Z80 = (opts) ->
 			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (regs[#{r}] & 0x88) >> 2 ) | ( (subtemp & 0x88) >> 1 );
 			regs[rA] = subtemp;
 			regs[rF] = ( subtemp & 0x100 ? FLAG_C : 0 ) | FLAG_N | halfcarrySubTable[lookup & 0x07] | overflowSubTable[lookup >> 4] | sz53Table[regs[rA]];
-			tstates += 4;
 		"""
 	
 	XOR_iHLi = () ->
@@ -1352,7 +1301,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			var val = memory.read(regPairs[rpHL]);
 			regs[rA] ^= val;
 			regs[rF] = sz53pTable[regs[rA]];
-			tstates += 7;
+			tstates += 3;
 		"""
 	
 	XOR_iRRpNNi = (rp) ->
@@ -1364,7 +1313,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			var val = memory.read(addr);
 			regs[rA] ^= val;
 			regs[rF] = sz53pTable[regs[rA]];
-			tstates += 19;
+			tstates += 11;
 		"""
 	
 	XOR_N = () ->
@@ -1372,14 +1321,13 @@ window.JSSpeccy.Z80 = (opts) ->
 			var val = memory.read(regPairs[rpPC]++);
 			regs[rA] ^= val;
 			regs[rF] = sz53pTable[regs[rA]];
-			tstates += 7;
+			tstates += 3;
 		"""
 	
 	XOR_R = (r) ->
 		"""
 			regs[rA] ^= regs[#{r}];
 			regs[rF] = sz53pTable[regs[rA]];
-			tstates += 4;
 		"""
 	
 	# wrapper to make the string from an opcode generator into a function
@@ -2198,12 +2146,15 @@ window.JSSpeccy.Z80 = (opts) ->
 			switch lastOpcodePrefix
 				when ''
 					opcode = memory.read(regPairs[rpPC]++)
+					tstates += 4
 					OPCODE_RUNNERS[opcode]()
 				when 'CB'
 					opcode = memory.read(regPairs[rpPC]++)
+					tstates += 4
 					OPCODE_RUNNERS_CB[opcode]()
 				when 'DD'
 					opcode = memory.read(regPairs[rpPC]++)
+					tstates += 4
 					OPCODE_RUNNERS_DD[opcode]()
 				when 'DDCB'
 					offset = memory.read(regPairs[rpPC]++)
@@ -2213,9 +2164,11 @@ window.JSSpeccy.Z80 = (opts) ->
 					OPCODE_RUNNERS_DDCB[opcode](offset)
 				when 'ED'
 					opcode = memory.read(regPairs[rpPC]++)
+					tstates += 4
 					OPCODE_RUNNERS_ED[opcode]()
 				when 'FD'
 					opcode = memory.read(regPairs[rpPC]++)
+					tstates += 4
 					OPCODE_RUNNERS_FD[opcode]()
 				when 'FDCB'
 					offset = memory.read(regPairs[rpPC]++)
