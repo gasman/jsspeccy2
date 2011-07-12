@@ -1210,25 +1210,11 @@ window.JSSpeccy.Z80 = (opts) ->
 		"""
 	
 	SHIFT = (prefix) ->
-		# Fake instruction for CB/ED-shifted opcodes - passes control to a secondary opcode table
+		# Fake instruction for shifted opcodes - passes control to a secondary opcode table
+		# TODO: increment tstates by 4 at this point, rather than including that in the child opcode's count
 		"""
-			opcode = memory.read(regPairs[rpPC]++)
-			if !OPCODE_RUNNERS_#{prefix}[opcode]
-				console.log(regPairs[rpPC], '#{prefix}')
-			OPCODE_RUNNERS_#{prefix}[opcode]();
-		"""
-	
-	SHIFT_DDCB = (prefix) ->
-		# like SHIFT, but with the extra quirk that we have to pull an offset parameter from PC
-		# *before* the final opcode to tell us what to do
-		"""
-			offset = memory.read(regPairs[rpPC]++)
-			if (offset & 0x80)
-				offset -= 0x100
-			opcode = memory.read(regPairs[rpPC]++)
-			if !OPCODE_RUNNERS_#{prefix}[opcode]
-				console.log(regPairs[rpPC], '#{prefix}')
-			OPCODE_RUNNERS_#{prefix}[opcode](offset)
+			opcodePrefix = '#{prefix}';
+			interruptible = false;
 		"""
 	
 	SLA_iHLi = () ->
@@ -1658,13 +1644,13 @@ window.JSSpeccy.Z80 = (opts) ->
 	# Generate the opcode runner lookup table for either the DDCB or FDCB set
 	generateddfdcbOpcodeSet = (prefix) ->
 		if prefix == 'DDCB'
-			rp = 'IX'
-			rh = 'IXH'
-			rl = 'IXL'
+			rp = rpIX
+			rh = rIXH
+			rl = rIXL
 		else # prefix == 'FDCB'
-			rp = 'IY'
-			rh = 'IYH'
-			rl = 'IYL'
+			rp = rpIY
+			rh = rIYH
+			rl = rIYL
 		return {
 			
 			0x06: ddcbOp( RLC_iRRpNNi(rp) )        # RLC (IX+nn)
@@ -1739,13 +1725,13 @@ window.JSSpeccy.Z80 = (opts) ->
 	# specified register pair (IX or IY)
 	generateddfdOpcodeSet = (prefix) ->
 		if prefix == 'DD'
-			rp = 'IX'
-			rh = 'IXH'
-			rl = 'IXL'
+			rp = rpIX
+			rh = rIXH
+			rl = rIXL
 		else # prefix == 'FD'
-			rp = 'IY'
-			rh = 'IYH'
-			rl = 'IYL'
+			rp = rpIY
+			rh = rIYH
+			rl = rIYL
 		return {
 			0x09: op( ADD_RR_RR(rp, rpBC) )        # ADD IX,BC
 			
@@ -1829,7 +1815,9 @@ window.JSSpeccy.Z80 = (opts) ->
 			
 			0xBE: op( CP_iRRpNNi(rp) )        # CP (IX+dd)
 			
-			0xCB: op ( SHIFT_DDCB(prefix + 'CB') )        # shift code
+			0xCB: op ( SHIFT(prefix + 'CB') )        # shift code
+			
+			0xDD: op( SHIFT('DD') )        # shift code
 			
 			0xE1: op( POP_RR(rp) )        # POP IX
 			
@@ -1841,10 +1829,12 @@ window.JSSpeccy.Z80 = (opts) ->
 			
 			0xF9: op( LD_RR_RR(rpSP, rp) )        # LD SP,IX
 			
+			0xFD: op( SHIFT('FD') )        # shift code
+			
 			0x100: 'dd'
 		}
 	
-	OPCODE_RUNNERS_DD = generateddfdOpcodeSet(rpIX, rIXH, rIXL)
+	OPCODE_RUNNERS_DD = generateddfdOpcodeSet('DD')
 	
 	OPCODE_RUNNERS_ED = {
 		
@@ -1903,7 +1893,7 @@ window.JSSpeccy.Z80 = (opts) ->
 		0x100: 'ed'
 	}
 	
-	OPCODE_RUNNERS_FD = generateddfdOpcodeSet(rpIY, rIYH, rIYL)
+	OPCODE_RUNNERS_FD = generateddfdOpcodeSet('FD')
 	
 	OPCODE_RUNNERS = {
 		0x00: op( NOP() )        # NOP
@@ -2193,6 +2183,7 @@ window.JSSpeccy.Z80 = (opts) ->
 	
 	interruptible = true
 	interruptPending = false
+	opcodePrefix = ''
 	
 	self.runFrame = ->
 		display.startFrame()
@@ -2202,8 +2193,37 @@ window.JSSpeccy.Z80 = (opts) ->
 				z80Interrupt()
 				interruptPending = false
 			interruptible = true # unless overridden by opcode
-			opcode = memory.read(regPairs[rpPC]++)
-			OPCODE_RUNNERS[opcode]()
+			lastOpcodePrefix = opcodePrefix
+			opcodePrefix = ''
+			switch lastOpcodePrefix
+				when ''
+					opcode = memory.read(regPairs[rpPC]++)
+					OPCODE_RUNNERS[opcode]()
+				when 'CB'
+					opcode = memory.read(regPairs[rpPC]++)
+					OPCODE_RUNNERS_CB[opcode]()
+				when 'DD'
+					opcode = memory.read(regPairs[rpPC]++)
+					OPCODE_RUNNERS_DD[opcode]()
+				when 'DDCB'
+					offset = memory.read(regPairs[rpPC]++)
+					if (offset & 0x80)
+						offset -= 0x100
+					opcode = memory.read(regPairs[rpPC]++)
+					OPCODE_RUNNERS_DDCB[opcode](offset)
+				when 'ED'
+					opcode = memory.read(regPairs[rpPC]++)
+					OPCODE_RUNNERS_ED[opcode]()
+				when 'FD'
+					opcode = memory.read(regPairs[rpPC]++)
+					OPCODE_RUNNERS_FD[opcode]()
+				when 'FDCB'
+					offset = memory.read(regPairs[rpPC]++)
+					if (offset & 0x80)
+						offset -= 0x100
+					opcode = memory.read(regPairs[rpPC]++)
+					OPCODE_RUNNERS_FDCB[opcode](offset)
+				
 			while display.nextEventTime != null && display.nextEventTime <= tstates
 				display.doEvent();
 		

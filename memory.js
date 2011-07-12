@@ -4,10 +4,10 @@ JSSpeccy.Memory = function(opts) {
 	
 	var ramPages = [];
 	for (var i = 0; i < 8; i++) {
-		ramPages[i] = new Uint8Array(0x3fff);
+		ramPages[i] = new Uint8Array(0x4000);
 	}
 	
-	var scratch = new Uint8Array(0x3fff);
+	var scratch = new Uint8Array(0x4000);
 	
 	var readSlots = [
 		model === JSSpeccy.Memory.MODEL_48K ? JSSpeccy.roms['48.rom'] : JSSpeccy.roms['128-0.rom'],
