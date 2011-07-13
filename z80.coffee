@@ -190,44 +190,13 @@ window.JSSpeccy.Z80 = (opts) ->
 			regs[rF] = ( adctemp & 0x100 ? FLAG_C : 0 ) | halfcarryAddTable[lookup & 0x07] | overflowAddTable[lookup >> 4] | sz53Table[regs[rA]];
 		"""
 	
-	ADD_A_iHLi = () ->
+	ADD_A = (param) ->
+		operand = getParamBoilerplate(param)
 		"""
-			var val = memory.read(regPairs[rpHL]);
-			var addtemp = regs[rA] + val;
-			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (val & 0x88) >> 2 ) | ( (addtemp & 0x88) >> 1 );
-			regs[rA] = addtemp;
-			regs[rF] = ( addtemp & 0x100 ? FLAG_C : 0 ) | halfcarryAddTable[lookup & 0x07] | overflowAddTable[lookup >> 4] | sz53Table[regs[rA]];
-			tstates += 3;
-		"""
-	
-	ADD_A_iRRpNNi = (rp) ->
-		"""
-			var offset = memory.read(regPairs[rpPC]++);
-			if (offset & 0x80) offset -= 0x100;
-			var addr = (regPairs[#{rp}] + offset) & 0xffff;
+			#{operand.getter}
 			
-			var val = memory.read(addr);
-			var addtemp = regs[rA] + val;
-			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (val & 0x88) >> 2 ) | ( (addtemp & 0x88) >> 1 );
-			regs[rA] = addtemp;
-			regs[rF] = ( addtemp & 0x100 ? FLAG_C : 0 ) | halfcarryAddTable[lookup & 0x07] | overflowAddTable[lookup >> 4] | sz53Table[regs[rA]];
-			tstates += 11;
-		"""
-	
-	ADD_A_N = () ->
-		"""
-			var val = memory.read(regPairs[rpPC]++);
-			var addtemp = regs[rA] + val;
-			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (val & 0x88) >> 2 ) | ( (addtemp & 0x88) >> 1 );
-			regs[rA] = addtemp;
-			regs[rF] = ( addtemp & 0x100 ? FLAG_C : 0 ) | halfcarryAddTable[lookup & 0x07] | overflowAddTable[lookup >> 4] | sz53Table[regs[rA]];
-			tstates += 3;
-		"""
-	
-	ADD_A_R = (r) ->
-		"""
-			var addtemp = regs[rA] + regs[#{r}];
-			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (regs[#{r}] & 0x88) >> 2 ) | ( (addtemp & 0x88) >> 1 );
+			var addtemp = regs[rA] + #{operand.v};
+			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (#{operand.v} & 0x88) >> 2 ) | ( (addtemp & 0x88) >> 1 );
 			regs[rA] = addtemp;
 			regs[rF] = ( addtemp & 0x100 ? FLAG_C : 0 ) | halfcarryAddTable[lookup & 0x07] | overflowAddTable[lookup >> 4] | sz53Table[regs[rA]];
 		"""
@@ -1765,9 +1734,9 @@ window.JSSpeccy.Z80 = (opts) ->
 			0x7D: op( LD_R_R(rA, rl) )        # LD A,IXl
 			0x7E: op( LD_R_iRRpNNi(rA, rp) )        # LD A,(IX+nn)
 			
-			0x84: op( ADD_A_R(rh) )           # ADD A,IXh
-			0x85: op( ADD_A_R(rl) )           # ADD A,IXl
-			0x86: op( ADD_A_iRRpNNi(rp) )        # ADD A,(IX+nn)
+			0x84: op( ADD_A rhn )           # ADD A,IXh
+			0x85: op( ADD_A rln )           # ADD A,IXl
+			0x86: op( ADD_A "(#{rpn}+nn)" )        # ADD A,(IX+nn)
 			
 			0x8C: op( ADC_A rhn )           # ADC A,IXh
 			0x8D: op( ADC_A rln )           # ADC A,IXl
@@ -2006,14 +1975,14 @@ window.JSSpeccy.Z80 = (opts) ->
 		0x7d: op( LD_R_R(rA, rL) )        # LD A,L
 		0x7e: op( LD_R_iRRi(rA, rpHL) )        # LD A,(HL)
 		0x7f: op( LD_R_R(rA, rA) )        # LD A,A
-		0x80: op( ADD_A_R(rB) )        # ADD A,B
-		0x81: op( ADD_A_R(rC) )        # ADD A,C
-		0x82: op( ADD_A_R(rD) )        # ADD A,D
-		0x83: op( ADD_A_R(rE) )        # ADD A,E
-		0x84: op( ADD_A_R(rH) )        # ADD A,H
-		0x85: op( ADD_A_R(rL) )        # ADD A,L
-		0x86: op( ADD_A_iHLi() )        # ADD A,(HL)
-		0x87: op( ADD_A_R(rA) )        # ADD A,A
+		0x80: op( ADD_A "B" )        # ADD A,B
+		0x81: op( ADD_A "C" )        # ADD A,C
+		0x82: op( ADD_A "D" )        # ADD A,D
+		0x83: op( ADD_A "E" )        # ADD A,E
+		0x84: op( ADD_A "H" )        # ADD A,H
+		0x85: op( ADD_A "L" )        # ADD A,L
+		0x86: op( ADD_A "(HL)" )        # ADD A,(HL)
+		0x87: op( ADD_A "A" )        # ADD A,A
 		0x88: op( ADC_A "B" )        # ADC A,B
 		0x89: op( ADC_A "C" )        # ADC A,C
 		0x8a: op( ADC_A "D" )        # ADC A,D
@@ -2076,7 +2045,7 @@ window.JSSpeccy.Z80 = (opts) ->
 		0xC3: op( JP_NN() )        # JP nnnn
 		0xC4: op( CALL_C_NN(FLAG_Z, false) )        # CALL NZ,nnnn
 		0xC5: op( PUSH_RR(rpBC) )        # PUSH BC
-		0xC6: op( ADD_A_N() )        # ADD A,nn
+		0xC6: op( ADD_A "nn" )        # ADD A,nn
 		0xC7: op( RST(0x0000) )        # RST 0x00
 		0xC8: op( RET_C(FLAG_Z, true) )        # RET Z
 		0xC9: op( RET() )        # RET
