@@ -448,33 +448,17 @@ window.JSSpeccy.Z80 = (opts) ->
 			tstates += 4;
 		"""
 	
-	INC_iHLi = () ->
+	INC = (param) ->
+		operand = getParamBoilerplate(param)
 		"""
-			var value = memory.read(regPairs[rpHL]);
-			regs[rF] = (regs[rF] & FLAG_C ) | ( value & 0x0f ? 0 : FLAG_H ) | FLAG_N;
-			value = (value + 1) & 0xff;
-			memory.write(regPairs[rpHL], value);
-			regs[rF] = (regs[rF] & FLAG_C) | ( value == 0x80 ? FLAG_V : 0 ) | ( value & 0x0f ? 0 : FLAG_H ) | sz53Table[value];
-			tstates += 7;
-		"""
-	
-	INC_iRRpNNi = (rp) ->
-		"""
-			var offset = memory.read(regPairs[rpPC]++);
-			if (offset & 0x80) offset -= 0x100;
-			var addr = (regPairs[#{rp}] + offset) & 0xffff;
+			#{operand.getter}
 			
-			var value = memory.read(addr);
-			value = (value + 1) & 0xff;
-			memory.write(addr, value);
-			regs[rF] = (regs[rF] & FLAG_C) | ( value == 0x80 ? FLAG_V : 0 ) | ( value & 0x0f ? 0 : FLAG_H ) | sz53Table[value];
-			tstates += 15;
-		"""
-	
-	INC_R = (r) ->
-		"""
-			regs[#{r}]++;
-			regs[rF] = (regs[rF] & FLAG_C) | ( regs[#{r}] == 0x80 ? FLAG_V : 0 ) | ( regs[#{r}] & 0x0f ? 0 : FLAG_H ) | sz53Table[regs[#{r}]];
+			regs[rF] = (regs[rF] & FLAG_C ) | ( #{operand.v} & 0x0f ? 0 : FLAG_H ) | FLAG_N;
+			#{operand.v} = (#{operand.v} + 1) #{operand.trunc};
+			
+			#{operand.setter}
+			regs[rF] = (regs[rF] & FLAG_C) | ( #{operand.v} == 0x80 ? FLAG_V : 0 ) | ( #{operand.v} & 0x0f ? 0 : FLAG_H ) | sz53Table[#{operand.v}];
+			tstates += 7;
 		"""
 	
 	INC_RR = (rp) ->
@@ -1587,18 +1571,18 @@ window.JSSpeccy.Z80 = (opts) ->
 			0x21: op( LD_RR_NN(rp) )        # LD IX,nnnn
 			0x22: op( LD_iNNi_RR(rp) )        # LD (nnnn),IX
 			0x23: op( INC_RR(rp) )        # INC IX
-			0x24: op( INC_R(rh) )         # INC IXh
+			0x24: op( INC rhn )         # INC IXh
 			0x25: op( DEC rhn )         # DEC IXh
 			0x26: op( LD_R_N(rh) )        # LD IXh, nn
 			
 			0x29: op( ADD_RR_RR(rp, rp) )        # ADD IX,IX
 			0x2A: op( LD_RR_iNNi(rp) )        # LD IX,(nnnn)
 			0x2B: op( DEC_RR(rp) )        # DEC IX
-			0x2C: op( INC_R(rl) )         # INC IXl
+			0x2C: op( INC rln )         # INC IXl
 			0x2D: op( DEC rln )         # DEC IXl
 			0x2E: op( LD_R_N(rl) )        # LD IXl, nn
 			
-			0x34: op( INC_iRRpNNi(rp) )        # INC (IX+nn)
+			0x34: op( INC "(#{rpn}+nn)" )        # INC (IX+nn)
 			0x35: op( DEC "(#{rpn}+nn)" )        # DEC (IX+nn)
 			0x36: op( LD_iRRpNNi_N(rp) )        # LD (IX+nn),nn
 			
@@ -1765,7 +1749,7 @@ window.JSSpeccy.Z80 = (opts) ->
 		0x01: op( LD_RR_NN(rpBC) )        # LD BC,nnnn
 		0x02: op( LD_iRRi_R(rpBC, rA) )        # LD (BC),A
 		0x03: op( INC_RR(rpBC) )        # INC BC
-		0x04: op( INC_R(rB) )        # INC B
+		0x04: op( INC "B" )        # INC B
 		0x05: op( DEC "B" )        # DEC B
 		0x06: op( LD_R_N(rB) )        # LD B,nn
 		0x07: op( RLCA() )        # RLCA
@@ -1773,7 +1757,7 @@ window.JSSpeccy.Z80 = (opts) ->
 		0x09: op( ADD_RR_RR(rpHL, rpBC) )        # ADD HL,BC
 		0x0A: op( LD_R_iRRi(rA, rpBC) )        # LD A,(BC)
 		0x0B: op( DEC_RR(rpBC) )        # DEC BC
-		0x0C: op( INC_R(rC) )        # INC C
+		0x0C: op( INC "C" )        # INC C
 		0x0D: op( DEC "C" )        # DEC C
 		0x0E: op( LD_R_N(rC) )        # LD C,nn
 		0x0F: op( RRCA() )        # RRCA
@@ -1781,7 +1765,7 @@ window.JSSpeccy.Z80 = (opts) ->
 		0x11: op( LD_RR_NN(rpDE) )        # LD DE,nnnn
 		0x12: op( LD_iRRi_R(rpDE, rA) )        # LD (DE),A
 		0x13: op( INC_RR(rpDE) )        # INC DE
-		0x14: op( INC_R(rD) )        # INC D
+		0x14: op( INC "D" )        # INC D
 		0x15: op( DEC "D" )        # DEC D
 		0x16: op( LD_R_N(rD) )        # LD D,nn
 		0x17: op( RLA() )        # RLA
@@ -1789,7 +1773,7 @@ window.JSSpeccy.Z80 = (opts) ->
 		0x19: op( ADD_RR_RR(rpHL, rpDE) )        # ADD HL,DE
 		0x1A: op( LD_R_iRRi(rA, rpDE) )        # LD A,(DE)
 		0x1B: op( DEC_RR(rpDE) )        # DEC DE
-		0x1C: op( INC_R(rE) )        # INC E
+		0x1C: op( INC "E" )        # INC E
 		0x1D: op( DEC "E" )        # DEC E
 		0x1E: op( LD_R_N(rE) )        # LD E,nn
 		0x1F: op( RRA() )        # RRA
@@ -1797,7 +1781,7 @@ window.JSSpeccy.Z80 = (opts) ->
 		0x21: op( LD_RR_NN(rpHL) )        # LD HL,nnnn
 		0x22: op( LD_iNNi_RR(rpHL) )        # LD (nnnn),HL
 		0x23: op( INC_RR(rpHL) )        # INC HL
-		0x24: op( INC_R(rH) )        # INC H
+		0x24: op( INC "H" )        # INC H
 		0x25: op( DEC "H" )        # DEC H
 		0x26: op( LD_R_N(rH) )        # LD H,nn
 		
@@ -1805,7 +1789,7 @@ window.JSSpeccy.Z80 = (opts) ->
 		0x29: op( ADD_RR_RR(rpHL, rpHL) )        # ADD HL,HL
 		0x2A: op( LD_RR_iNNi(rpHL) )        # LD HL,(nnnn)
 		0x2B: op( DEC_RR(rpHL) )        # DEC HL
-		0x2C: op( INC_R(rL) )        # INC L
+		0x2C: op( INC "L" )        # INC L
 		0x2D: op( DEC "L" )        # DEC L
 		0x2E: op( LD_R_N(rL) )        # LD L,nn
 		0x2F: op( CPL() )        # CPL
@@ -1813,7 +1797,7 @@ window.JSSpeccy.Z80 = (opts) ->
 		0x31: op( LD_RR_NN(rpSP) )        # LD SP,nnnn
 		0x32: op( LD_iNNi_A() )        # LD (nnnn),a
 		0x33: op( INC_RR(rpSP) )        # INC SP
-		0x34: op( INC_iHLi() )        # INC (HL)
+		0x34: op( INC "(HL)" )        # INC (HL)
 		0x35: op( DEC "(HL)" )        # DEC (HL)
 		0x36: op( LD_iRRi_N(rpHL) )        # LD (HL),nn
 		0x37: op( SCF() )        # SCF
@@ -1821,7 +1805,7 @@ window.JSSpeccy.Z80 = (opts) ->
 		0x39: op( ADD_RR_RR(rpHL, rpSP) )        # ADD HL,SP
 		0x3A: op( LD_A_iNNi() )        # LD A,(nnnn)
 		0x3B: op( DEC_RR(rpSP) )        # DEC SP
-		0x3C: op( INC_R(rA) )        # INC A
+		0x3C: op( INC "A" )        # INC A
 		0x3D: op( DEC "A" )        # DEC A
 		0x3E: op( LD_R_N(rA) )        # LD A,nn
 		0x3F: op( CCF() )        # CCF
