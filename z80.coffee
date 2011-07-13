@@ -136,48 +136,56 @@ window.JSSpeccy.Z80 = (opts) ->
 	z80InitTables()
 	
 	###
+		Boilerplate generator: a helper to deal with classes of opcodes which perform
+		the same task on different types of operands: e.g. XOR B, XOR (HL), XOR nn, XOR (IX+nn).
+		This function accepts the parameter in question, and returns a set of canned strings
+		for use in the opcode runner body:
+		'getter': a block of code that performs any necessary memory access etc in order to
+			make 'v' a valid expression;
+		'v': an expression with no side effects, evaluating to the operand's value.
+	###
+	getParamBoilerplate = (param) ->
+		if param.match(/^[AFBCDEHL]|I[XY][HL]$/)
+			{
+				'getter': '',
+				'v': "regs[r#{param}]"
+			}
+		else if param == '(HL)'
+			{
+				'getter': "var val = memory.read(regPairs[#{rpHL}]); tstates += 3;"
+				'v': 'val'
+			}
+		else if param == 'nn'
+			{
+				'getter': "var val = memory.read(regPairs[#{rpPC}]++); tstates += 3;"
+				'v': 'val'
+			}
+		else if (match = param.match(/^\((I[XY])\+nn\)$/))
+			rp = "rp" + match[1]
+			{
+				'getter': """
+					var offset = memory.read(regPairs[#{rpPC}]++);
+					if (offset & 0x80) offset -= 0x100;
+					var val = memory.read( (regPairs[#{rp}] + offset) & 0xffff );
+					tstates += 11;
+				"""
+				'v': 'val'
+			}
+		else
+			throw "Unknown param format: #{param}"
+
+	###
 		Opcode generator functions: each returns a string of Javascript that performs the opcode
 		when executed within this module's scope. Note that instructions with DDCBnn opcodes also
 		require an 'offset' variable to be defined as nn (as a signed byte).
 	###
-	ADC_A_iHLi = () ->
+	ADC_A = (param) ->
+		operand = getParamBoilerplate(param)
 		"""
-			var val = memory.read(regPairs[rpHL]);
-			var adctemp = regs[rA] + val + (regs[rF] & FLAG_C);
-			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (val & 0x88) >> 2 ) | ( (adctemp & 0x88) >> 1 );
-			regs[rA] = adctemp;
-			regs[rF] = ( adctemp & 0x100 ? FLAG_C : 0 ) | halfcarryAddTable[lookup & 0x07] | overflowAddTable[lookup >> 4] | sz53Table[regs[rA]];
-			tstates += 3;
-		"""
-	
-	ADC_A_iRRpNNi = (rp) ->
-		"""
-			var offset = memory.read(regPairs[rpPC]++);
-			if (offset & 0x80) offset -= 0x100;
-			var addr = (regPairs[#{rp}] + offset) & 0xffff;
+			#{operand.getter}
 			
-			var val = memory.read(addr);
-			var adctemp = regs[rA] + val + (regs[rF] & FLAG_C);
-			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (val & 0x88) >> 2 ) | ( (adctemp & 0x88) >> 1 );
-			regs[rA] = adctemp;
-			regs[rF] = ( adctemp & 0x100 ? FLAG_C : 0 ) | halfcarryAddTable[lookup & 0x07] | overflowAddTable[lookup >> 4] | sz53Table[regs[rA]];
-			tstates += 11;
-		"""
-	
-	ADC_A_N = () ->
-		"""
-			var val = memory.read(regPairs[rpPC]++);
-			var adctemp = regs[rA] + val + (regs[rF] & FLAG_C);
-			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (val & 0x88) >> 2 ) | ( (adctemp & 0x88) >> 1 );
-			regs[rA] = adctemp;
-			regs[rF] = ( adctemp & 0x100 ? FLAG_C : 0 ) | halfcarryAddTable[lookup & 0x07] | overflowAddTable[lookup >> 4] | sz53Table[regs[rA]];
-			tstates += 3;
-		"""
-	
-	ADC_A_R = (r) ->
-		"""
-			var adctemp = regs[rA] + regs[#{r}] + (regs[rF] & FLAG_C);
-			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (regs[#{r}] & 0x88) >> 2 ) | ( (adctemp & 0x88) >> 1 );
+			var adctemp = regs[rA] + #{operand.v} + (regs[rF] & FLAG_C);
+			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (#{operand.v} & 0x88) >> 2 ) | ( (adctemp & 0x88) >> 1 );
 			regs[rA] = adctemp;
 			regs[rF] = ( adctemp & 0x100 ? FLAG_C : 0 ) | halfcarryAddTable[lookup & 0x07] | overflowAddTable[lookup >> 4] | sz53Table[regs[rA]];
 		"""
@@ -1676,10 +1684,18 @@ window.JSSpeccy.Z80 = (opts) ->
 			rp = rpIX
 			rh = rIXH
 			rl = rIXL
+			
+			rpn = 'IX'
+			rhn = 'IXH'
+			rln = 'IXL'
 		else # prefix == 'FD'
 			rp = rpIY
 			rh = rIYH
 			rl = rIYL
+			
+			rpn = 'IY'
+			rhn = 'IYH'
+			rln = 'IYL'
 		return {
 			0x09: op( ADD_RR_RR(rp, rpBC) )        # ADD IX,BC
 			
@@ -1753,9 +1769,9 @@ window.JSSpeccy.Z80 = (opts) ->
 			0x85: op( ADD_A_R(rl) )           # ADD A,IXl
 			0x86: op( ADD_A_iRRpNNi(rp) )        # ADD A,(IX+nn)
 			
-			0x8C: op( ADC_A_R(rh) )           # ADC A,IXh
-			0x8D: op( ADC_A_R(rl) )           # ADC A,IXl
-			0x8E: op( ADC_A_iRRpNNi(rp) )        # ADC A,(IX+nn)
+			0x8C: op( ADC_A rhn )           # ADC A,IXh
+			0x8D: op( ADC_A rln )           # ADC A,IXl
+			0x8E: op( ADC_A "(#{rpn}+nn)" )        # ADC A,(IX+nn)
 			
 			0x94: op( SUB_R(rh) )           # SUB IXh
 			0x95: op( SUB_R(rl) )           # SUB IXl
@@ -1998,14 +2014,14 @@ window.JSSpeccy.Z80 = (opts) ->
 		0x85: op( ADD_A_R(rL) )        # ADD A,L
 		0x86: op( ADD_A_iHLi() )        # ADD A,(HL)
 		0x87: op( ADD_A_R(rA) )        # ADD A,A
-		0x88: op( ADC_A_R(rB) )        # ADC A,B
-		0x89: op( ADC_A_R(rC) )        # ADC A,C
-		0x8a: op( ADC_A_R(rD) )        # ADC A,D
-		0x8b: op( ADC_A_R(rE) )        # ADC A,E
-		0x8c: op( ADC_A_R(rH) )        # ADC A,H
-		0x8d: op( ADC_A_R(rL) )        # ADC A,L
-		0x8e: op( ADC_A_iHLi() )        # ADC A,(HL)
-		0x8f: op( ADC_A_R(rA) )        # ADC A,A
+		0x88: op( ADC_A "B" )        # ADC A,B
+		0x89: op( ADC_A "C" )        # ADC A,C
+		0x8a: op( ADC_A "D" )        # ADC A,D
+		0x8b: op( ADC_A "E" )        # ADC A,E
+		0x8c: op( ADC_A "H" )        # ADC A,H
+		0x8d: op( ADC_A "L" )        # ADC A,L
+		0x8e: op( ADC_A "(HL)" )        # ADC A,(HL)
+		0x8f: op( ADC_A "A" )        # ADC A,A
 		0x90: op( SUB_R(rB) )        # SUB A,B
 		0x91: op( SUB_R(rC) )        # SUB A,C
 		0x92: op( SUB_R(rD) )        # SUB A,D
@@ -2068,7 +2084,7 @@ window.JSSpeccy.Z80 = (opts) ->
 		0xCB: op( SHIFT('CB') )        # shift code
 		0xCC: op( CALL_C_NN(FLAG_Z, true) )        # CALL Z,nnnn
 		0xCD: op( CALL_NN() )        # CALL nnnn
-		0xCE: op( ADC_A_N() )        # ADC A,nn
+		0xCE: op( ADC_A "nn" )        # ADC A,nn
 		0xCF: op( RST(0x0008) )        # RST 0x08
 		0xD0: op( RET_C(FLAG_C, false) )        # RET NC
 		0xD1: op( POP_RR(rpDE) )        # POP DE
@@ -2194,6 +2210,8 @@ window.JSSpeccy.Z80 = (opts) ->
 						offset -= 0x100
 					opcode = memory.read(regPairs[rpPC]++)
 					OPCODE_RUNNERS_FDCB[opcode](offset)
+				else
+					throw "Unknown opcode prefix: #{lastOpcodePrefix}"
 				
 			while display.nextEventTime != null && display.nextEventTime <= tstates
 				display.doEvent();
