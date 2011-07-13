@@ -33,6 +33,7 @@ JSSpeccy.Spectrum = function(opts) {
 	}
 	self.reset = function() {
 		processor.reset();
+		memory.reset();
 	}
 	
 	self.loadSnapshot = function(snapshot) {

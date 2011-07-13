@@ -55,6 +55,10 @@ JSSpeccy.Memory = function(opts) {
 		}
 	}
 	
+	self.reset = function() {
+		self.setPaging(0);
+	}
+	
 	return self;
 }
 JSSpeccy.Memory.MODEL_48K = 1;
