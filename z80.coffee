@@ -740,37 +740,12 @@ window.JSSpeccy.Z80 = (opts) ->
 		"""
 		"""
 	
-	OR_iHLi = () ->
+	OR_A = (param) ->
+		operand = getParamBoilerplate(param)
 		"""
-			var val = memory.read(regPairs[rpHL]);
-			regs[rA] |= val;
-			regs[rF] = sz53pTable[regs[rA]];
-			tstates += 3;
-		"""
-	
-	OR_iRRpNNi = (rp) ->
-		"""
-			var offset = memory.read(regPairs[rpPC]++);
-			if (offset & 0x80) offset -= 0x100;
-			var addr = (regPairs[#{rp}] + offset) & 0xffff;
+			#{operand.getter}
 			
-			var val = memory.read(addr);
-			regs[rA] |= val;
-			regs[rF] = sz53pTable[regs[rA]];
-			tstates += 11;
-		"""
-	
-	OR_N = () ->
-		"""
-			var val = memory.read(regPairs[rpPC]++);
-			regs[rA] |= val;
-			regs[rF] = sz53pTable[regs[rA]];
-			tstates += 3;
-		"""
-	
-	OR_R = (r) ->
-		"""
-			regs[rA] |= regs[#{r}];
+			regs[rA] |= #{operand.v};
 			regs[rF] = sz53pTable[regs[rA]];
 		"""
 	
@@ -1705,9 +1680,9 @@ window.JSSpeccy.Z80 = (opts) ->
 			0xAD: op( XOR_R(rl) )           # XOR IXl
 			0xAE: op( XOR_iRRpNNi(rp) )        # XOR A,(IX+dd)
 			
-			0xB4: op( OR_R(rh) )           # OR IXh
-			0xB5: op( OR_R(rl) )           # OR IXl
-			0xB6: op( OR_iRRpNNi(rp) )        # OR A,(IX+dd)
+			0xB4: op( OR_A rhn )           # OR IXh
+			0xB5: op( OR_A rln )           # OR IXl
+			0xB6: op( OR_A "(#{rpn}+nn)" )        # OR A,(IX+dd)
 			
 			0xBC: op( CP_A rhn )           # CP IXh
 			0xBD: op( CP_A rln )           # CP IXl
@@ -1970,14 +1945,14 @@ window.JSSpeccy.Z80 = (opts) ->
 		0xAD: op( XOR_R(rL) )        # XOR L
 		0xAE: op( XOR_iHLi() )        # XOR (HL)
 		0xAF: op( XOR_R(rA) )        # XOR A
-		0xb0: op( OR_R(rB) )        # OR B
-		0xb1: op( OR_R(rC) )        # OR C
-		0xb2: op( OR_R(rD) )        # OR D
-		0xb3: op( OR_R(rE) )        # OR E
-		0xb4: op( OR_R(rH) )        # OR H
-		0xb5: op( OR_R(rL) )        # OR L
-		0xb6: op( OR_iHLi() )        # OR (HL)
-		0xb7: op( OR_R(rA) )        # OR A
+		0xb0: op( OR_A "B" )        # OR B
+		0xb1: op( OR_A "C" )        # OR C
+		0xb2: op( OR_A "D" )        # OR D
+		0xb3: op( OR_A "E" )        # OR E
+		0xb4: op( OR_A "H" )        # OR H
+		0xb5: op( OR_A "L" )        # OR L
+		0xb6: op( OR_A "(HL)" )        # OR (HL)
+		0xb7: op( OR_A "A" )        # OR A
 		0xb8: op( CP_A "B" )        # CP B
 		0xb9: op( CP_A "C" )        # CP C
 		0xba: op( CP_A "D" )        # CP D
@@ -2040,7 +2015,7 @@ window.JSSpeccy.Z80 = (opts) ->
 		0xF3: op( DI() )        # DI
 		0xF4: op( CALL_C_NN(FLAG_S, false) )        # CALL P,nnnn
 		0xF5: op( PUSH_RR(rpAF) )        # PUSH AF
-		0xF6: op( OR_N() )        # OR nn
+		0xF6: op( OR_A "nn" )        # OR nn
 		0xF7: op( RST(0x0030) )        # RST 0x30
 		0xF8: op( RET_C(FLAG_S, true) )        # RET M
 		0xF9: op( LD_RR_RR(rpSP, rpHL) )        # LD SP,HL
