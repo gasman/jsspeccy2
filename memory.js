@@ -36,11 +36,14 @@ JSSpeccy.Memory = function(opts) {
 		return screenPage[addr];
 	}
 	
+	var pagingIsLocked = false;
 	if (model === JSSpeccy.Memory.MODEL_128K) {
 		self.setPaging = function(val) {
+			if (pagingIsLocked) return;
 			readSlots[3] = writeSlots[3] = ramPages[val & 0x07];
 			readSlots[0] = (val & 0x10) ? JSSpeccy.roms['128-1.rom'] : JSSpeccy.roms['128-0.rom'];
 			screenPage = (val & 0x08) ? ramPages[7] : ramPages[5];
+			pagingIsLocked = val & 0x20;
 		}
 	} else {
 		self.setPaging = function(val) {
@@ -56,6 +59,7 @@ JSSpeccy.Memory = function(opts) {
 	}
 	
 	self.reset = function() {
+		pagingIsLocked = false;
 		self.setPaging(0);
 	}
 	
