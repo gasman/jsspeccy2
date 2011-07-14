@@ -145,8 +145,11 @@ window.JSSpeccy.Z80 = (opts) ->
 		'v': an expression with no side effects, evaluating to the operand's value. (Must also be a valid lvalue for assignment)
 		'trunc': an expression such as '& 0xff' to truncate v back to its proper range, if appropriate
 		'setter': a block of code that writes an updated value back to its proper location, if any
+		
+		Passing hasIXOffsetAlready = true indicates that we have already read the offset value of (IX+nn)/(IY+nn)
+		into a variable 'offset' (necessary because DDCB/FFCB instructions put this before the final opcode byte).
 	###
-	getParamBoilerplate = (param) ->
+	getParamBoilerplate = (param, hasIXOffsetAlready = false) ->
 		if param.match(/^[AFBCDEHL]|I[XY][HL]$/)
 			{
 				'getter': ''
@@ -170,14 +173,20 @@ window.JSSpeccy.Z80 = (opts) ->
 			}
 		else if (match = param.match(/^\((I[XY])\+nn\)$/))
 			rp = "rp" + match[1]
-			{
-				'getter': """
+			if hasIXOffsetAlready
+				getter = ''
+			else
+				getter = """
 					var offset = memory.read(regPairs[#{rpPC}]++);
 					if (offset & 0x80) offset -= 0x100;
-					var addr = (regPairs[#{rp}] + offset) & 0xffff;
-					var val = memory.read( addr );
-					tstates += 11;
 				"""
+			getter += """
+				var addr = (regPairs[#{rp}] + offset) & 0xffff;
+				var val = memory.read( addr );
+				tstates += 11;
+			"""
+			{
+				'getter': getter
 				'v': 'val'
 				'trunc': '& 0xff'
 				'setter': "memory.write(addr, val); tstates += 4;"
@@ -753,28 +762,13 @@ window.JSSpeccy.Z80 = (opts) ->
 			tstates += 7;
 		"""
 	
-	RES_N_iHLi = (bit) ->
+	RES = (bit, param) ->
+		operand = getParamBoilerplate(param, true)
 		hexMask = 0xff ^ (1 << bit)
 		"""
-			var addr = regPairs[rpHL];
-			var value = memory.read(addr);
-			memory.write(addr, value & #{hexMask});
-			tstates += 7;
-		"""
-	
-	RES_N_iRRpNNi = (bit, rp) -> # expects 'offset'
-		hexMask = 0xff ^ (1 << bit)
-		"""
-			var addr = (regPairs[#{rp}] + offset) & 0xffff;
-			var value = memory.read(addr);
-			memory.write(addr, value & #{hexMask});
-			tstates += 15;
-		"""
-	
-	RES_N_R = (bit, r) ->
-		hexMask = 0xff ^ (1 << bit)
-		"""
-			regs[#{r}] &= #{hexMask};
+			#{operand.getter}
+			#{operand.v} &= #{hexMask};
+			#{operand.setter}
 		"""
 	
 	RET = () ->
@@ -1333,70 +1327,70 @@ window.JSSpeccy.Z80 = (opts) ->
 		0x7D: op(BIT_N_R(7, rL))        # BIT 7,L
 		0x7E: op(BIT_N_iHLi(7))        # BIT 7,(HL)
 		0x7F: op(BIT_N_R(7, rA))        # BIT 7,A
-		0x80: op(RES_N_R(0, rB))        # RES 0,B
-		0x81: op(RES_N_R(0, rC))        # RES 0,C
-		0x82: op(RES_N_R(0, rD))        # RES 0,D
-		0x83: op(RES_N_R(0, rE))        # RES 0,E
-		0x84: op(RES_N_R(0, rH))        # RES 0,H
-		0x85: op(RES_N_R(0, rL))        # RES 0,L
-		0x86: op(RES_N_iHLi(0))        # RES 0,(HL)
-		0x87: op(RES_N_R(0, rA))        # RES 0,A
-		0x88: op(RES_N_R(1, rB))        # RES 1,B
-		0x89: op(RES_N_R(1, rC))        # RES 1,C
-		0x8A: op(RES_N_R(1, rD))        # RES 1,D
-		0x8B: op(RES_N_R(1, rE))        # RES 1,E
-		0x8C: op(RES_N_R(1, rH))        # RES 1,H
-		0x8D: op(RES_N_R(1, rL))        # RES 1,L
-		0x8E: op(RES_N_iHLi(1))        # RES 1,(HL)
-		0x8F: op(RES_N_R(1, rA))        # RES 1,A
-		0x90: op(RES_N_R(2, rB))        # RES 2,B
-		0x91: op(RES_N_R(2, rC))        # RES 2,C
-		0x92: op(RES_N_R(2, rD))        # RES 2,D
-		0x93: op(RES_N_R(2, rE))        # RES 2,E
-		0x94: op(RES_N_R(2, rH))        # RES 2,H
-		0x95: op(RES_N_R(2, rL))        # RES 2,L
-		0x96: op(RES_N_iHLi(2))        # RES 2,(HL)
-		0x97: op(RES_N_R(2, rA))        # RES 2,A
-		0x98: op(RES_N_R(3, rB))        # RES 3,B
-		0x99: op(RES_N_R(3, rC))        # RES 3,C
-		0x9A: op(RES_N_R(3, rD))        # RES 3,D
-		0x9B: op(RES_N_R(3, rE))        # RES 3,E
-		0x9C: op(RES_N_R(3, rH))        # RES 3,H
-		0x9D: op(RES_N_R(3, rL))        # RES 3,L
-		0x9E: op(RES_N_iHLi(3))        # RES 3,(HL)
-		0x9F: op(RES_N_R(3, rA))        # RES 3,A
-		0xA0: op(RES_N_R(4, rB))        # RES 4,B
-		0xA1: op(RES_N_R(4, rC))        # RES 4,C
-		0xA2: op(RES_N_R(4, rD))        # RES 4,D
-		0xA3: op(RES_N_R(4, rE))        # RES 4,E
-		0xA4: op(RES_N_R(4, rH))        # RES 4,H
-		0xA5: op(RES_N_R(4, rL))        # RES 4,L
-		0xA6: op(RES_N_iHLi(4))        # RES 4,(HL)
-		0xA7: op(RES_N_R(4, rA))        # RES 4,A
-		0xA8: op(RES_N_R(5, rB))        # RES 5,B
-		0xA9: op(RES_N_R(5, rC))        # RES 5,C
-		0xAA: op(RES_N_R(5, rD))        # RES 5,D
-		0xAB: op(RES_N_R(5, rE))        # RES 5,E
-		0xAC: op(RES_N_R(5, rH))        # RES 5,H
-		0xAD: op(RES_N_R(5, rL))        # RES 5,L
-		0xAE: op(RES_N_iHLi(5))        # RES 5,(HL)
-		0xAF: op(RES_N_R(5, rA))        # RES 5,A
-		0xB0: op(RES_N_R(6, rB))        # RES 6,B
-		0xB1: op(RES_N_R(6, rC))        # RES 6,C
-		0xB2: op(RES_N_R(6, rD))        # RES 6,D
-		0xB3: op(RES_N_R(6, rE))        # RES 6,E
-		0xB4: op(RES_N_R(6, rH))        # RES 6,H
-		0xB5: op(RES_N_R(6, rL))        # RES 6,L
-		0xB6: op(RES_N_iHLi(6))        # RES 6,(HL)
-		0xB7: op(RES_N_R(6, rA))        # RES 6,A
-		0xB8: op(RES_N_R(7, rB))        # RES 7,B
-		0xB9: op(RES_N_R(7, rC))        # RES 7,C
-		0xBA: op(RES_N_R(7, rD))        # RES 7,D
-		0xBB: op(RES_N_R(7, rE))        # RES 7,E
-		0xBC: op(RES_N_R(7, rH))        # RES 7,H
-		0xBD: op(RES_N_R(7, rL))        # RES 7,L
-		0xBE: op(RES_N_iHLi(7))        # RES 7,(HL)
-		0xBF: op(RES_N_R(7, rA))        # RES 7,A
+		0x80: op( RES 0, 'B' )        # RES 0,B
+		0x81: op( RES 0, 'C' )        # RES 0,C
+		0x82: op( RES 0, 'D' )        # RES 0,D
+		0x83: op( RES 0, 'E' )        # RES 0,E
+		0x84: op( RES 0, 'H' )        # RES 0,H
+		0x85: op( RES 0, 'L' )        # RES 0,L
+		0x86: op( RES 0, '(HL)' )        # RES 0,(HL)
+		0x87: op( RES 0, 'A' )        # RES 0,A
+		0x88: op( RES 1, 'B' )        # RES 1,B
+		0x89: op( RES 1, 'C' )        # RES 1,C
+		0x8A: op( RES 1, 'D' )        # RES 1,D
+		0x8B: op( RES 1, 'E' )        # RES 1,E
+		0x8C: op( RES 1, 'H' )        # RES 1,H
+		0x8D: op( RES 1, 'L' )        # RES 1,L
+		0x8E: op( RES 1, '(HL)' )        # RES 1,(HL)
+		0x8F: op( RES 1, 'A' )        # RES 1,A
+		0x90: op( RES 2, 'B' )        # RES 2,B
+		0x91: op( RES 2, 'C' )        # RES 2,C
+		0x92: op( RES 2, 'D' )        # RES 2,D
+		0x93: op( RES 2, 'E' )        # RES 2,E
+		0x94: op( RES 2, 'H' )        # RES 2,H
+		0x95: op( RES 2, 'L' )        # RES 2,L
+		0x96: op( RES 2, '(HL)' )        # RES 2,(HL)
+		0x97: op( RES 2, 'A' )        # RES 2,A
+		0x98: op( RES 3, 'B' )        # RES 3,B
+		0x99: op( RES 3, 'C' )        # RES 3,C
+		0x9A: op( RES 3, 'D' )        # RES 3,D
+		0x9B: op( RES 3, 'E' )        # RES 3,E
+		0x9C: op( RES 3, 'H' )        # RES 3,H
+		0x9D: op( RES 3, 'L' )        # RES 3,L
+		0x9E: op( RES 3, '(HL)' )        # RES 3,(HL)
+		0x9F: op( RES 3, 'A' )        # RES 3,A
+		0xA0: op( RES 4, 'B' )        # RES 4,B
+		0xA1: op( RES 4, 'C' )        # RES 4,C
+		0xA2: op( RES 4, 'D' )        # RES 4,D
+		0xA3: op( RES 4, 'E' )        # RES 4,E
+		0xA4: op( RES 4, 'H' )        # RES 4,H
+		0xA5: op( RES 4, 'L' )        # RES 4,L
+		0xA6: op( RES 4, '(HL)' )        # RES 4,(HL)
+		0xA7: op( RES 4, 'A' )        # RES 4,A
+		0xA8: op( RES 5, 'B' )        # RES 5,B
+		0xA9: op( RES 5, 'C' )        # RES 5,C
+		0xAA: op( RES 5, 'D' )        # RES 5,D
+		0xAB: op( RES 5, 'E' )        # RES 5,E
+		0xAC: op( RES 5, 'H' )        # RES 5,H
+		0xAD: op( RES 5, 'L' )        # RES 5,L
+		0xAE: op( RES 5, '(HL)' )        # RES 5,(HL)
+		0xAF: op( RES 5, 'A' )        # RES 5,A
+		0xB0: op( RES 6, 'B' )        # RES 6,B
+		0xB1: op( RES 6, 'C' )        # RES 6,C
+		0xB2: op( RES 6, 'D' )        # RES 6,D
+		0xB3: op( RES 6, 'E' )        # RES 6,E
+		0xB4: op( RES 6, 'H' )        # RES 6,H
+		0xB5: op( RES 6, 'L' )        # RES 6,L
+		0xB6: op( RES 6, '(HL)' )        # RES 6,(HL)
+		0xB7: op( RES 6, 'A' )        # RES 6,A
+		0xB8: op( RES 7, 'B' )        # RES 7,B
+		0xB9: op( RES 7, 'C' )        # RES 7,C
+		0xBA: op( RES 7, 'D' )        # RES 7,D
+		0xBB: op( RES 7, 'E' )        # RES 7,E
+		0xBC: op( RES 7, 'H' )        # RES 7,H
+		0xBD: op( RES 7, 'L' )        # RES 7,L
+		0xBE: op( RES 7, '(HL)' )        # RES 7,(HL)
+		0xBF: op( RES 7, 'A' )        # RES 7,A
 		0xC0: op(SET_N_R(0, rB))        # SET 0,B
 		0xC1: op(SET_N_R(0, rC))        # SET 0,C
 		0xC2: op(SET_N_R(0, rD))        # SET 0,D
@@ -1470,10 +1464,18 @@ window.JSSpeccy.Z80 = (opts) ->
 			rp = rpIX
 			rh = rIXH
 			rl = rIXL
+			
+			rpn = 'IX'
+			rhn = 'IXH'
+			rln = 'IXL'
 		else # prefix == 'FDCB'
 			rp = rpIY
 			rh = rIYH
 			rl = rIYL
+			
+			rpn = 'IY'
+			rhn = 'IYH'
+			rln = 'IYL'
 		return {
 			
 			0x06: ddcbOp( RLC_iRRpNNi(rp) )        # RLC (IX+nn)
@@ -1506,21 +1508,21 @@ window.JSSpeccy.Z80 = (opts) ->
 			
 			0x7E: ddcbOp( BIT_N_iRRpNNi(7, rp) )        # BIT 7,(IX+nn)
 			
-			0x86: ddcbOp( RES_N_iRRpNNi(0, rp) )        # RES 0,(IX+nn)
+			0x86: ddcbOp( RES 0, "(#{rpn}+nn)" )        # RES 0,(IX+nn)
 			
-			0x8E: ddcbOp( RES_N_iRRpNNi(1, rp) )        # RES 1,(IX+nn)
+			0x8E: ddcbOp( RES 1, "(#{rpn}+nn)" )        # RES 1,(IX+nn)
 			
-			0x96: ddcbOp( RES_N_iRRpNNi(2, rp) )        # RES 2,(IX+nn)
+			0x96: ddcbOp( RES 2, "(#{rpn}+nn)" )        # RES 2,(IX+nn)
 			
-			0x9E: ddcbOp( RES_N_iRRpNNi(3, rp) )        # RES 3,(IX+nn)
+			0x9E: ddcbOp( RES 3, "(#{rpn}+nn)" )        # RES 3,(IX+nn)
 			
-			0xA6: ddcbOp( RES_N_iRRpNNi(4, rp) )        # RES 4,(IX+nn)
+			0xA6: ddcbOp( RES 4, "(#{rpn}+nn)" )        # RES 4,(IX+nn)
 			
-			0xAE: ddcbOp( RES_N_iRRpNNi(5, rp) )        # RES 5,(IX+nn)
+			0xAE: ddcbOp( RES 5, "(#{rpn}+nn)" )        # RES 5,(IX+nn)
 			
-			0xB6: ddcbOp( RES_N_iRRpNNi(6, rp) )        # RES 6,(IX+nn)
+			0xB6: ddcbOp( RES 6, "(#{rpn}+nn)" )        # RES 6,(IX+nn)
 			
-			0xBE: ddcbOp( RES_N_iRRpNNi(7, rp) )        # RES 7,(IX+nn)
+			0xBE: ddcbOp( RES 7, "(#{rpn}+nn)" )        # RES 7,(IX+nn)
 			
 			0xC6: ddcbOp( SET_N_iRRpNNi(0, rp) )        # SET 0,(IX+nn)
 			
