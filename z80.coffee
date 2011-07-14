@@ -805,32 +805,14 @@ window.JSSpeccy.Z80 = (opts) ->
 				}
 			"""
 	
-	RL_iHLi = () ->
+	RL = (param) ->
+		operand = getParamBoilerplate(param, true)
 		"""
-			var value = memory.read(regPairs[rpHL]);
-			var rltemp = value;
-			value = ( (value << 1) | (regs[rF] & FLAG_C) ) & 0xff;
-			regs[rF] = ( rltemp >> 7 ) | sz53pTable[value];
-			memory.write(regPairs[rpHL], value);
-			tstates =+ 7;
-		"""
-	
-	RL_iRRpNNi = (rp) -> # expects 'offset'
-		"""
-			var addr = (regPairs[#{rp}] + offset) & 0xffff;
-			var value = memory.read(addr);
-			var rltemp = value;
-			value = ( (value << 1) | (regs[rF] & FLAG_C) ) & 0xff;
-			regs[rF] = ( rltemp >> 7 ) | sz53pTable[value];
-			memory.write(addr, value);
-			tstates =+ 15;
-		"""
-	
-	RL_R = (r) ->
-		"""
-			var rltemp = regs[#{r}];
-			regs[#{r}] = ( regs[#{r}]<<1 ) | ( regs[rF] & FLAG_C );
-			regs[rF] = ( rltemp >> 7 ) | sz53pTable[regs[#{r}]];
+			#{operand.getter}
+			var rltemp = #{operand.v};
+			#{operand.v} = ( (#{operand.v} << 1) | (regs[rF] & FLAG_C) ) & 0xff;
+			regs[rF] = ( rltemp >> 7 ) | sz53pTable[#{operand.v}];
+			#{operand.setter}
 		"""
 	
 	RLA = () ->
@@ -1222,14 +1204,14 @@ window.JSSpeccy.Z80 = (opts) ->
 		0x0d: op(RRC_R(rL))        # RRC L
 		0x0e: op(RRC_iHLi())        # RRC (HL)
 		0x0f: op(RRC_R(rA))        # RRC A
-		0x10: op(RL_R(rB))        # RL B
-		0x11: op(RL_R(rC))        # RL C
-		0x12: op(RL_R(rD))        # RL D
-		0x13: op(RL_R(rE))        # RL E
-		0x14: op(RL_R(rH))        # RL H
-		0x15: op(RL_R(rL))        # RL L
-		0x16: op(RL_iHLi())        # RL (HL)
-		0x17: op(RL_R(rA))        # RL A
+		0x10: op( RL 'B' )        # RL B
+		0x11: op( RL 'C' )        # RL C
+		0x12: op( RL 'D' )        # RL D
+		0x13: op( RL 'E' )        # RL E
+		0x14: op( RL 'H' )        # RL H
+		0x15: op( RL 'L' )        # RL L
+		0x16: op( RL '(HL)' )        # RL (HL)
+		0x17: op( RL 'A' )        # RL A
 		0x18: op(RR_R(rB))        # RR B
 		0x19: op(RR_R(rC))        # RR C
 		0x1a: op(RR_R(rD))        # RR D
@@ -1482,7 +1464,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			
 			0x0E: ddcbOp( RRC_iRRpNNi(rp) )        # RRC (IX+nn)
 			
-			0x16: ddcbOp( RL_iRRpNNi(rp) )        # RL (IX+nn)
+			0x16: ddcbOp( RL "(#{rpn}+nn)" )        # RL (IX+nn)
 			
 			0x1E: ddcbOp( RR_iRRpNNi(rp) )        # RR (IX+nn)
 			
