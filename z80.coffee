@@ -879,47 +879,12 @@ window.JSSpeccy.Z80 = (opts) ->
 			tstates += 7;
 		"""
 	
-	SBC_A_iHLi = () ->
+	SBC_A = (param) ->
+		operand = getParamBoilerplate(param)
 		"""
-			var val = memory.read(regPairs[rpHL]);
-			
-			var sbctemp = regs[rA] - val - ( regs[rF] & FLAG_C );
-			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (val & 0x88) >> 2 ) | ( (sbctemp & 0x88) >> 1 );
-			regs[rA] = sbctemp;
-			regs[rF] = ( sbctemp & 0x100 ? FLAG_C : 0 ) | FLAG_N | halfcarrySubTable[lookup & 0x07] | overflowSubTable[lookup >> 4] | sz53Table[regs[rA]];
-			tstates += 3;
-		"""
-	
-	SBC_A_iRRpNNi = (rp) ->
-		"""
-			var offset = memory.read(regPairs[rpPC]++);
-			if (offset & 0x80) offset -= 0x100;
-			var addr = (regPairs[#{rp}] + offset) & 0xffff;
-			
-			var val = memory.read(addr);
-			
-			var sbctemp = regs[rA] - val - ( regs[rF] & FLAG_C );
-			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (val & 0x88) >> 2 ) | ( (sbctemp & 0x88) >> 1 );
-			regs[rA] = sbctemp;
-			regs[rF] = ( sbctemp & 0x100 ? FLAG_C : 0 ) | FLAG_N | halfcarrySubTable[lookup & 0x07] | overflowSubTable[lookup >> 4] | sz53Table[regs[rA]];
-			tstates += 11;
-		"""
-	
-	SBC_A_N = () ->
-		"""
-			var val = memory.read(regPairs[rpPC]++);
-			
-			var sbctemp = regs[rA] - val - ( regs[rF] & FLAG_C );
-			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (val & 0x88) >> 2 ) | ( (sbctemp & 0x88) >> 1 );
-			regs[rA] = sbctemp;
-			regs[rF] = ( sbctemp & 0x100 ? FLAG_C : 0 ) | FLAG_N | halfcarrySubTable[lookup & 0x07] | overflowSubTable[lookup >> 4] | sz53Table[regs[rA]];
-			tstates += 3;
-		"""
-	
-	SBC_A_R = (r) ->
-		"""
-			var sbctemp = regs[rA] - regs[#{r}] - ( regs[rF] & FLAG_C );
-			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (regs[#{r}] & 0x88) >> 2 ) | ( (sbctemp & 0x88) >> 1 );
+			#{operand.getter}
+			var sbctemp = regs[rA] - #{operand.v} - ( regs[rF] & FLAG_C );
+			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (#{operand.v} & 0x88) >> 2 ) | ( (sbctemp & 0x88) >> 1 );
 			regs[rA] = sbctemp;
 			regs[rF] = ( sbctemp & 0x100 ? FLAG_C : 0 ) | FLAG_N | halfcarrySubTable[lookup & 0x07] | overflowSubTable[lookup >> 4] | sz53Table[regs[rA]];
 		"""
@@ -1576,9 +1541,9 @@ window.JSSpeccy.Z80 = (opts) ->
 			0x95: op( SUB_R(rl) )           # SUB IXl
 			0x96: op( SUB_iRRpNNi(rp) )        # SUB A,(IX+dd)
 			
-			0x9C: op( SBC_A_R(rh) )           # SBC IXh
-			0x9D: op( SBC_A_R(rl) )           # SBC IXl
-			0x9E: op( SBC_A_iRRpNNi(rp) )        # SBC A,(IX+dd)
+			0x9C: op( SBC_A rhn )           # SBC IXh
+			0x9D: op( SBC_A rln )           # SBC IXl
+			0x9E: op( SBC_A "(#{rpn}+nn)" )        # SBC A,(IX+dd)
 			
 			0xA4: op( AND_A rhn )           # AND IXh
 			0xA5: op( AND_A rln )           # AND IXl
@@ -1829,14 +1794,14 @@ window.JSSpeccy.Z80 = (opts) ->
 		0x95: op( SUB_R(rL) )        # SUB A,L
 		0x96: op( SUB_iHLi() )        # SUB A,(HL)
 		0x97: op( SUB_R(rA) )        # SUB A,A
-		0x98: op( SBC_A_R(rB) )        # SBC A,B
-		0x99: op( SBC_A_R(rC) )        # SBC A,C
-		0x9a: op( SBC_A_R(rD) )        # SBC A,D
-		0x9b: op( SBC_A_R(rE) )        # SBC A,E
-		0x9c: op( SBC_A_R(rH) )        # SBC A,H
-		0x9d: op( SBC_A_R(rL) )        # SBC A,L
-		0x9e: op( SBC_A_iHLi() )        # SBC A,(HL)
-		0x9f: op( SBC_A_R(rA) )        # SBC A,A
+		0x98: op( SBC_A "B" )        # SBC A,B
+		0x99: op( SBC_A "C" )        # SBC A,C
+		0x9a: op( SBC_A "D" )        # SBC A,D
+		0x9b: op( SBC_A "E" )        # SBC A,E
+		0x9c: op( SBC_A "H" )        # SBC A,H
+		0x9d: op( SBC_A "L" )        # SBC A,L
+		0x9e: op( SBC_A "(HL)" )        # SBC A,(HL)
+		0x9f: op( SBC_A "A" )        # SBC A,A
 		0xa0: op( AND_A "B" )        # AND A,B
 		0xa1: op( AND_A "C" )        # AND A,C
 		0xa2: op( AND_A "D" )        # AND A,D
@@ -1899,7 +1864,7 @@ window.JSSpeccy.Z80 = (opts) ->
 		0xDB: op( IN_A_N() )        # IN A,(nn)
 		0xDC: op( CALL_C_NN(FLAG_C, true) )        # CALL C,nnnn
 		0xDD: op( SHIFT('DD') )        # shift code
-		0xDE: op( SBC_A_N() )        # SBC A,nn
+		0xDE: op( SBC_A "nn" )        # SBC A,nn
 		0xDF: op( RST(0x0018) )        # RST 0x18
 		0xE0: op( RET_C(FLAG_P, false) )        # RET PO
 		0xE1: op( POP_RR(rpHL) )        # POP HL
