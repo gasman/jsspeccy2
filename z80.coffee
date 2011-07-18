@@ -980,6 +980,26 @@ window.JSSpeccy.Z80 = (opts) ->
 					runnerFunctions[i] = eval "(function() {#{runString}})"
 		runnerFunctions
 	
+	opcodeSwitch = (runStringTable, fallbackTable = {}) ->
+		clauses = []
+		for i in [0...0x100]
+			runString = runStringTable[i]
+			if runString == null
+				runString = fallbackTable[i]
+			if runString != null
+				clauses.push """
+					case #{i}:
+						#{runString}
+						break;
+				"""
+		"""
+			switch (opcode) {
+				#{clauses.join('')}
+				default:
+					throw("Unimplemented opcode: " + opcode);
+			}
+		"""
+	
 	OPCODE_RUN_STRINGS_CB = {
 		0x00: RLC "B"         # RLC B
 		0x01: RLC "C"         # RLC C
@@ -1819,57 +1839,69 @@ window.JSSpeccy.Z80 = (opts) ->
 	interruptPending = false
 	opcodePrefix = ''
 	
-	self.runFrame = ->
-		display.startFrame()
-		interruptPending = true
-		while tstates < display.frameLength
-			if interruptPending && interruptible
-				z80Interrupt()
-				interruptPending = false
-			interruptible = true # unless overridden by opcode
-			lastOpcodePrefix = opcodePrefix
-			opcodePrefix = ''
-			switch lastOpcodePrefix
-				when ''
-					opcode = memory.read(regPairs[rpPC]++)
-					tstates += 4
-					OPCODE_RUNNERS[opcode]()
-				when 'CB'
-					opcode = memory.read(regPairs[rpPC]++)
-					tstates += 4
-					OPCODE_RUNNERS_CB[opcode]()
-				when 'DD'
-					opcode = memory.read(regPairs[rpPC]++)
-					tstates += 4
-					OPCODE_RUNNERS_DD[opcode]()
-				when 'DDCB'
-					offset = memory.read(regPairs[rpPC]++)
-					if (offset & 0x80)
-						offset -= 0x100
-					opcode = memory.read(regPairs[rpPC]++)
-					OPCODE_RUNNERS_DDCB[opcode](offset)
-				when 'ED'
-					opcode = memory.read(regPairs[rpPC]++)
-					tstates += 4
-					OPCODE_RUNNERS_ED[opcode]()
-				when 'FD'
-					opcode = memory.read(regPairs[rpPC]++)
-					tstates += 4
-					OPCODE_RUNNERS_FD[opcode]()
-				when 'FDCB'
-					offset = memory.read(regPairs[rpPC]++)
-					if (offset & 0x80)
-						offset -= 0x100
-					opcode = memory.read(regPairs[rpPC]++)
-					OPCODE_RUNNERS_FDCB[opcode](offset)
-				else
-					throw "Unknown opcode prefix: #{lastOpcodePrefix}"
-				
-			while display.nextEventTime != null && display.nextEventTime <= tstates
-				display.doEvent();
+	self.runFrame = eval """(function() {
+		var lastOpcodePrefix, offset, opcode;
 		
-		display.endFrame()
-		tstates -= display.frameLength
+		display.startFrame();
+		interruptPending = true;
+		while (tstates < display.frameLength) {
+			if (interruptPending && interruptible) {
+				z80Interrupt();
+				interruptPending = false;
+			}
+			interruptible = true; /* unless overridden by opcode */
+			lastOpcodePrefix = opcodePrefix;
+			opcodePrefix = '';
+			switch (lastOpcodePrefix) {
+				case '':
+					opcode = memory.read(regPairs[rpPC]++);
+					tstates += 4;
+					#{opcodeSwitch(OPCODE_RUN_STRINGS)}
+					break;
+				case 'CB':
+					opcode = memory.read(regPairs[rpPC]++);
+					tstates += 4;
+					#{opcodeSwitch(OPCODE_RUN_STRINGS_CB)}
+					break;
+				case 'DD':
+					opcode = memory.read(regPairs[rpPC]++);
+					tstates += 4;
+					#{opcodeSwitch(OPCODE_RUN_STRINGS_DD)}
+					break;
+				case 'DDCB':
+					offset = memory.read(regPairs[rpPC]++);
+					if (offset & 0x80) offset -= 0x100;
+					opcode = memory.read(regPairs[rpPC]++);
+					#{opcodeSwitch(OPCODE_RUN_STRINGS_DDCB)}
+					break;
+				case 'ED':
+					opcode = memory.read(regPairs[rpPC]++);
+					tstates += 4;
+					#{opcodeSwitch(OPCODE_RUN_STRINGS_ED)}
+					break;
+				case 'FD':
+					opcode = memory.read(regPairs[rpPC]++);
+					tstates += 4;
+					#{opcodeSwitch(OPCODE_RUN_STRINGS_FD)}
+					break;
+				case 'FDCB':
+					offset = memory.read(regPairs[rpPC]++);
+					if (offset & 0x80) offset -= 0x100;
+					opcode = memory.read(regPairs[rpPC]++);
+					#{opcodeSwitch(OPCODE_RUN_STRINGS_FDCB)}
+					break;
+				default:
+					throw("Unknown opcode prefix: " + lastOpcodePrefix);
+			}
+				
+			while (display.nextEventTime != null && display.nextEventTime <= tstates) {
+				display.doEvent();
+			}
+		}
+		
+		display.endFrame();
+		tstates -= display.frameLength;
+	})"""
 	
 	self.reset = ->
 		regPairs[rpPC] = regPairs[rpIR] = 0
