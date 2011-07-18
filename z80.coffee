@@ -949,44 +949,12 @@ window.JSSpeccy.Z80 = (opts) ->
 			#{operand.setter}
 		"""
 	
-	SUB_iHLi = () ->
+	SUB_A = (param) ->
+		operand = getParamBoilerplate(param)
 		"""
-			var val = memory.read(regPairs[rpHL]);
-			var subtemp = regs[rA] - val;
-			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (val & 0x88) >> 2 ) | ( (subtemp & 0x88) >> 1 );
-			regs[rA] = subtemp;
-			regs[rF] = ( subtemp & 0x100 ? FLAG_C : 0 ) | FLAG_N | halfcarrySubTable[lookup & 0x07] | overflowSubTable[lookup >> 4] | sz53Table[regs[rA]];
-			tstates += 3;
-		"""
-	
-	SUB_iRRpNNi = (rp) ->
-		"""
-			var offset = memory.read(regPairs[rpPC]++);
-			if (offset & 0x80) offset -= 0x100;
-			var addr = (regPairs[#{rp}] + offset) & 0xffff;
-			
-			var val = memory.read(addr);
-			var subtemp = regs[rA] - val;
-			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (val & 0x88) >> 2 ) | ( (subtemp & 0x88) >> 1 );
-			regs[rA] = subtemp;
-			regs[rF] = ( subtemp & 0x100 ? FLAG_C : 0 ) | FLAG_N | halfcarrySubTable[lookup & 0x07] | overflowSubTable[lookup >> 4] | sz53Table[regs[rA]];
-			tstates += 11;
-		"""
-	
-	SUB_N = () ->
-		"""
-			var val = memory.read(regPairs[rpPC]++);
-			var subtemp = regs[rA] - val;
-			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (val & 0x88) >> 2 ) | ( (subtemp & 0x88) >> 1 );
-			regs[rA] = subtemp;
-			regs[rF] = ( subtemp & 0x100 ? FLAG_C : 0 ) | FLAG_N | halfcarrySubTable[lookup & 0x07] | overflowSubTable[lookup >> 4] | sz53Table[regs[rA]];
-			tstates += 3;
-		"""
-	
-	SUB_R = (r) ->
-		"""
-			var subtemp = regs[rA] - regs[#{r}];
-			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (regs[#{r}] & 0x88) >> 2 ) | ( (subtemp & 0x88) >> 1 );
+			#{operand.getter}
+			var subtemp = regs[rA] - #{operand.v};
+			var lookup = ( (regs[rA] & 0x88) >> 3 ) | ( (#{operand.v} & 0x88) >> 2 ) | ( (subtemp & 0x88) >> 1 );
 			regs[rA] = subtemp;
 			regs[rF] = ( subtemp & 0x100 ? FLAG_C : 0 ) | FLAG_N | halfcarrySubTable[lookup & 0x07] | overflowSubTable[lookup >> 4] | sz53Table[regs[rA]];
 		"""
@@ -1468,9 +1436,9 @@ window.JSSpeccy.Z80 = (opts) ->
 			0x8D: op( ADC_A rln )           # ADC A,IXl
 			0x8E: op( ADC_A "(#{rpn}+nn)" )        # ADC A,(IX+nn)
 			
-			0x94: op( SUB_R(rh) )           # SUB IXh
-			0x95: op( SUB_R(rl) )           # SUB IXl
-			0x96: op( SUB_iRRpNNi(rp) )        # SUB A,(IX+dd)
+			0x94: op( SUB_A rhn )           # SUB IXh
+			0x95: op( SUB_A rln )           # SUB IXl
+			0x96: op( SUB_A "(#{rpn}+nn)" )        # SUB A,(IX+dd)
 			
 			0x9C: op( SBC_A rhn )           # SBC IXh
 			0x9D: op( SBC_A rln )           # SBC IXl
@@ -1717,14 +1685,14 @@ window.JSSpeccy.Z80 = (opts) ->
 		0x8d: op( ADC_A "L" )        # ADC A,L
 		0x8e: op( ADC_A "(HL)" )        # ADC A,(HL)
 		0x8f: op( ADC_A "A" )        # ADC A,A
-		0x90: op( SUB_R(rB) )        # SUB A,B
-		0x91: op( SUB_R(rC) )        # SUB A,C
-		0x92: op( SUB_R(rD) )        # SUB A,D
-		0x93: op( SUB_R(rE) )        # SUB A,E
-		0x94: op( SUB_R(rH) )        # SUB A,H
-		0x95: op( SUB_R(rL) )        # SUB A,L
-		0x96: op( SUB_iHLi() )        # SUB A,(HL)
-		0x97: op( SUB_R(rA) )        # SUB A,A
+		0x90: op( SUB_A "B" )        # SUB A,B
+		0x91: op( SUB_A "C" )        # SUB A,C
+		0x92: op( SUB_A "D" )        # SUB A,D
+		0x93: op( SUB_A "E" )        # SUB A,E
+		0x94: op( SUB_A "H" )        # SUB A,H
+		0x95: op( SUB_A "L" )        # SUB A,L
+		0x96: op( SUB_A "(HL)" )        # SUB A,(HL)
+		0x97: op( SUB_A "A" )        # SUB A,A
 		0x98: op( SBC_A "B" )        # SBC A,B
 		0x99: op( SBC_A "C" )        # SBC A,C
 		0x9a: op( SBC_A "D" )        # SBC A,D
@@ -1787,7 +1755,7 @@ window.JSSpeccy.Z80 = (opts) ->
 		0xD3: op( OUT_iNi_A() )        # OUT (nn),A
 		0xD4: op( CALL_C_NN(FLAG_C, false) )        # CALL NC,nnnn
 		0xD5: op( PUSH_RR(rpDE) )        # PUSH DE
-		0xD6: op( SUB_N() )        # SUB nn
+		0xD6: op( SUB_A "nn" )        # SUB nn
 		0xD7: op( RST(0x0010) )        # RST 0x10
 		0xD8: op( RET_C(FLAG_C, true) )        # RET C
 		0xD9: op( EXX() )        # EXX
