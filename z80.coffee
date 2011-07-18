@@ -929,32 +929,14 @@ window.JSSpeccy.Z80 = (opts) ->
 			#{operand.setter}
 		"""
 	
-	SRA_iHLi = () ->
+	SRA = (param) ->
+		operand = getParamBoilerplate(param, true)
 		"""
-			var value = memory.read(regPairs[rpHL]);
-			regs[rF] = value & FLAG_C;
-			value = ( (value & 0x80) | (value >> 1) ) & 0xff;
-			regs[rF] |= sz53pTable[value];
-			memory.write(regPairs[rpHL], value);
-			tstates += 7;
-		"""
-	
-	SRA_iRRpNNi = (rp) -> # expects 'offset'
-		"""
-			var addr = (regPairs[#{rp}] + offset) & 0xffff;
-			var value = memory.read(addr);
-			regs[rF] = value & FLAG_C;
-			value = ( (value & 0x80) | (value >> 1) ) & 0xff;
-			regs[rF] |= sz53pTable[value];
-			memory.write(addr, value);
-			tstates += 15;
-		"""
-	
-	SRA_R = (r) ->
-		"""
-			regs[rF] = regs[#{r}] & FLAG_C;
-			regs[#{r}] = (regs[#{r}] & 0x80) | (regs[#{r}] >> 1);
-			regs[rF] |= sz53pTable[regs[#{r}]];
+			#{operand.getter}
+			regs[rF] = #{operand.v} & FLAG_C;
+			#{operand.v} = ( (#{operand.v} & 0x80) | (#{operand.v} >> 1) ) #{operand.trunc};
+			regs[rF] |= sz53pTable[#{operand.v}];
+			#{operand.setter}
 		"""
 	
 	SRL_iHLi = () ->
@@ -1108,14 +1090,14 @@ window.JSSpeccy.Z80 = (opts) ->
 		0x25: op( SLA 'L' )        # SLA L
 		0x26: op( SLA '(HL)' )        # SLA (HL)
 		0x27: op( SLA 'A' )        # SLA A
-		0x28: op(SRA_R(rB))        # SRA B
-		0x29: op(SRA_R(rC))        # SRA C
-		0x2a: op(SRA_R(rD))        # SRA D
-		0x2b: op(SRA_R(rE))        # SRA E
-		0x2c: op(SRA_R(rH))        # SRA H
-		0x2d: op(SRA_R(rL))        # SRA L
-		0x2e: op(SRA_iHLi())        # SRA (HL)
-		0x2f: op(SRA_R(rA))        # SRA A
+		0x28: op( SRA 'B' )        # SRA B
+		0x29: op( SRA 'C' )        # SRA C
+		0x2a: op( SRA 'D' )        # SRA D
+		0x2b: op( SRA 'E' )        # SRA E
+		0x2c: op( SRA 'H' )        # SRA H
+		0x2d: op( SRA 'L' )        # SRA L
+		0x2e: op( SRA '(HL)' )        # SRA (HL)
+		0x2f: op( SRA 'A' )        # SRA A
 		
 		0x38: op(SRL_R(rB))        # SRL B
 		0x39: op(SRL_R(rC))        # SRL C
@@ -1350,7 +1332,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			
 			0x26: ddcbOp( SLA "(#{rpn}+nn)" )        # SLA (IX+nn)
 			
-			0x2E: ddcbOp( SRA_iRRpNNi(rp) )        # SRA (IX+nn)
+			0x2E: ddcbOp( SRA "(#{rpn}+nn)" )        # SRA (IX+nn)
 			
 			0x3E: ddcbOp( SRL_iRRpNNi(rp) )        # SRL (IX+nn)
 			
