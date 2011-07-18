@@ -939,32 +939,14 @@ window.JSSpeccy.Z80 = (opts) ->
 			#{operand.setter}
 		"""
 	
-	SRL_iHLi = () ->
+	SRL = (param) ->
+		operand = getParamBoilerplate(param, true)
 		"""
-			var value = memory.read(regPairs[rpHL]);
-			regs[rF] = value & FLAG_C;
-			value >>= 1;
-			regs[rF] |= sz53pTable[value];
-			memory.write(regPairs[rpHL], value);
-			tstates += 7;
-		"""
-	
-	SRL_iRRpNNi = (rp) -> # expects 'offset'
-		"""
-			var addr = (regPairs[#{rp}] + offset) & 0xffff;
-			var value = memory.read(addr);
-			regs[rF] = value & FLAG_C;
-			value >>= 1;
-			regs[rF] |= sz53pTable[value];
-			memory.write(addr, value);
-			tstates += 15;
-		"""
-	
-	SRL_R = (r) ->
-		"""
-			regs[rF] = regs[#{r}] & FLAG_C;
-			regs[#{r}] >>= 1;
-			regs[rF] |= sz53pTable[regs[#{r}]];
+			#{operand.getter}
+			regs[rF] =  #{operand.v} & FLAG_C;
+			#{operand.v} >>= 1;
+			regs[rF] |= sz53pTable[#{operand.v}];
+			#{operand.setter}
 		"""
 	
 	SUB_iHLi = () ->
@@ -1099,14 +1081,14 @@ window.JSSpeccy.Z80 = (opts) ->
 		0x2e: op( SRA '(HL)' )        # SRA (HL)
 		0x2f: op( SRA 'A' )        # SRA A
 		
-		0x38: op(SRL_R(rB))        # SRL B
-		0x39: op(SRL_R(rC))        # SRL C
-		0x3a: op(SRL_R(rD))        # SRL D
-		0x3b: op(SRL_R(rE))        # SRL E
-		0x3c: op(SRL_R(rH))        # SRL H
-		0x3d: op(SRL_R(rL))        # SRL L
-		0x3e: op(SRL_iHLi())        # SRL (HL)
-		0x3f: op(SRL_R(rA))        # SRL A
+		0x38: op( SRL 'B' )        # SRL B
+		0x39: op( SRL 'C' )        # SRL C
+		0x3a: op( SRL 'D' )        # SRL D
+		0x3b: op( SRL 'E' )        # SRL E
+		0x3c: op( SRL 'H' )        # SRL H
+		0x3d: op( SRL 'L' )        # SRL L
+		0x3e: op( SRL '(HL)' )        # SRL (HL)
+		0x3f: op( SRL 'A' )        # SRL A
 		0x40: op(BIT_N_R(0, rB))        # BIT 0,B
 		0x41: op(BIT_N_R(0, rC))        # BIT 0,C
 		0x42: op(BIT_N_R(0, rD))        # BIT 0,D
@@ -1334,7 +1316,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			
 			0x2E: ddcbOp( SRA "(#{rpn}+nn)" )        # SRA (IX+nn)
 			
-			0x3E: ddcbOp( SRL_iRRpNNi(rp) )        # SRL (IX+nn)
+			0x3E: ddcbOp( SRL "(#{rpn}+nn)" )        # SRL (IX+nn)
 			
 			0x46: ddcbOp( BIT_N_iRRpNNi(0, rp) )        # BIT 0,(IX+nn)
 			
