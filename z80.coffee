@@ -636,7 +636,7 @@ window.JSSpeccy.Z80 = (opts) ->
 		if r1 == rI || r2 == rI || r1 == rR || r2 == rR
 			"""
 				regs[#{r1}] = regs[#{r2}];
-				tstates += 9;
+				tstates += 1;
 			"""
 		else
 			"""
@@ -837,32 +837,14 @@ window.JSSpeccy.Z80 = (opts) ->
 			regs[rF] = ( regs[rF] & ( FLAG_P | FLAG_Z | FLAG_S ) ) | ( regs[rA] & ( FLAG_C | FLAG_3 | FLAG_5) );
 		"""
 	
-	RR_iHLi = () ->
+	RR = (param) ->
+		operand = getParamBoilerplate(param, true)
 		"""
-			var value = memory.read(regPairs[rpHL]);
-			var rrtemp = value;
-			value = ( (value >> 1) | ( regs[rF] << 7 ) ) & 0xff;
-			regs[rF] = ( rrtemp & FLAG_C ) | sz53pTable[value];
-			memory.write(regPairs[rpHL], value);
-			tstates += 7;
-		"""
-	
-	RR_iRRpNNi = (rp) -> # expects 'offset'
-		"""
-			var addr = (regPairs[#{rp}] + offset) & 0xffff;
-			var value = memory.read(addr);
-			var rrtemp = value;
-			value = ( (value >> 1) | ( regs[rF] << 7 ) ) & 0xff;
-			regs[rF] = ( rrtemp & FLAG_C ) | sz53pTable[value];
-			memory.write(addr, value);
-			tstates += 15;
-		"""
-	
-	RR_R = (r) ->
-		"""
-			var rrtemp = regs[#{r}];
-			regs[#{r}] = ( regs[#{r}]>>1 ) | ( regs[rF] << 7 );
-			regs[rF] = ( rrtemp & FLAG_C ) | sz53pTable[regs[#{r}]];
+			#{operand.getter}
+			var rrtemp = #{operand.v};
+			#{operand.v} = ( (#{operand.v} >> 1) | ( regs[rF] << 7 ) ) & 0xff;
+			regs[rF] = ( rrtemp & FLAG_C ) | sz53pTable[#{operand.v}];
+			#{operand.setter}
 		"""
 	
 	RRC_iHLi = () ->
@@ -1196,14 +1178,14 @@ window.JSSpeccy.Z80 = (opts) ->
 		0x15: op( RL 'L' )        # RL L
 		0x16: op( RL '(HL)' )        # RL (HL)
 		0x17: op( RL 'A' )        # RL A
-		0x18: op(RR_R(rB))        # RR B
-		0x19: op(RR_R(rC))        # RR C
-		0x1a: op(RR_R(rD))        # RR D
-		0x1b: op(RR_R(rE))        # RR E
-		0x1c: op(RR_R(rH))        # RR H
-		0x1d: op(RR_R(rL))        # RR L
-		0x1e: op(RR_iHLi())        # RR (HL)
-		0x1f: op(RR_R(rA))        # RR A
+		0x18: op( RR 'B' )        # RR B
+		0x19: op( RR 'C' )        # RR C
+		0x1a: op( RR 'D' )        # RR D
+		0x1b: op( RR 'E' )        # RR E
+		0x1c: op( RR 'H' )        # RR H
+		0x1d: op( RR 'L' )        # RR L
+		0x1e: op( RR '(HL)' )        # RR (HL)
+		0x1f: op( RR 'A' )        # RR A
 		0x20: op(SLA_R(rB))        # SLA B
 		0x21: op(SLA_R(rC))        # SLA C
 		0x22: op(SLA_R(rD))        # SLA D
@@ -1450,7 +1432,7 @@ window.JSSpeccy.Z80 = (opts) ->
 			
 			0x16: ddcbOp( RL "(#{rpn}+nn)" )        # RL (IX+nn)
 			
-			0x1E: ddcbOp( RR_iRRpNNi(rp) )        # RR (IX+nn)
+			0x1E: ddcbOp( RR "(#{rpn}+nn)" )        # RR (IX+nn)
 			
 			0x26: ddcbOp( SLA_iRRpNNi(rp) )        # SLA (IX+nn)
 			
