@@ -959,37 +959,11 @@ window.JSSpeccy.Z80 = (opts) ->
 			regs[rF] = ( subtemp & 0x100 ? FLAG_C : 0 ) | FLAG_N | halfcarrySubTable[lookup & 0x07] | overflowSubTable[lookup >> 4] | sz53Table[regs[rA]];
 		"""
 	
-	XOR_iHLi = () ->
+	XOR_A = (param) ->
+		operand = getParamBoilerplate(param)
 		"""
-			var val = memory.read(regPairs[rpHL]);
-			regs[rA] ^= val;
-			regs[rF] = sz53pTable[regs[rA]];
-			tstates += 3;
-		"""
-	
-	XOR_iRRpNNi = (rp) ->
-		"""
-			var offset = memory.read(regPairs[rpPC]++);
-			if (offset & 0x80) offset -= 0x100;
-			var addr = (regPairs[#{rp}] + offset) & 0xffff;
-			
-			var val = memory.read(addr);
-			regs[rA] ^= val;
-			regs[rF] = sz53pTable[regs[rA]];
-			tstates += 11;
-		"""
-	
-	XOR_N = () ->
-		"""
-			var val = memory.read(regPairs[rpPC]++);
-			regs[rA] ^= val;
-			regs[rF] = sz53pTable[regs[rA]];
-			tstates += 3;
-		"""
-	
-	XOR_R = (r) ->
-		"""
-			regs[rA] ^= regs[#{r}];
+			#{operand.getter}
+			regs[rA] ^= #{operand.v};
 			regs[rF] = sz53pTable[regs[rA]];
 		"""
 	
@@ -1448,9 +1422,9 @@ window.JSSpeccy.Z80 = (opts) ->
 			0xA5: op( AND_A rln )           # AND IXl
 			0xA6: op( AND_A "(#{rpn}+nn)" )        # AND (IX+dd)
 			
-			0xAC: op( XOR_R(rh) )           # XOR IXh
-			0xAD: op( XOR_R(rl) )           # XOR IXl
-			0xAE: op( XOR_iRRpNNi(rp) )        # XOR A,(IX+dd)
+			0xAC: op( XOR_A rhn )           # XOR IXh
+			0xAD: op( XOR_A rln )           # XOR IXl
+			0xAE: op( XOR_A "(#{rpn}+nn)" )        # XOR A,(IX+dd)
 			
 			0xB4: op( OR_A rhn )           # OR IXh
 			0xB5: op( OR_A rln )           # OR IXl
@@ -1709,14 +1683,14 @@ window.JSSpeccy.Z80 = (opts) ->
 		0xa5: op( AND_A "L" )        # AND A,L
 		0xa6: op( AND_A "(HL)" )        # AND A,(HL)
 		0xa7: op( AND_A "A" )        # AND A,A
-		0xA8: op( XOR_R(rB) )        # XOR B
-		0xA9: op( XOR_R(rC) )        # XOR C
-		0xAA: op( XOR_R(rD) )        # XOR D
-		0xAB: op( XOR_R(rE) )        # XOR E
-		0xAC: op( XOR_R(rH) )        # XOR H
-		0xAD: op( XOR_R(rL) )        # XOR L
-		0xAE: op( XOR_iHLi() )        # XOR (HL)
-		0xAF: op( XOR_R(rA) )        # XOR A
+		0xA8: op( XOR_A "B" )        # XOR B
+		0xA9: op( XOR_A "C" )        # XOR C
+		0xAA: op( XOR_A "D" )        # XOR D
+		0xAB: op( XOR_A "E" )        # XOR E
+		0xAC: op( XOR_A "H" )        # XOR H
+		0xAD: op( XOR_A "L" )        # XOR L
+		0xAE: op( XOR_A "(HL)" )        # XOR (HL)
+		0xAF: op( XOR_A "A" )        # XOR A
 		0xb0: op( OR_A "B" )        # OR B
 		0xb1: op( OR_A "C" )        # OR C
 		0xb2: op( OR_A "D" )        # OR D
@@ -1779,7 +1753,7 @@ window.JSSpeccy.Z80 = (opts) ->
 		0xEB: op( EX_RR_RR(rpDE, rpHL) )        # EX DE,HL
 		0xEC: op( CALL_C_NN(FLAG_P, true) )        # CALL PE,nnnn
 		0xED: op( SHIFT('ED') )        # shift code
-		0xEE: op( XOR_N() )        # XOR nn
+		0xEE: op( XOR_A "nn" )        # XOR nn
 		0xEF: op( RST(0x0028) )        # RST 0x28
 		0xF0: op( RET_C(FLAG_S, false) )        # RET P
 		0xF1: op( POP_RR(rpAF) )        # POP AF
