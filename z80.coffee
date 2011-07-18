@@ -903,28 +903,13 @@ window.JSSpeccy.Z80 = (opts) ->
 			regs[rF] = ( regs[rF] & (FLAG_P | FLAG_Z | FLAG_S) ) | ( regs[rA] & (FLAG_3 | FLAG_5) ) | FLAG_C;
 		"""
 	
-	SET_N_iHLi = (bit) ->
+	SET = (bit, param) ->
 		hexMask = 1 << bit
+		operand = getParamBoilerplate(param, true)
 		"""
-			var addr = regPairs[rpHL];
-			var value = memory.read(addr);
-			memory.write(addr, value | #{hexMask});
-			tstates += 7;
-		"""
-	
-	SET_N_iRRpNNi = (bit, rp) -> # expects 'offset'
-		hexMask = 1 << bit
-		"""
-			var addr = (regPairs[#{rp}] + offset) & 0xffff;
-			var value = memory.read(addr);
-			memory.write(addr, value | #{hexMask});
-			tstates += 15;
-		"""
-	
-	SET_N_R = (bit, r) ->
-		hexMask = 1 << bit
-		"""
-			regs[#{r}] |= #{hexMask};
+			#{operand.getter}
+			#{operand.v} |= #{hexMask};
+			#{operand.setter}
 		"""
 	
 	SHIFT = (prefix) ->
@@ -1286,70 +1271,70 @@ window.JSSpeccy.Z80 = (opts) ->
 		0xBD: op( RES 7, 'L' )        # RES 7,L
 		0xBE: op( RES 7, '(HL)' )        # RES 7,(HL)
 		0xBF: op( RES 7, 'A' )        # RES 7,A
-		0xC0: op(SET_N_R(0, rB))        # SET 0,B
-		0xC1: op(SET_N_R(0, rC))        # SET 0,C
-		0xC2: op(SET_N_R(0, rD))        # SET 0,D
-		0xC3: op(SET_N_R(0, rE))        # SET 0,E
-		0xC4: op(SET_N_R(0, rH))        # SET 0,H
-		0xC5: op(SET_N_R(0, rL))        # SET 0,L
-		0xC6: op(SET_N_iHLi(0))        # SET 0,(HL)
-		0xC7: op(SET_N_R(0, rA))        # SET 0,A
-		0xC8: op(SET_N_R(1, rB))        # SET 1,B
-		0xC9: op(SET_N_R(1, rC))        # SET 1,C
-		0xCA: op(SET_N_R(1, rD))        # SET 1,D
-		0xCB: op(SET_N_R(1, rE))        # SET 1,E
-		0xCC: op(SET_N_R(1, rH))        # SET 1,H
-		0xCD: op(SET_N_R(1, rL))        # SET 1,L
-		0xCE: op(SET_N_iHLi(1))        # SET 1,(HL)
-		0xCF: op(SET_N_R(1, rA))        # SET 1,A
-		0xD0: op(SET_N_R(2, rB))        # SET 2,B
-		0xD1: op(SET_N_R(2, rC))        # SET 2,C
-		0xD2: op(SET_N_R(2, rD))        # SET 2,D
-		0xD3: op(SET_N_R(2, rE))        # SET 2,E
-		0xD4: op(SET_N_R(2, rH))        # SET 2,H
-		0xD5: op(SET_N_R(2, rL))        # SET 2,L
-		0xD6: op(SET_N_iHLi(2))        # SET 2,(HL)
-		0xD7: op(SET_N_R(2, rA))        # SET 2,A
-		0xD8: op(SET_N_R(3, rB))        # SET 3,B
-		0xD9: op(SET_N_R(3, rC))        # SET 3,C
-		0xDA: op(SET_N_R(3, rD))        # SET 3,D
-		0xDB: op(SET_N_R(3, rE))        # SET 3,E
-		0xDC: op(SET_N_R(3, rH))        # SET 3,H
-		0xDD: op(SET_N_R(3, rL))        # SET 3,L
-		0xDE: op(SET_N_iHLi(3))        # SET 3,(HL)
-		0xDF: op(SET_N_R(3, rA))        # SET 3,A
-		0xE0: op(SET_N_R(4, rB))        # SET 4,B
-		0xE1: op(SET_N_R(4, rC))        # SET 4,C
-		0xE2: op(SET_N_R(4, rD))        # SET 4,D
-		0xE3: op(SET_N_R(4, rE))        # SET 4,E
-		0xE4: op(SET_N_R(4, rH))        # SET 4,H
-		0xE5: op(SET_N_R(4, rL))        # SET 4,L
-		0xE6: op(SET_N_iHLi(4))        # SET 4,(HL)
-		0xE7: op(SET_N_R(4, rA))        # SET 4,A
-		0xE8: op(SET_N_R(5, rB))        # SET 5,B
-		0xE9: op(SET_N_R(5, rC))        # SET 5,C
-		0xEA: op(SET_N_R(5, rD))        # SET 5,D
-		0xEB: op(SET_N_R(5, rE))        # SET 5,E
-		0xEC: op(SET_N_R(5, rH))        # SET 5,H
-		0xED: op(SET_N_R(5, rL))        # SET 5,L
-		0xEE: op(SET_N_iHLi(5))        # SET 5,(HL)
-		0xEF: op(SET_N_R(5, rA))        # SET 5,A
-		0xF0: op(SET_N_R(6, rB))        # SET 6,B
-		0xF1: op(SET_N_R(6, rC))        # SET 6,C
-		0xF2: op(SET_N_R(6, rD))        # SET 6,D
-		0xF3: op(SET_N_R(6, rE))        # SET 6,E
-		0xF4: op(SET_N_R(6, rH))        # SET 6,H
-		0xF5: op(SET_N_R(6, rL))        # SET 6,L
-		0xF6: op(SET_N_iHLi(6))        # SET 6,(HL)
-		0xF7: op(SET_N_R(6, rA))        # SET 6,A
-		0xF8: op(SET_N_R(7, rB))        # SET 7,B
-		0xF9: op(SET_N_R(7, rC))        # SET 7,C
-		0xFA: op(SET_N_R(7, rD))        # SET 7,D
-		0xFB: op(SET_N_R(7, rE))        # SET 7,E
-		0xFC: op(SET_N_R(7, rH))        # SET 7,H
-		0xFD: op(SET_N_R(7, rL))        # SET 7,L
-		0xFE: op(SET_N_iHLi(7))        # SET 7,(HL)
-		0xFF: op(SET_N_R(7, rA))        # SET 7,A
+		0xC0: op( SET 0, 'B' )        # SET 0,B
+		0xC1: op( SET 0, 'C' )        # SET 0,C
+		0xC2: op( SET 0, 'D' )        # SET 0,D
+		0xC3: op( SET 0, 'E' )        # SET 0,E
+		0xC4: op( SET 0, 'H' )        # SET 0,H
+		0xC5: op( SET 0, 'L' )        # SET 0,L
+		0xC6: op( SET 0, '(HL)' )        # SET 0,(HL)
+		0xC7: op( SET 0, 'A' )        # SET 0,A
+		0xC8: op( SET 1, 'B' )        # SET 1,B
+		0xC9: op( SET 1, 'C' )        # SET 1,C
+		0xCA: op( SET 1, 'D' )        # SET 1,D
+		0xCB: op( SET 1, 'E' )        # SET 1,E
+		0xCC: op( SET 1, 'H' )        # SET 1,H
+		0xCD: op( SET 1, 'L' )        # SET 1,L
+		0xCE: op( SET 1, '(HL)' )        # SET 1,(HL)
+		0xCF: op( SET 1, 'A' )        # SET 1,A
+		0xD0: op( SET 2, 'B' )        # SET 2,B
+		0xD1: op( SET 2, 'C' )        # SET 2,C
+		0xD2: op( SET 2, 'D' )        # SET 2,D
+		0xD3: op( SET 2, 'E' )        # SET 2,E
+		0xD4: op( SET 2, 'H' )        # SET 2,H
+		0xD5: op( SET 2, 'L' )        # SET 2,L
+		0xD6: op( SET 2, '(HL)' )        # SET 2,(HL)
+		0xD7: op( SET 2, 'A' )        # SET 2,A
+		0xD8: op( SET 3, 'B' )        # SET 3,B
+		0xD9: op( SET 3, 'C' )        # SET 3,C
+		0xDA: op( SET 3, 'D' )        # SET 3,D
+		0xDB: op( SET 3, 'E' )        # SET 3,E
+		0xDC: op( SET 3, 'H' )        # SET 3,H
+		0xDD: op( SET 3, 'L' )        # SET 3,L
+		0xDE: op( SET 3, '(HL)' )        # SET 3,(HL)
+		0xDF: op( SET 3, 'A' )        # SET 3,A
+		0xE0: op( SET 4, 'B' )        # SET 4,B
+		0xE1: op( SET 4, 'C' )        # SET 4,C
+		0xE2: op( SET 4, 'D' )        # SET 4,D
+		0xE3: op( SET 4, 'E' )        # SET 4,E
+		0xE4: op( SET 4, 'H' )        # SET 4,H
+		0xE5: op( SET 4, 'L' )        # SET 4,L
+		0xE6: op( SET 4, '(HL)' )        # SET 4,(HL)
+		0xE7: op( SET 4, 'A' )        # SET 4,A
+		0xE8: op( SET 5, 'B' )        # SET 5,B
+		0xE9: op( SET 5, 'C' )        # SET 5,C
+		0xEA: op( SET 5, 'D' )        # SET 5,D
+		0xEB: op( SET 5, 'E' )        # SET 5,E
+		0xEC: op( SET 5, 'H' )        # SET 5,H
+		0xED: op( SET 5, 'L' )        # SET 5,L
+		0xEE: op( SET 5, '(HL)' )        # SET 5,(HL)
+		0xEF: op( SET 5, 'A' )        # SET 5,A
+		0xF0: op( SET 6, 'B' )        # SET 6,B
+		0xF1: op( SET 6, 'C' )        # SET 6,C
+		0xF2: op( SET 6, 'D' )        # SET 6,D
+		0xF3: op( SET 6, 'E' )        # SET 6,E
+		0xF4: op( SET 6, 'H' )        # SET 6,H
+		0xF5: op( SET 6, 'L' )        # SET 6,L
+		0xF6: op( SET 6, '(HL)' )        # SET 6,(HL)
+		0xF7: op( SET 6, 'A' )        # SET 6,A
+		0xF8: op( SET 7, 'B' )        # SET 7,B
+		0xF9: op( SET 7, 'C' )        # SET 7,C
+		0xFA: op( SET 7, 'D' )        # SET 7,D
+		0xFB: op( SET 7, 'E' )        # SET 7,E
+		0xFC: op( SET 7, 'H' )        # SET 7,H
+		0xFD: op( SET 7, 'L' )        # SET 7,L
+		0xFE: op( SET 7, '(HL)' )        # SET 7,(HL)
+		0xFF: op( SET 7, 'A' )        # SET 7,A
 		0x100: 'cb'
 	}
 	
@@ -1419,21 +1404,21 @@ window.JSSpeccy.Z80 = (opts) ->
 			
 			0xBE: ddcbOp( RES 7, "(#{rpn}+nn)" )        # RES 7,(IX+nn)
 			
-			0xC6: ddcbOp( SET_N_iRRpNNi(0, rp) )        # SET 0,(IX+nn)
+			0xC6: ddcbOp( SET 0, "(#{rpn}+nn)" )        # SET 0,(IX+nn)
 			
-			0xCE: ddcbOp( SET_N_iRRpNNi(1, rp) )        # SET 1,(IX+nn)
+			0xCE: ddcbOp( SET 1, "(#{rpn}+nn)" )        # SET 1,(IX+nn)
 			
-			0xD6: ddcbOp( SET_N_iRRpNNi(2, rp) )        # SET 2,(IX+nn)
+			0xD6: ddcbOp( SET 2, "(#{rpn}+nn)" )        # SET 2,(IX+nn)
 			
-			0xDE: ddcbOp( SET_N_iRRpNNi(3, rp) )        # SET 3,(IX+nn)
+			0xDE: ddcbOp( SET 3, "(#{rpn}+nn)" )        # SET 3,(IX+nn)
 			
-			0xE6: ddcbOp( SET_N_iRRpNNi(4, rp) )        # SET 4,(IX+nn)
+			0xE6: ddcbOp( SET 4, "(#{rpn}+nn)" )        # SET 4,(IX+nn)
 			
-			0xEE: ddcbOp( SET_N_iRRpNNi(5, rp) )        # SET 5,(IX+nn)
+			0xEE: ddcbOp( SET 5, "(#{rpn}+nn)" )        # SET 5,(IX+nn)
 			
-			0xF6: ddcbOp( SET_N_iRRpNNi(6, rp) )        # SET 6,(IX+nn)
+			0xF6: ddcbOp( SET 6, "(#{rpn}+nn)" )        # SET 6,(IX+nn)
 			
-			0xFE: ddcbOp( SET_N_iRRpNNi(7, rp) )        # SET 7,(IX+nn)
+			0xFE: ddcbOp( SET 7, "(#{rpn}+nn)" )        # SET 7,(IX+nn)
 			
 			0x100: 'ddcb'
 		}
