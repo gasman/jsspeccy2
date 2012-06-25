@@ -349,7 +349,7 @@ CPDR = () ->
 		regs[#{rF}] = (regs[#{rF}] & #{FLAG_C}) | ( regPairs[#{rpBC}] ? #{FLAG_V | FLAG_N} : #{FLAG_N} ) | halfcarrySubTable[lookup] | (bytetemp ? 0 : #{FLAG_Z}) | (bytetemp & #{FLAG_S});
 		if (regs[#{rF}] & #{FLAG_H}) bytetemp--;
 		regs[#{rF}] |= (bytetemp & #{FLAG_3}) | ( (bytetemp & 0x02) ? #{FLAG_5} : 0 );
-		if (regs[#{rF}] & #{FLAG_V | FLAG_Z} == #{FLAG_V}) {
+		if ((regs[#{rF}] & #{FLAG_V | FLAG_Z}) == #{FLAG_V}) {
 			regPairs[#{rpPC}] -= 2;
 			tstates += 5;
 		}
@@ -366,7 +366,7 @@ CPIR = () ->
 		regs[#{rF}] = (regs[#{rF}] & #{FLAG_C}) | ( regPairs[#{rpBC}] ? #{FLAG_V | FLAG_N} : #{FLAG_N} ) | halfcarrySubTable[lookup] | (bytetemp ? 0 : #{FLAG_Z}) | (bytetemp & #{FLAG_S});
 		if (regs[#{rF}] & #{FLAG_H}) bytetemp--;
 		regs[#{rF}] |= (bytetemp & #{FLAG_3}) | ( (bytetemp & 0x02) ? #{FLAG_5} : 0 );
-		if (regs[#{rF}] & #{FLAG_V | FLAG_Z} == #{FLAG_V}) {
+		if ((regs[#{rF}] & #{FLAG_V | FLAG_Z}) == #{FLAG_V}) {
 			regPairs[#{rpPC}] -= 2;
 			tstates += 5;
 		}
