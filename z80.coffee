@@ -194,6 +194,14 @@ getParamBoilerplate = (param, hasIXOffsetAlready = false) ->
 			'trunc': '& 0xff'
 			'setter': "memory.write(addr, val); tstates += 4;"
 		}
+	else if param == 'add'
+		# special case for incorporating ADD/SUB into DAA calculation using a custom variable 'add'
+		{
+			'getter': ''
+			'v': 'add'
+			'trunc': ''
+			'setter': ''
+		}
 	else
 		throw "Unknown param format: #{param}"
 
@@ -372,6 +380,23 @@ CPIR = () ->
 		}
 		regPairs[#{rpHL}]++;
 		tstates += 8;
+	"""
+
+DAA = () ->
+	subClause = SUB_A('add')
+	addClause = ADD_A('add')
+	"""
+		var add = 0;
+		var carry = regs[#{rF}] & #{FLAG_C};
+		if( ( regs[#{rF}] & #{FLAG_H} ) || ( ( regs[#{rA}] & 0x0f ) > 9 ) ) add = 6;
+		if( carry || ( regs[#{rA}] > 0x99 ) ) add |= 0x60;
+		if( regs[#{rA}] > 0x99 ) carry = #{FLAG_C};
+		if( regs[#{rF}] & #{FLAG_N} ) {
+			#{subClause}
+		} else {
+			#{addClause}
+		}
+		regs[#{rF}] = ( regs[#{rF}] & #{~( FLAG_C | FLAG_P )} ) | carry | parityTable[regs[#{rA}]];
 	"""
 
 CPL = () ->
@@ -1591,7 +1616,7 @@ OPCODE_RUN_STRINGS = {
 	0x24: INC "H"         # INC H
 	0x25: DEC "H"         # DEC H
 	0x26: LD_R_N(rH)         # LD H,nn
-	
+	0x27: DAA()           # DAA
 	0x28: JR_C_N(FLAG_Z, true)         # JR Z,nn
 	0x29: ADD_RR_RR(rpHL, rpHL)         # ADD HL,HL
 	0x2A: LD_RR_iNNi(rpHL)         # LD HL,(nnnn)
