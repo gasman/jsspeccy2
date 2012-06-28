@@ -45,7 +45,7 @@ function JSSpeccy(container, opts) {
 		reader.readAsArrayBuffer(file);
 	};
 	controller.loadFile = function(name, data) {
-		if ( name.match(/\.sna$/) ) {
+		if ( name.match(/\.sna$/i) ) {
 			var snapshot = JSSpeccy.loadSna(data);
 			spectrum = JSSpeccy.Spectrum({
 				ui: ui,
