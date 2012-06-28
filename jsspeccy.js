@@ -59,9 +59,12 @@ function JSSpeccy(container, opts) {
 	controller.isRunning = false;
 
 	function tick() {
+		var startTime = (new Date()).getTime();
 		if (!controller.isRunning) return;
 		spectrum.runFrame();
-		setTimeout(tick, 20);
+		var endTime = (new Date()).getTime();
+		var waitTime = 20 - (endTime - startTime);
+		setTimeout(tick, Math.max(0, waitTime));
 	}
 
 	controller.onStart = Event();
