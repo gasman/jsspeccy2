@@ -1979,8 +1979,8 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			};
 
 			/* Register / flag accessors required for tape trapping */
-			self.getCarry = function() {
-				return regs[#{rF}] & #{FLAG_C};
+			self.getCarry_ = function() {
+				return regs[#{rF_}] & #{FLAG_C};
 			};
 			self.setCarry = function(val) {
 				if (val) {
@@ -1989,8 +1989,8 @@ window.JSSpeccy.buildZ80 = (opts) ->
 					regs[#{rF}] &= #{~FLAG_C};
 				}
 			};
-			self.getA = function() {
-				return regs[#{rA}];
+			self.getA_ = function() {
+				return regs[#{rA_}];
 			};
 			self.getDE = function() {
 				return regPairs[#{rpDE}];

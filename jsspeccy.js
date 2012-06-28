@@ -53,10 +53,13 @@ function JSSpeccy(container, opts) {
 				model: snapshot.model
 			});
 			spectrum.loadSnapshot(snapshot);
+		} else if (name.match(/\.tap$/i)) {
+			controller.currentTape = JSSpeccy.TapFile(data);
 		}
 	};
 
 	controller.isRunning = false;
+	controller.currentTape = null;
 
 	function tick() {
 		var startTime = (new Date()).getTime();
@@ -100,7 +103,8 @@ function JSSpeccy(container, opts) {
 	var spectrum = JSSpeccy.Spectrum({
 		ui: ui,
 		keyboard: keyboard,
-		model: JSSpeccy.Spectrum.MODEL_128K
+		model: JSSpeccy.Spectrum.MODEL_128K,
+		controller: controller
 	});
 
 	if (!('autostart' in opts) || opts['autostart']) {
