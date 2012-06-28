@@ -1,3 +1,6 @@
+.jsspeccy {
+	position: relative;
+}
 .jsspeccy canvas {
 	padding: 0;
 	margin: 0;
@@ -31,4 +34,23 @@
 }
 .jsspeccy .toolbar .reset {
 	background-image: url(images/48x48_kaboodleloop.png);
+}
+.jsspeccy .toolbar .open {
+	background-image: url(images/48x48_folder_blue_open.png);
+}
+
+.jsspeccy .panel {
+	top: 30px;
+	left: 50%;
+	margin-left: -300px;
+	width: 600px;
+	height: 200px;
+	background-color: white;
+	display: none;
+	position: absolute;
+	border: 1px solid #444;
+}
+
+.jsspeccy .panel .close {
+	float: right;
 }

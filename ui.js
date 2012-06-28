@@ -21,11 +21,7 @@ JSSpeccy.UI = function(opts) {
 	};
 	self.canvas.ondrop = function(evt) {
 		var files = evt.dataTransfer.files;
-		var reader = new FileReader();
-		reader.onloadend = function() {
-			controller.loadFile(files[0].name, this.result);
-		};
-		reader.readAsBinaryString(files[0]);
+		controller.loadLocalFile(files[0]);
 		return false;
 	};
 	
@@ -62,7 +58,49 @@ JSSpeccy.UI = function(opts) {
 	resetButton.onclick = function() {
 		controller.reset();
 	};
-	
+
+	var openButton = addToolbarButton('open file', 'open');
+	openButton.onclick = function() {
+		showPanel(openFilePanel);
+	};
+
+	var panels = [];
+
+	function createPanel() {
+		var panel = document.createElement('div');
+		panel.className = 'panel';
+		container.appendChild(panel);
+		panels.push(panel);
+
+		var close = document.createElement('button');
+		close.innerText = 'close';
+		close.className = 'close';
+		close.onclick = function() {hidePanels();};
+		panel.appendChild(close);
+
+		return panel;
+	}
+	var openFilePanel = createPanel();
+	var fileSelect = document.createElement('input');
+	fileSelect.type = 'file';
+	openFilePanel.appendChild(fileSelect);
+	fileSelect.onchange = function() {
+		controller.loadLocalFile(this.files[0]);
+		hidePanels();
+	};
+
+	function showPanel(requestedPanel) {
+		for (var i = 0; i < panels.length; i++) {
+			panels[i].style.display = (panels[i] == requestedPanel ? 'block' : 'none');
+		}
+	}
+
+	function hidePanels() {
+		for (var i = 0; i < panels.length; i++) {
+			panels[i].style.display = 'none';
+		}
+	}
+
 	self.setResolution = function(width, height) {
 		container.style.width = width * scaleFactor + 'px';
 		

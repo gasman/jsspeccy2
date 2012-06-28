@@ -37,6 +37,13 @@ function JSSpeccy(container, opts) {
 	controller.reset = function() {
 		spectrum.reset();
 	};
+	controller.loadLocalFile = function(file) {
+		var reader = new FileReader();
+		reader.onloadend = function() {
+			controller.loadFile(file.name, this.result);
+		};
+		reader.readAsBinaryString(file);
+	};
 	controller.loadFile = function(name, data) {
 		if ( name.match(/\.sna$/) ) {
 			var snapshot = JSSpeccy.loadSna(data);
