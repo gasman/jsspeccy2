@@ -42,7 +42,7 @@ function JSSpeccy(container, opts) {
 		reader.onloadend = function() {
 			controller.loadFile(file.name, this.result);
 		};
-		reader.readAsBinaryString(file);
+		reader.readAsArrayBuffer(file);
 	};
 	controller.loadFile = function(name, data) {
 		if ( name.match(/\.sna$/) ) {

@@ -1,55 +1,44 @@
-JSSpeccy.loadSna = function(sna) {
-	function getWord(offset) {
-		return sna.charCodeAt(offset) | ( sna.charCodeAt(offset+1) << 8 );
-	}
-	
-	if (sna.length === 49179) {
+JSSpeccy.loadSna = function(data) {
+	if (data.byteLength === 49179) {
+		var sna = new DataView(data);
 		var snapshot = {
 			model: JSSpeccy.Spectrum.MODEL_48K,
 			registers: {},
 			ulaState: {},
 			memoryPages: {
-				5: new Uint8Array(0x4000),
-				2: new Uint8Array(0x4000),
-				0: new Uint8Array(0x4000)
+				/* construct byte arrays of length 0x4000 at the appropriate offsets into the data stream */
+				5: new Uint8Array(data, 27, 0x4000),
+				2: new Uint8Array(data, 0x4000 + 27, 0x4000),
+				0: new Uint8Array(data, 0x8000 + 27, 0x4000)
 			}
-		}
-		snapshot.registers['IR'] = (sna.charCodeAt(0) << 8) | sna.charCodeAt(20);
-		snapshot.registers['HL_'] = getWord(1);
-		snapshot.registers['DE_'] = getWord(3);
-		snapshot.registers['BC_'] = getWord(5);
-		snapshot.registers['AF_'] = getWord(7);
-		snapshot.registers['HL'] = getWord(9);
-		snapshot.registers['DE'] = getWord(11);
-		snapshot.registers['BC'] = getWord(13);
-		snapshot.registers['IY'] = getWord(15);
-		snapshot.registers['IX'] = getWord(17);
-		snapshot.registers['iff1'] = snapshot.registers['iff2'] = (sna.charCodeAt(19) & 0x04) >> 2;
-		snapshot.registers['AF'] = getWord(21);
-		var sp = getWord(23);
+		};
+		snapshot.registers['IR'] = (sna.getUint8(0) << 8) | sna.getUint8(20);
+		snapshot.registers['HL_'] = sna.getUint16(1, true);
+		snapshot.registers['DE_'] = sna.getUint16(3, true);
+		snapshot.registers['BC_'] = sna.getUint16(5, true);
+		snapshot.registers['AF_'] = sna.getUint16(7, true);
+		snapshot.registers['HL'] = sna.getUint16(9, true);
+		snapshot.registers['DE'] = sna.getUint16(11, true);
+		snapshot.registers['BC'] = sna.getUint16(13, true);
+		snapshot.registers['IY'] = sna.getUint16(15, true);
+		snapshot.registers['IX'] = sna.getUint16(17, true);
+		snapshot.registers['iff1'] = snapshot.registers['iff2'] = (sna.getUint8(19) & 0x04) >> 2;
+		snapshot.registers['AF'] = sna.getUint16(21, true);
+		var sp = sna.getUint16(23, true);
 		/* peek memory at SP to get proper value of PC */
-		var l = sna.charCodeAt(sp - 16384 + 27);
+		var l = sna.getUint8(sp - 16384 + 27);
 		sp = (sp + 1) & 0xffff;
-		var h = sna.charCodeAt(sp - 16384 + 27);
+		var h = sna.getUint8(sp - 16384 + 27);
 		sp = (sp + 1) & 0xffff;
 		snapshot.registers['PC'] = (h<<8) | l;
 		snapshot.registers['SP'] = sp;
-		snapshot.registers['im'] = sna.charCodeAt(25);
+		snapshot.registers['im'] = sna.getUint8(25);
 		
-		snapshot.ulaState.borderColour = sna.charCodeAt(26);
+		snapshot.ulaState.borderColour = sna.getUint8(26);
 		
-		for (var i = 0; i < 0x4000; i++) {
-			snapshot.memoryPages[5][i] = sna.charCodeAt(i + 27);
-		}
-		for (var i = 0; i < 0x4000; i++) {
-			snapshot.memoryPages[2][i] = sna.charCodeAt(i + 0x4000 + 27);
-		}
-		for (var i = 0; i < 0x4000; i++) {
-			snapshot.memoryPages[0][i] = sna.charCodeAt(i + 0x8000 + 27);
-		}
 		return snapshot;
 	} else {
-		throw "Cannot handle SNA snapshots of length " + str.length;
+		throw "Cannot handle SNA snapshots of length " + data.byteLength;
 	}
 }
 
