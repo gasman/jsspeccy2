@@ -109,6 +109,5 @@ function JSSpeccy(container, opts) {
 }
 JSSpeccy.traps = {};
 JSSpeccy.traps.tapeLoad = function() {
-	console.log('trap!');
-	return true;
+	/* will be overridden when a JSSpeccy.Spectrum object is initialised */
 };

@@ -1978,6 +1978,30 @@ window.JSSpeccy.buildZ80 = (opts) ->
 				im = snapRegs['im'];
 			};
 
+			/* Register / flag accessors required for tape trapping */
+			self.getCarry = function() {
+				return regs[#{rF}] & #{FLAG_C};
+			};
+			self.setCarry = function(val) {
+				if (val) {
+					regs[#{rF}] |= #{FLAG_C};
+				} else {
+					regs[#{rF}] &= #{~FLAG_C};
+				}
+			};
+			self.getA = function() {
+				return regs[#{rA}];
+			};
+			self.getDE = function() {
+				return regPairs[#{rpDE}];
+			}
+			self.getIX = function() {
+				return regPairs[#{rpIX}];
+			}
+			self.setPC = function(val) {
+				regPairs[#{rpPC}] = val;
+			}
+
 			return self;
 		};
 	"""
