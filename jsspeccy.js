@@ -87,6 +87,16 @@ function JSSpeccy(container, opts) {
 
 	var keyboard = JSSpeccy.Keyboard();
 
+	/* define a list of rules to be triggered when the Z80 executes an opcode at a specified address;
+		each rule is a tuple of (address, opcode, expression_to_run). If expression_to_run evaluates
+		to false, the remainder of the opcode's execution is skipped */
+	var z80Traps = [
+		[0x056b, 0xc0, 'JSSpeccy.traps.tapeLoad()'],
+		[0x0111, 0xc0, 'JSSpeccy.traps.tapeLoad()']
+	];
+
+	JSSpeccy.buildZ80({traps: z80Traps});
+
 	var spectrum = JSSpeccy.Spectrum({
 		ui: ui,
 		keyboard: keyboard,
@@ -97,3 +107,8 @@ function JSSpeccy(container, opts) {
 		controller.start();
 	}
 }
+JSSpeccy.traps = {};
+JSSpeccy.traps.tapeLoad = function() {
+	console.log('trap!');
+	return true;
+};
