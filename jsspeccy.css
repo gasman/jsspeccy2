@@ -1,0 +1,34 @@
+.jsspeccy canvas {
+	padding: 0;
+	margin: 0;
+}
+.jsspeccy .toolbar {
+	margin: 0;
+	padding: 8px;
+	overflow: hidden;
+	background-color: #445;
+	list-style-type: none;
+}
+.jsspeccy .toolbar li {
+	float: left;
+	padding-right: 8px;
+}
+
+.jsspeccy .toolbar button {
+	width: 64px;
+	height: 64px;
+	text-indent: -5000px;
+	direction: ltr;
+	background-position: center center;
+	background-repeat: no-repeat;
+}
+
+.jsspeccy .toolbar .stop {
+	background-image: url(images/48x48_player_pause.png);
+}
+.jsspeccy .toolbar .start {
+	background-image: url(images/48x48_player_play.png);
+}
+.jsspeccy .toolbar .reset {
+	background-image: url(images/48x48_kaboodleloop.png);
+}
