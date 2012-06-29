@@ -22,3 +22,18 @@ JSSpeccy.TapFile = function(data) {
 
 	return self;
 };
+
+JSSpeccy.TapFile.isValid = function(data) {
+	/* test whether the given ArrayBuffer is a valid TAP file, i.e. EOF is consistent with the
+	block lengths we read from the file */
+	var pos = 0;
+	var tap = new DataView(data);
+
+	while (pos < data.byteLength) {
+		if (pos + 1 >= data.byteLength) return false; /* EOF in the middle of a length word */
+		var blockLength = tap.getUint16(pos, true);
+		pos += blockLength + 2;
+	}
+
+	return (pos == data.byteLength); /* file is a valid TAP if pos is exactly at EOF and no further */
+};

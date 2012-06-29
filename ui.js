@@ -81,12 +81,32 @@ JSSpeccy.UI = function(opts) {
 		return panel;
 	}
 	var openFilePanel = createPanel();
+
+	var loadFromDiskHeader = document.createElement('h2');
+	loadFromDiskHeader.innerText = 'Load from disk:';
+	openFilePanel.appendChild(loadFromDiskHeader);
 	var fileSelect = document.createElement('input');
 	fileSelect.type = 'file';
 	openFilePanel.appendChild(fileSelect);
 	fileSelect.onchange = function() {
 		controller.loadLocalFile(this.files[0]);
 		hidePanels();
+	};
+
+	var loadFromWebHeader = document.createElement('h2');
+	loadFromWebHeader.innerText = 'Load from web:';
+	openFilePanel.appendChild(loadFromWebHeader);
+	var urlField = document.createElement('input');
+	openFilePanel.appendChild(urlField);
+	var openUrlButton = document.createElement('button');
+	openUrlButton.innerText = 'Open URL';
+	openFilePanel.appendChild(openUrlButton);
+	openUrlButton.onclick = function() {
+		var url = urlField.value;
+		if (url !== '') {
+			controller.loadFromUrl(url);
+			hidePanels();
+		}
 	};
 
 	function showPanel(requestedPanel) {

@@ -44,19 +44,66 @@ function JSSpeccy(container, opts) {
 		};
 		reader.readAsArrayBuffer(file);
 	};
+	controller.loadFromUrl = function(url) {
+		var request = new XMLHttpRequest();
+
+		request.addEventListener('error', function(e) {
+			alert('Error loading from URL:' + url);
+		});
+
+		request.addEventListener('load', function(e) {
+			data = request.response;
+			controller.loadFile(url, data);
+			/* URL is not ideal for passing as the 'filename' argument - e.g. the file
+			may be served through a server-side script with a non-indicative file
+			extension - but it's better than nothing, and hopefully the heuristics
+			in loadFile will figure out what it is either way.
+			Ideally we'd look for a header like Content-Disposition for a better clue,
+			but XHR (on Chrome at least) doesn't give us access to that. Grr. */
+		});
+
+		/* trigger XHR */
+		request.open('GET', url, true);
+		request.responseType = "arraybuffer";
+		request.send();
+	};
+
 	controller.loadFile = function(name, data) {
-		if ( name.match(/\.sna$/i) ) {
-			var snapshot = JSSpeccy.loadSna(data);
-			spectrum = JSSpeccy.Spectrum({
-				ui: ui,
-				keyboard: keyboard,
-				model: snapshot.model
-			});
-			spectrum.loadSnapshot(snapshot);
-		} else if (name.match(/\.tap$/i)) {
-			controller.currentTape = JSSpeccy.TapFile(data);
-		} else if (name.match(/\.tzx$/i)) {
-			controller.currentTape = JSSpeccy.TzxFile(data);
+		var fileType = 'unknown';
+		if (name && name.match(/\.sna$/i)) {
+			fileType = 'sna';
+		} else if (name && name.match(/\.tap$/i)) {
+			fileType = 'tap';
+		} else if (name && name.match(/\.tzx$/i)) {
+			fileType = 'tzx';
+		} else {
+			var signatureBytes = new Uint8Array(data, 0, 8);
+			var signature = String.fromCharCode.apply(null, signatureBytes);
+			if (signature == "ZXTape!\x1A") {
+				fileType = 'tzx';
+			} else if (data.byteLength == 49179) {
+				fileType = 'sna';
+			} else if (JSSpeccy.TapFile.isValid(data)) {
+				fileType = 'tap';
+			}
+		}
+
+		switch (fileType) {
+			case 'sna':
+				var snapshot = JSSpeccy.loadSna(data);
+				spectrum = JSSpeccy.Spectrum({
+					ui: ui,
+					keyboard: keyboard,
+					model: snapshot.model
+				});
+				spectrum.loadSnapshot(snapshot);
+				break;
+			case 'tap':
+				controller.currentTape = JSSpeccy.TapFile(data);
+				break;
+			case 'tzx':
+				controller.currentTape = JSSpeccy.TzxFile(data);
+				break;
 		}
 	};
 
