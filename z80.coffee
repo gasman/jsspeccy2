@@ -713,6 +713,17 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			tstates += 2;
 		"""
 
+	LDD = () ->
+		"""
+			var byteTemp = memory.read(regPairs[#{rpHL}]);
+			regPairs[#{rpBC}]--;
+			memory.write(regPairs[#{rpDE}],bytetemp);
+			regPairs[#{rpDE}]--; regPairs[#{rpHL}]--;
+			bytetemp = (bytetemp + regs[#{rA}]) & 0xff;
+			regs[#{rF}] = (regs[#{rF}] & #{FLAG_C | FLAG_Z | FLAG_S}) | (regPairs[#{rpBC}] ? #{FLAG_V} : 0) | (bytetemp & #{FLAG_3}) | ((bytetemp & 0x02) ? #{FLAG_5} : 0);
+			tstates += 8;
+		"""
+
 	LDDR = () ->
 		"""
 			var bytetemp = memory.read(regPairs[#{rpHL}]);
@@ -1571,6 +1582,8 @@ window.JSSpeccy.buildZ80 = (opts) ->
 		0x7B: LD_RR_iNNi(rpSP)         # LD SP,(nnnn)
 		
 		0xA0: LDI()         # LDI
+
+		0xA8: LDD()         # LDD
 		
 		0xB0: LDIR()         # LDIR
 		0xb1: CPIR()         # CPIR
