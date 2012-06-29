@@ -905,6 +905,15 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			#{operand.setter}
 		"""
 
+	RLD = () ->
+		"""
+			var bytetemp =  memory.read(regPairs[#{rpHL}]); tstates += 3;
+			memory.write(regPairs[#{rpHL}], (bytetemp << 4) | (regs[#{rA}] & 0x0f)); tstates += 4;
+			regs[#{rA}] = (regs[#{rA}] & 0xf0) | (bytetemp >> 4);
+			regs[#{rF}] = (regs[#{rF}] & #{FLAG_C}) | sz53pTable[regs[#{rA}]];
+			tstates += 3;
+		"""
+
 	RLCA = () ->
 		"""
 			regs[#{rA}] = (regs[#{rA}] << 1) | (regs[#{rA}] >> 7);
@@ -1591,6 +1600,8 @@ window.JSSpeccy.buildZ80 = (opts) ->
 		0x69: OUT_iCi_R(rL)         # OUT (C),L
 		0x6A: ADC_HL_RR(rpHL)        # ADC HL,HL
 		0x6B: LD_RR_iNNi(rpHL, true)         # LD HL,(nnnn)
+
+		0x6F: RLD()        # RLD
 		
 		0x72: SBC_HL_RR(rpSP)         # SBC HL,SP
 		0x73: LD_iNNi_RR(rpSP)         # LD (nnnn),SP
