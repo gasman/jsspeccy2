@@ -223,6 +223,25 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			regs[#{rF}] = ( adctemp & 0x100 ? #{FLAG_C} : 0 ) | halfcarryAddTable[lookup & 0x07] | overflowAddTable[lookup >> 4] | sz53Table[regs[#{rA}]];
 		"""
 
+	ADC_HL_RR = (rp2) ->
+		"""
+			var add16temp = regPairs[#{rpHL}] + regPairs[#{rp2}] + (regs[#{rF}] & #{FLAG_C});
+			var lookup = (
+				( (regPairs[#{rpHL}] & 0x8800) >> 11 ) |
+				( (regPairs[#{rp2}] & 0x8800) >> 10 ) |
+				( (add16temp & 0x8800) >>  9 )
+			);
+			regPairs[#{rpHL}] = add16temp;
+			regs[#{rF}] = (
+				(add16temp & 0x10000 ? #{FLAG_C} : 0) |
+				overflowAddTable[lookup >> 4] |
+				(regs[#{rH}] & #{FLAG_3 | FLAG_5 | FLAG_S}) |
+				halfcarryAddTable[lookup & 0x07] |
+				(regPairs[#{rpHL}] ? 0 : #{FLAG_Z})
+			);
+			tstates += 7;
+		"""
+
 	ADD_A = (param) ->
 		operand = getParamBoilerplate(param)
 		"""
@@ -1547,7 +1566,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 		0x47: LD_R_R(rI, rA)         # LD I,A
 		0x48: IN_R_iCi(rC)         # IN C,(C)
 		0x49: OUT_iCi_R(rC)         # OUT (C),C
-		
+		0x4A: ADC_HL_RR(rpBC)        # ADC HL,BC
 		0x4B: LD_RR_iNNi(rpBC)         # LD BC,(nnnn)
 		
 		0x50: IN_R_iCi(rD)         # IN D,(C)
@@ -1559,7 +1578,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 		
 		0x58: IN_R_iCi(rE)         # IN E,(C)
 		0x59: OUT_iCi_R(rE)         # OUT (C),E
-		
+		0x5A: ADC_HL_RR(rpDE)        # ADC HL,DE
 		0x5B: LD_RR_iNNi(rpDE)         # LD DE,(nnnn)
 		
 		0x5E: IM(2)         # IM 2
@@ -1570,7 +1589,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 		
 		0x68: IN_R_iCi(rL)         # IN L,(C)
 		0x69: OUT_iCi_R(rL)         # OUT (C),L
-		
+		0x6A: ADC_HL_RR(rpHL)        # ADC HL,HL
 		0x6B: LD_RR_iNNi(rpHL, true)         # LD HL,(nnnn)
 		
 		0x72: SBC_HL_RR(rpSP)         # SBC HL,SP
@@ -1578,7 +1597,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 		
 		0x78: IN_R_iCi(rA)         # IN A,(C)
 		0x79: OUT_iCi_R(rA)         # OUT (C),A
-		
+		0x7A: ADC_HL_RR(rpSP)        # ADC HL,SP
 		0x7B: LD_RR_iNNi(rpSP)         # LD SP,(nnnn)
 		
 		0xA0: LDI()         # LDI
