@@ -55,6 +55,8 @@ function JSSpeccy(container, opts) {
 			spectrum.loadSnapshot(snapshot);
 		} else if (name.match(/\.tap$/i)) {
 			controller.currentTape = JSSpeccy.TapFile(data);
+		} else if (name.match(/\.tzx$/i)) {
+			controller.currentTape = JSSpeccy.TzxFile(data);
 		}
 	};
 
