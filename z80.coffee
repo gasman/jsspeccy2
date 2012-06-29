@@ -1577,40 +1577,57 @@ window.JSSpeccy.buildZ80 = (opts) ->
 		0x49: OUT_iCi_R(rC)         # OUT (C),C
 		0x4A: ADC_HL_RR(rpBC)        # ADC HL,BC
 		0x4B: LD_RR_iNNi(rpBC)         # LD BC,(nnnn)
+		0x4C: NEG()         # NEG
 		
+		0x4E: IM(0)         # IM 0
+		0x4F: LD_R_R(rR, rA)         # LD R,A
 		0x50: IN_R_iCi(rD)         # IN D,(C)
 		0x51: OUT_iCi_R(rD)         # OUT (C),D
 		0x52: SBC_HL_RR(rpDE)         # SBC HL,DE
 		0x53: LD_iNNi_RR(rpDE)         # LD (nnnn),DE
+		0x54: NEG()         # NEG
 		
 		0x56: IM(1)         # IM 1
-		
+		0x57: LD_R_R(rA, rI)         # LD A,I
 		0x58: IN_R_iCi(rE)         # IN E,(C)
 		0x59: OUT_iCi_R(rE)         # OUT (C),E
 		0x5A: ADC_HL_RR(rpDE)        # ADC HL,DE
 		0x5B: LD_RR_iNNi(rpDE)         # LD DE,(nnnn)
+		0x5C: NEG()         # NEG
 		
 		0x5E: IM(2)         # IM 2
-		
+		0x5F: LD_R_R(rA, rR)         # LD A,R
 		0x60: IN_R_iCi(rH)         # IN H,(C)
 		0x61: OUT_iCi_R(rH)         # OUT (C),H
 		0x62: SBC_HL_RR(rpHL)         # SBC HL,HL
+		0x63: LD_iNNi_RR(rpHL)         # LD (nnnn),HL
+		0x64: NEG()         # NEG
 		
+		0x66: IM(0)         # IM 0
+
 		0x68: IN_R_iCi(rL)         # IN L,(C)
 		0x69: OUT_iCi_R(rL)         # OUT (C),L
 		0x6A: ADC_HL_RR(rpHL)        # ADC HL,HL
 		0x6B: LD_RR_iNNi(rpHL, true)         # LD HL,(nnnn)
+		0x6C: NEG()         # NEG
 
+		0x6E: IM(0)         # IM 0
 		0x6F: RLD()        # RLD
 		
 		0x72: SBC_HL_RR(rpSP)         # SBC HL,SP
 		0x73: LD_iNNi_RR(rpSP)         # LD (nnnn),SP
+		0x74: NEG()         # NEG
 		
+		0x76: IM(1)         # IM 1
+
 		0x78: IN_R_iCi(rA)         # IN A,(C)
 		0x79: OUT_iCi_R(rA)         # OUT (C),A
 		0x7A: ADC_HL_RR(rpSP)        # ADC HL,SP
 		0x7B: LD_RR_iNNi(rpSP)         # LD SP,(nnnn)
+		0x7C: NEG()         # NEG
 		
+		0x7E: IM(2)         # IM 2
+
 		0xA0: LDI()         # LDI
 
 		0xA8: LDD()         # LDD
