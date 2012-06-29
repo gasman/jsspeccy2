@@ -130,6 +130,12 @@ function JSSpeccy(container, opts) {
 		controller.isRunning = false;
 		controller.onStop.trigger();
 	};
+	controller.deactivateKeyboard = function() {
+		keyboard.active = false;
+	};
+	controller.activateKeyboard = function() {
+		keyboard.active = true;
+	};
 
 	var ui = JSSpeccy.UI({
 		container: container,

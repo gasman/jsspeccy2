@@ -1,5 +1,6 @@
 JSSpeccy.Keyboard = function() {
 	var self = {};
+	self.active = true;
 	
 	var keyStates = [];
 	for (var row = 0; row < 8; row++) {
@@ -7,8 +8,10 @@ JSSpeccy.Keyboard = function() {
 	}
 	
 	function keyDown(evt) {
-		registerKeyDown(evt.keyCode);
-		if (!evt.metaKey) return false;
+		if (self.active) {
+			registerKeyDown(evt.keyCode);
+			if (!evt.metaKey) return false;
+		}
 	}
 	function registerKeyDown(keyNum) {
 		var keyCode = keyCodes[keyNum];
@@ -18,7 +21,7 @@ JSSpeccy.Keyboard = function() {
 	}
 	function keyUp(evt) {
 		registerKeyUp(evt.keyCode);
-		if (!evt.metaKey) return false;
+		if (self.active && !evt.metaKey) return false;
 	}
 	function registerKeyUp(keyNum) {
 		var keyCode = keyCodes[keyNum];
@@ -27,7 +30,7 @@ JSSpeccy.Keyboard = function() {
 		if (keyCode.caps) keyStates[0] |= 0x01;
 	}
 	function keyPress(evt) {
-		if (!evt.metaKey) return false;
+		if (self.active && !evt.metaKey) return false;
 	}
 	
 	var keyCodes = {

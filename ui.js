@@ -113,12 +113,14 @@ JSSpeccy.UI = function(opts) {
 		for (var i = 0; i < panels.length; i++) {
 			panels[i].style.display = (panels[i] == requestedPanel ? 'block' : 'none');
 		}
+		controller.deactivateKeyboard();
 	}
 
 	function hidePanels() {
 		for (var i = 0; i < panels.length; i++) {
 			panels[i].style.display = 'none';
 		}
+		controller.activateKeyboard();
 	}
 
 	self.setResolution = function(width, height) {
