@@ -930,6 +930,13 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			#{operand.setter}
 		"""
 
+	RRA = () ->
+		"""
+			var bytetemp = regs[#{rA}];
+			regs[#{rA}] = (bytetemp >> 1) | (regs[#{rF}] << 7);
+			regs[#{rF}] = (regs[#{rF}] & #{FLAG_P | FLAG_Z | FLAG_S}) | (regs[#{rA}] & #{FLAG_3 | FLAG_5}) | (bytetemp & #{FLAG_C});
+		"""
+
 	RRC = (param) ->
 		operand = getParamBoilerplate(param, true)
 		"""
@@ -947,11 +954,12 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			regs[#{rF}] |= (regs[#{rA}] & #{FLAG_3 | FLAG_5});
 		"""
 
-	RRA = () ->
+	RRD = () ->
 		"""
-			var bytetemp = regs[#{rA}];
-			regs[#{rA}] = (bytetemp >> 1) | (regs[#{rF}] << 7);
-			regs[#{rF}] = (regs[#{rF}] & #{FLAG_P | FLAG_Z | FLAG_S}) | (regs[#{rA}] & #{FLAG_3 | FLAG_5}) | (bytetemp & #{FLAG_C});
+			var bytetemp = memory.read(regPairs[#{rpHL}]); tstates += 3;
+			memory.write(regPairs[#{rpHL}], (regs[#{rA}] << 4) | (bytetemp >> 4)); tstates += 4;
+			regs[#{rA}] = (regs[#{rA}] & 0xf0) | (bytetemp & 0x0f);
+			regs[#{rF}] = (regs[#{rF}] & #{FLAG_C}) | sz53pTable[regs[#{rA}]];
 		"""
 
 	RST = (addr) ->
@@ -1653,7 +1661,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 		0x64: NEG()         # NEG
 		
 		0x66: IM(0)         # IM 0
-
+		0x67: RRD()        # RRD
 		0x68: IN_R_iCi(rL)         # IN L,(C)
 		0x69: OUT_iCi_R(rL)         # OUT (C),L
 		0x6A: ADC_HL_RR(rpHL)        # ADC HL,HL
