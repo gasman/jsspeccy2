@@ -530,7 +530,6 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			
 			#{operand.setter}
 			regs[#{rF}] = (regs[#{rF}] & #{FLAG_C}) | ( #{operand.v} == 0x80 ? #{FLAG_V} : 0 ) | ( #{operand.v} & 0x0f ? 0 : #{FLAG_H} ) | sz53Table[#{operand.v}];
-			tstates += 7;
 		"""
 
 	INC_RR = (rp) ->
