@@ -2024,38 +2024,45 @@ window.JSSpeccy.buildZ80 = (opts) ->
 						case '':
 							opcode = memory.read(regPairs[#{rpPC}]++);
 							tstates += 4;
+							regs[#{rR}] = ((regs[#{rR}] + 1) & 0x7f) | (regs[#{rR}] & 0x80);
 							#{opcodeSwitch(OPCODE_RUN_STRINGS, null, opts.traps)}
 							break;
 						case 'CB':
 							opcode = memory.read(regPairs[#{rpPC}]++);
 							tstates += 4;
+							regs[#{rR}] = ((regs[#{rR}] + 1) & 0x7f) | (regs[#{rR}] & 0x80);
 							#{opcodeSwitch(OPCODE_RUN_STRINGS_CB)}
 							break;
 						case 'DD':
 							opcode = memory.read(regPairs[#{rpPC}]++);
 							tstates += 4;
+							regs[#{rR}] = ((regs[#{rR}] + 1) & 0x7f) | (regs[#{rR}] & 0x80);
 							#{opcodeSwitch(OPCODE_RUN_STRINGS_DD)}
 							break;
 						case 'DDCB':
 							offset = memory.read(regPairs[#{rpPC}]++);
 							if (offset & 0x80) offset -= 0x100;
 							opcode = memory.read(regPairs[#{rpPC}]++);
+							regs[#{rR}] = ((regs[#{rR}] + 1) & 0x7f) | (regs[#{rR}] & 0x80);
 							#{opcodeSwitch(OPCODE_RUN_STRINGS_DDCB)}
 							break;
 						case 'ED':
 							opcode = memory.read(regPairs[#{rpPC}]++);
 							tstates += 4;
+							regs[#{rR}] = ((regs[#{rR}] + 1) & 0x7f) | (regs[#{rR}] & 0x80);
 							#{opcodeSwitch(OPCODE_RUN_STRINGS_ED)}
 							break;
 						case 'FD':
 							opcode = memory.read(regPairs[#{rpPC}]++);
 							tstates += 4;
+							regs[#{rR}] = ((regs[#{rR}] + 1) & 0x7f) | (regs[#{rR}] & 0x80);
 							#{opcodeSwitch(OPCODE_RUN_STRINGS_FD)}
 							break;
 						case 'FDCB':
 							offset = memory.read(regPairs[#{rpPC}]++);
 							if (offset & 0x80) offset -= 0x100;
 							opcode = memory.read(regPairs[#{rpPC}]++);
+							regs[#{rR}] = ((regs[#{rR}] + 1) & 0x7f) | (regs[#{rR}] & 0x80);
 							#{opcodeSwitch(OPCODE_RUN_STRINGS_FDCB)}
 							break;
 						default:
