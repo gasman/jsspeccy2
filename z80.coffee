@@ -1084,7 +1084,8 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			switch (opcode) {
 				#{clauses.join('')}
 				default:
-					throw("Unimplemented opcode " + opcode + " in page #{runStringTable[0x100]}");
+					var addr = regPairs[#{rpPC}] - 1;
+					throw("Unimplemented opcode " + opcode + " in page #{runStringTable[0x100]} - PC = " + addr);
 			}
 		"""
 
@@ -2007,12 +2008,11 @@ window.JSSpeccy.buildZ80 = (opts) ->
 				}
 			};
 
-			self.runFrame = function() {
+			self.runFrame = function(frameLength) {
 				var lastOpcodePrefix, offset, opcode;
 
-				display.startFrame();
 				interruptPending = true;
-				while (tstates < display.frameLength) {
+				while (tstates < frameLength) {
 					if (interruptPending && interruptible) {
 						z80Interrupt();
 						interruptPending = false;
@@ -2066,9 +2066,6 @@ window.JSSpeccy.buildZ80 = (opts) ->
 						display.doEvent();
 					}
 				}
-				
-				display.endFrame();
-				tstates -= display.frameLength;
 			};
 
 			self.reset = function() {
@@ -2095,7 +2092,124 @@ window.JSSpeccy.buildZ80 = (opts) ->
 				im = snapRegs['im'];
 			};
 
-			/* Register / flag accessors required for tape trapping */
+			/* Register / flag accessors (used for tape trapping and test harness) */
+			self.getAF = function() {
+				return regPairs[#{rpAF}];
+			}
+			self.getBC = function() {
+				return regPairs[#{rpBC}];
+			}
+			self.getDE = function() {
+				return regPairs[#{rpDE}];
+			}
+			self.getHL = function() {
+				return regPairs[#{rpHL}];
+			}
+			self.getAF_ = function() {
+				return regPairs[#{rpAF_}];
+			}
+			self.getBC_ = function() {
+				return regPairs[#{rpBC_}];
+			}
+			self.getDE_ = function() {
+				return regPairs[#{rpDE_}];
+			}
+			self.getHL_ = function() {
+				return regPairs[#{rpHL_}];
+			}
+			self.getIX = function() {
+				return regPairs[#{rpIX}];
+			}
+			self.getIY = function() {
+				return regPairs[#{rpIY}];
+			}
+			self.getI = function() {
+				return regs[#{rI}];
+			}
+			self.getR = function() {
+				return regs[#{rR}];
+			}
+			self.getSP = function() {
+				return regPairs[#{rpSP}];
+			}
+			self.getPC = function() {
+				return regPairs[#{rpPC}];
+			}
+			self.getIFF1 = function() {
+				return iff1;
+			}
+			self.getIFF2 = function() {
+				return iff2;
+			}
+			self.getIM = function() {
+				return im;
+			}
+			self.getHalted = function() {
+				return halted;
+			}
+
+			self.setAF = function(val) {
+				regPairs[#{rpAF}] = val;
+			}
+			self.setBC = function(val) {
+				regPairs[#{rpBC}] = val;
+			}
+			self.setDE = function(val) {
+				regPairs[#{rpDE}] = val;
+			}
+			self.setHL = function(val) {
+				regPairs[#{rpHL}] = val;
+			}
+			self.setAF_ = function(val) {
+				regPairs[#{rpAF_}] = val;
+			}
+			self.setBC_ = function(val) {
+				regPairs[#{rpBC_}] = val;
+			}
+			self.setDE_ = function(val) {
+				regPairs[#{rpDE_}] = val;
+			}
+			self.setHL_ = function(val) {
+				regPairs[#{rpHL_}] = val;
+			}
+			self.setIX = function(val) {
+				regPairs[#{rpIX}] = val;
+			}
+			self.setIY = function(val) {
+				regPairs[#{rpIY}] = val;
+			}
+			self.setI = function(val) {
+				regs[#{rI}] = val;
+			}
+			self.setR = function(val) {
+				regs[#{rR}] = val;
+			}
+			self.setSP = function(val) {
+				regPairs[#{rpSP}] = val;
+			}
+			self.setPC = function(val) {
+				regPairs[#{rpPC}] = val;
+			}
+			self.setIFF1 = function(val) {
+				iff1 = val;
+			}
+			self.setIFF2 = function(val) {
+				iff2 = val;
+			}
+			self.setIM = function(val) {
+				im = val;
+			}
+			self.setHalted = function(val) {
+				halted = val;
+			}
+
+			self.getTstates = function() {
+				return tstates;
+			}
+			self.setTstates = function(val) {
+				tstates = val;
+			}
+
 			self.getCarry_ = function() {
 				return regs[#{rF_}] & #{FLAG_C};
 			};
@@ -2109,15 +2223,6 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			self.getA_ = function() {
 				return regs[#{rA_}];
 			};
-			self.getDE = function() {
-				return regPairs[#{rpDE}];
-			}
-			self.getIX = function() {
-				return regPairs[#{rpIX}];
-			}
-			self.setPC = function(val) {
-				regPairs[#{rpPC}] = val;
-			}
 
 			return self;
 		};

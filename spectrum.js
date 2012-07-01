@@ -30,7 +30,10 @@ JSSpeccy.Spectrum = function(opts) {
 	});
 
 	self.runFrame = function() {
-		processor.runFrame();
+		display.startFrame();
+		processor.runFrame(display.frameLength);
+		display.endFrame();
+		processor.setTstates(processor.getTstates() - display.frameLength);
 	};
 	self.reset = function() {
 		processor.reset();
