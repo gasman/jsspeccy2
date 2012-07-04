@@ -37,11 +37,11 @@
 				var self = {};
 
 				var mem;
-				var initialMem;
+				var written;
 
 				self.clear = function() {
 					mem = new Uint8Array(0x10000);
-					initialMem = new Uint8Array(0x10000);
+					written = new Uint8Array(0x10000);
 				}
 
 				self.contend = function(addr) {
@@ -55,17 +55,17 @@
 				}
 				self.write = function(addr, val) {
 					mem[addr] = val;
+					written[addr] = 1;
 					if (self.onwrite) self.onwrite(addr, val);
 				}
 				self.initialWrite = function(addr, val) {
 					mem[addr] = val;
-					initialMem[addr] = val;
 				}
 				self.dump = function() {
 					for (i = 0; i < mem.length; i++) {
-						if((initialMem[i]) != (mem[i])) {
+						if (written[i]) {
 							var changeReport = hexWord(i);
-							while ((initialMem[i]) != (mem[i]) && i < mem.length) {
+							while (written[i] && i < mem.length) {
 								changeReport += ' ' + hexByte(mem[i]);
 								i++;
 							}
