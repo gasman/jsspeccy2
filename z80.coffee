@@ -310,10 +310,10 @@ window.JSSpeccy.buildZ80 = (opts) ->
 		"""
 			var addr = regPairs[#{rpHL}];
 			var value = READMEM(addr);
+			CONTEND_READ_NO_MREQ(addr, 1);
 			regs[#{rF}] = ( regs[#{rF}] & #{FLAG_C} ) | #{FLAG_H} | ( value & #{FLAG_3 | FLAG_5} );
 			if( !(value & #{0x01 << bit}) ) regs[#{rF}] |= #{FLAG_P | FLAG_Z};
 			#{updateSignFlag}
-			tstates += 1;
 		"""
 
 	BIT_N_R = (bit, r) ->
@@ -1003,6 +1003,16 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			#{operand.setter}
 		"""
 
+	SLL = (param) ->
+		operand = getParamBoilerplate(param, true)
+		"""
+			#{operand.getter}
+			regs[#{rF}] =  #{operand.v} >> 7;
+			#{operand.v} = (((#{operand.v}) << 1) #{operand.trunc}) | 0x01;
+			regs[#{rF}] |= sz53pTable[#{operand.v}];
+			#{operand.setter}
+		"""
+
 	SRA = (param) ->
 		operand = getParamBoilerplate(param, true)
 		"""
@@ -1122,7 +1132,14 @@ window.JSSpeccy.buildZ80 = (opts) ->
 		0x2d: SRA 'L'         # SRA L
 		0x2e: SRA '(HL)'         # SRA (HL)
 		0x2f: SRA 'A'         # SRA A
-		
+		0x30: SLL 'B'         # SLL B
+		0x31: SLL 'C'         # SLL C
+		0x32: SLL 'D'         # SLL D
+		0x33: SLL 'E'         # SLL E
+		0x34: SLL 'H'         # SLL H
+		0x35: SLL 'L'         # SLL L
+		0x36: SLL '(HL)'         # SLL (HL)
+		0x37: SLL 'A'         # SLL A
 		0x38: SRL 'B'         # SRL B
 		0x39: SRL 'C'         # SRL C
 		0x3a: SRL 'D'         # SRL D
