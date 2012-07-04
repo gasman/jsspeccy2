@@ -202,6 +202,16 @@
 			function hexWord(num) {
 				return ('0000' + num.toString(16)).substr(-4);
 			}
+
+			window.onload = function() {
+				var request = new XMLHttpRequest();
+				request.addEventListener('load', function(e) {
+					data = request.response;
+					document.getElementById('test_in').value = data;
+				});
+				request.open('GET', 'tests.in', true);
+				request.send();
+			}
 		/* ]]> */</script>
 	</head>
 	<body>

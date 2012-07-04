@@ -333,25 +333,29 @@ window.JSSpeccy.buildZ80 = (opts) ->
 		"""
 			if (#{condition}) {
 				var l = READMEM(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
-				var h = READMEM(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
+				var h = READMEM(regPairs[#{rpPC}]);
+				CONTEND_READ_NO_MREQ(regPairs[#{rpPC}], 1);
+				regPairs[#{rpPC}]++;
 				regPairs[#{rpSP}]--; WRITEMEM(regPairs[#{rpSP}], regPairs[#{rpPC}] >> 8);
 				regPairs[#{rpSP}]--; WRITEMEM(regPairs[#{rpSP}], regPairs[#{rpPC}] & 0xff);
 				regPairs[#{rpPC}] = (h<<8) | l;
-				tstates += 1;
 			} else {
-				regPairs[#{rpPC}] += 2; /* skip past address bytes */
-				tstates += 6;
+				CONTEND_READ(regPairs[#{rpPC}], 3);
+				regPairs[#{rpPC}]++;
+				CONTEND_READ(regPairs[#{rpPC}], 3);
+				regPairs[#{rpPC}]++;
 			}
 		"""
 
 	CALL_NN = () ->
 		"""
 			var l = READMEM(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
-			var h = READMEM(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
+			var h = READMEM(regPairs[#{rpPC}]);
+			CONTEND_READ_NO_MREQ(regPairs[#{rpPC}], 1);
+			regPairs[#{rpPC}]++;
 			regPairs[#{rpSP}]--; WRITEMEM(regPairs[#{rpSP}], regPairs[#{rpPC}] >> 8);
 			regPairs[#{rpSP}]--; WRITEMEM(regPairs[#{rpSP}], regPairs[#{rpPC}] & 0xff);
 			regPairs[#{rpPC}] = (h<<8) | l;
-			tstates += 1;
 		"""
 
 	CCF = () ->
@@ -556,7 +560,10 @@ window.JSSpeccy.buildZ80 = (opts) ->
 				var h = READMEM(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 				regPairs[#{rpPC}] = (h<<8) | l;
 			} else {
-				regPairs[#{rpPC}] += 2; /* skip past address bytes */
+				CONTEND_READ(regPairs[#{rpPC}], 3);
+				regPairs[#{rpPC}]++;
+				CONTEND_READ(regPairs[#{rpPC}], 3);
+				regPairs[#{rpPC}]++;
 			}
 		"""
 
@@ -840,12 +847,12 @@ window.JSSpeccy.buildZ80 = (opts) ->
 		condition = "regs[#{rF}] & #{flag}"
 		condition = "!(#{condition})" if not sense
 		"""
+			CONTEND_READ_NO_MREQ(regPairs[#{rpIR}], 1);
 			if (#{condition}) {
 				var l = READMEM(regPairs[#{rpSP}]); regPairs[#{rpSP}]++;
 				var h = READMEM(regPairs[#{rpSP}]); regPairs[#{rpSP}]++;
 				regPairs[#{rpPC}] = (h<<8) | l;
 			}
-			tstates += 1;
 		"""
 
 	RL = (param) ->
