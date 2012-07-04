@@ -822,9 +822,9 @@ window.JSSpeccy.buildZ80 = (opts) ->
 
 	PUSH_RR = (rp) ->
 		"""
+			CONTEND_READ_NO_MREQ(regPairs[#{rpIR}], 1);
 			regPairs[#{rpSP}]--; WRITEMEM(regPairs[#{rpSP}], regPairs[#{rp}] >> 8);
 			regPairs[#{rpSP}]--; WRITEMEM(regPairs[#{rpSP}], regPairs[#{rp}] & 0xff);
-			tstates += 1;
 		"""
 
 	RES = (bit, param) ->
@@ -941,10 +941,10 @@ window.JSSpeccy.buildZ80 = (opts) ->
 
 	RST = (addr) ->
 		"""
+			CONTEND_READ_NO_MREQ(regPairs[#{rpIR}], 1);
 			regPairs[#{rpSP}]--; WRITEMEM(regPairs[#{rpSP}], regPairs[#{rpPC}] >> 8);
 			regPairs[#{rpSP}]--; WRITEMEM(regPairs[#{rpSP}], regPairs[#{rpPC}] & 0xff);
 			regPairs[#{rpPC}] = #{addr};
-			tstates += 1;
 		"""
 
 	SBC_A = (param) ->
