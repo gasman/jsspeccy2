@@ -29,7 +29,9 @@
 			var testInputLines;
 			var currentLine;
 
-			JSSpeccy.buildZ80();
+			JSSpeccy.buildZ80({
+				applyContention: true
+			});
 
 			var Memory = function() {
 				var self = {};
@@ -40,6 +42,10 @@
 				self.clear = function() {
 					mem = new Uint8Array(0x10000);
 					initialMem = new Uint8Array(0x10000);
+				}
+
+				self.contend = function(addr) {
+					if (self.oncontend) self.oncontend(addr);
 				}
 
 				self.read = function(addr) {
@@ -93,6 +99,9 @@
 				memory: memory,
 				ioBus: ioBus
 			});
+			memory.oncontend = function(addr) {
+				dump(('     ' + z80.getTstates()).substr(-5) + ' MC ' + hexWord(addr));
+			}
 			memory.onread = function(addr, val) {
 				dump(('     ' + z80.getTstates()).substr(-5) + ' MR ' + hexWord(addr) + ' ' + hexByte(val));
 			}

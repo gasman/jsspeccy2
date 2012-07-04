@@ -473,9 +473,10 @@ window.JSSpeccy.buildZ80 = (opts) ->
 	EX_iSPi_RR = (rp) ->
 		"""
 			var l = READMEM(regPairs[#{rpSP}]);
-			var h = READMEM((regPairs[#{rpSP}] + 1) & 0xffff);
+			var spPlus1 = (regPairs[#{rpSP}] + 1) & 0xffff;
+			var h = READMEM(spPlus1);
 			WRITEMEM(regPairs[#{rpSP}], regPairs[#{rp}] & 0xff);
-			WRITEMEM((regPairs[#{rpSP}] + 1) & 0xffff, regPairs[#{rp}] >> 8);
+			WRITEMEM(spPlus1, regPairs[#{rp}] >> 8);
 			regPairs[#{rp}] = (h<<8) | l;
 			tstates += 4;
 		"""
@@ -629,7 +630,8 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			var h = READMEM(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 			var addr = (h<<8) | l;
 			WRITEMEM(addr, regPairs[#{rp}] & 0xff);
-			WRITEMEM((addr + 1) & 0xffff, regPairs[#{rp}] >> 8);
+			addr = (addr + 1) & 0xffff;
+			WRITEMEM(addr, regPairs[#{rp}] >> 8);
 		"""
 
 	LD_iRRi_N = (rp) ->
@@ -701,7 +703,8 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			var h = READMEM(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 			var addr = (h<<8) | l;
 			l = READMEM(addr);
-			h = READMEM((addr + 1) & 0xffff);
+			addr = (addr + 1) & 0xffff;
+			h = READMEM(addr);
 			regPairs[#{rp}] = (h<<8) | l;
 		"""
 
@@ -1982,7 +1985,8 @@ window.JSSpeccy.buildZ80 = (opts) ->
 						case 2:
 							inttemp = (regs[#{rI}] << 8) | 0xff;
 							l = READMEM(inttemp);
-							h = READMEM( (inttemp+1) & 0xffff );
+							inttemp = (inttemp+1) & 0xffff;
+							h = READMEM(inttemp);
 							regPairs[#{rpPC}] = (h<<8) | l;
 							tstates += 7;
 							break;
@@ -2004,19 +2008,19 @@ window.JSSpeccy.buildZ80 = (opts) ->
 					opcodePrefix = '';
 					switch (lastOpcodePrefix) {
 						case '':
-							tstates += 4;
+							CONTEND_READ(regPairs[#{rpPC}], 4);
 							opcode = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 							regs[#{rR}] = ((regs[#{rR}] + 1) & 0x7f) | (regs[#{rR}] & 0x80);
 							#{opcodeSwitch(OPCODE_RUN_STRINGS, null, opts.traps)}
 							break;
 						case 'CB':
-							tstates += 4;
+							CONTEND_READ(regPairs[#{rpPC}], 4);
 							opcode = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 							regs[#{rR}] = ((regs[#{rR}] + 1) & 0x7f) | (regs[#{rR}] & 0x80);
 							#{opcodeSwitch(OPCODE_RUN_STRINGS_CB)}
 							break;
 						case 'DD':
-							tstates += 4;
+							CONTEND_READ(regPairs[#{rpPC}], 4);
 							opcode = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 							regs[#{rR}] = ((regs[#{rR}] + 1) & 0x7f) | (regs[#{rR}] & 0x80);
 							#{opcodeSwitch(OPCODE_RUN_STRINGS_DD)}
@@ -2024,19 +2028,19 @@ window.JSSpeccy.buildZ80 = (opts) ->
 						case 'DDCB':
 							offset = READMEM(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 							if (offset & 0x80) offset -= 0x100;
-							tstates += 4;
+							CONTEND_READ(regPairs[#{rpPC}], 4);
 							opcode = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 							regs[#{rR}] = ((regs[#{rR}] + 1) & 0x7f) | (regs[#{rR}] & 0x80);
 							#{opcodeSwitch(OPCODE_RUN_STRINGS_DDCB)}
 							break;
 						case 'ED':
-							tstates += 4;
+							CONTEND_READ(regPairs[#{rpPC}], 4);
 							opcode = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 							regs[#{rR}] = ((regs[#{rR}] + 1) & 0x7f) | (regs[#{rR}] & 0x80);
 							#{opcodeSwitch(OPCODE_RUN_STRINGS_ED)}
 							break;
 						case 'FD':
-							tstates += 4;
+							CONTEND_READ(regPairs[#{rpPC}], 4);
 							opcode = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 							regs[#{rR}] = ((regs[#{rR}] + 1) & 0x7f) | (regs[#{rR}] & 0x80);
 							#{opcodeSwitch(OPCODE_RUN_STRINGS_FD)}
@@ -2044,7 +2048,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 						case 'FDCB':
 							offset = READMEM(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 							if (offset & 0x80) offset -= 0x100;
-							tstates += 4;
+							CONTEND_READ(regPairs[#{rpPC}], 4);
 							opcode = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 							regs[#{rR}] = ((regs[#{rR}] + 1) & 0x7f) | (regs[#{rR}] & 0x80);
 							#{opcodeSwitch(OPCODE_RUN_STRINGS_FDCB)}
@@ -2219,8 +2223,16 @@ window.JSSpeccy.buildZ80 = (opts) ->
 		};
 	"""
 	# Apply macro expansions
-	defineZ80JS = defineZ80JS.replace(/READMEM\((.*?)\)/g, '(tstates += 3, memory.read($1))');
-	defineZ80JS = defineZ80JS.replace(/WRITEMEM\((.*?),(.*?)\)/g, '(tstates += 3, memory.write($1,$2))');
+	defineZ80JS = defineZ80JS.replace(/READMEM\((.*?)\)/g, '(CONTEND_READ($1, 3), memory.read($1))');
+	defineZ80JS = defineZ80JS.replace(/WRITEMEM\((.*?),(.*?)\)/g, '(CONTEND_WRITE($1, 3), memory.write($1,$2))');
+	if opts.applyContention
+		defineZ80JS = defineZ80JS.replace(/CONTEND_READ\((.*?),(.*?)\)/g,
+			'(memory.contend($1), tstates += ($2))');
+		defineZ80JS = defineZ80JS.replace(/CONTEND_WRITE\((.*?),(.*?)\)/g,
+			'(memory.contend($1), tstates += ($2))');
+	else
+		defineZ80JS = defineZ80JS.replace(/CONTEND_READ\((.*?),(.*?)\)/g, 'tstates += ($2)');
+		defineZ80JS = defineZ80JS.replace(/CONTEND_WRITE\((.*?),(.*?)\)/g, 'tstates += ($2)');
 
 	# console.log(defineZ80JS);
 	indirectEval = eval
