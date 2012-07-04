@@ -171,7 +171,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			}
 		else if param == 'nn'
 			{
-				'getter': "var val = memory.read(regPairs[#{rpPC}]++); tstates += 3;"
+				'getter': "var val = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++; tstates += 3;"
 				'v': 'val'
 				'trunc': '& 0xff'
 				'setter': ''
@@ -182,13 +182,13 @@ window.JSSpeccy.buildZ80 = (opts) ->
 				getter = ''
 			else
 				getter = """
-					var offset = memory.read(regPairs[#{rpPC}]++);
+					var offset = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++; tstates += 7;
 					if (offset & 0x80) offset -= 0x100;
 				"""
 			getter += """
 				var addr = (regPairs[#{rp}] + offset) & 0xffff;
 				var val = memory.read(addr);
-				tstates += 11;
+				tstates += 4;
 			"""
 			{
 				'getter': getter
@@ -317,10 +317,10 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			# branch if flag set
 			"""
 				if (regs[#{rF}] & #{flag}) {
-					var l = memory.read(regPairs[#{rpPC}]++);
-					var h = memory.read(regPairs[#{rpPC}]++);
-					memory.write(--regPairs[#{rpSP}], regPairs[#{rpPC}] >> 8);
-					memory.write(--regPairs[#{rpSP}], regPairs[#{rpPC}] & 0xff);
+					var l = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
+					var h = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
+					regPairs[#{rpSP}]--; memory.write(regPairs[#{rpSP}], regPairs[#{rpPC}] >> 8);
+					regPairs[#{rpSP}]--; memory.write(regPairs[#{rpSP}], regPairs[#{rpPC}] & 0xff);
 					regPairs[#{rpPC}] = (h<<8) | l;
 					tstates += 13;
 				} else {
@@ -335,10 +335,10 @@ window.JSSpeccy.buildZ80 = (opts) ->
 					regPairs[#{rpPC}] += 2; /* skip past address bytes */
 					tstates += 6;
 				} else {
-					var l = memory.read(regPairs[#{rpPC}]++);
-					var h = memory.read(regPairs[#{rpPC}]++);
-					memory.write(--regPairs[#{rpSP}], regPairs[#{rpPC}] >> 8);
-					memory.write(--regPairs[#{rpSP}], regPairs[#{rpPC}] & 0xff);
+					var l = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
+					var h = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
+					regPairs[#{rpSP}]--; memory.write(regPairs[#{rpSP}], regPairs[#{rpPC}] >> 8);
+					regPairs[#{rpSP}]--; memory.write(regPairs[#{rpSP}], regPairs[#{rpPC}] & 0xff);
 					regPairs[#{rpPC}] = (h<<8) | l;
 					tstates += 13;
 				}
@@ -346,10 +346,10 @@ window.JSSpeccy.buildZ80 = (opts) ->
 
 	CALL_NN = () ->
 		"""
-			var l = memory.read(regPairs[#{rpPC}]++);
-			var h = memory.read(regPairs[#{rpPC}]++);
-			memory.write(--regPairs[#{rpSP}], regPairs[#{rpPC}] >> 8);
-			memory.write(--regPairs[#{rpSP}], regPairs[#{rpPC}] & 0xff);
+			var l = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
+			var h = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
+			regPairs[#{rpSP}]--; memory.write(regPairs[#{rpSP}], regPairs[#{rpPC}] >> 8);
+			regPairs[#{rpSP}]--; memory.write(regPairs[#{rpSP}], regPairs[#{rpPC}] & 0xff);
 			regPairs[#{rpPC}] = (h<<8) | l;
 			tstates += 13;
 		"""
@@ -454,7 +454,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			regs[#{rB}]--;
 			if (regs[#{rB}]) {
 				/* take branch */
-				var offset = memory.read(regPairs[#{rpPC}]++);
+				var offset = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 				regPairs[#{rpPC}] += (offset & 0x80 ? offset - 0x100 : offset);
 				tstates += 9;
 			} else {
@@ -508,7 +508,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 
 	IN_A_N = () ->
 		"""
-			var val = memory.read(regPairs[#{rpPC}]++);
+			var val = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 			regs[#{rA}] = ioBus.read( (regs[#{rA}] << 8) | val );
 			tstates += 7;
 		"""
@@ -543,8 +543,8 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			# branch if flag set
 			"""
 				if (regs[#{rF}] & #{flag}) {
-					var l = memory.read(regPairs[#{rpPC}]++);
-					var h = memory.read(regPairs[#{rpPC}]++);
+					var l = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
+					var h = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 					regPairs[#{rpPC}] = (h<<8) | l;
 				} else {
 					regPairs[#{rpPC}] += 2; /* skip past address bytes */
@@ -557,8 +557,8 @@ window.JSSpeccy.buildZ80 = (opts) ->
 				if (regs[#{rF}] & #{flag}) {
 					regPairs[#{rpPC}] += 2; /* skip past address bytes */
 				} else {
-					var l = memory.read(regPairs[#{rpPC}]++);
-					var h = memory.read(regPairs[#{rpPC}]++);
+					var l = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
+					var h = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 					regPairs[#{rpPC}] = (h<<8) | l;
 				}
 				tstates += 6;
@@ -571,8 +571,8 @@ window.JSSpeccy.buildZ80 = (opts) ->
 
 	JP_NN = () ->
 		"""
-			var l = memory.read(regPairs[#{rpPC}]++);
-			var h = memory.read(regPairs[#{rpPC}]++);
+			var l = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
+			var h = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 			regPairs[#{rpPC}] = (h<<8) | l;
 			tstates += 6;
 		"""
@@ -582,7 +582,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			# branch if flag set
 			"""
 				if (regs[#{rF}] & #{flag}) {
-					var offset = memory.read(regPairs[#{rpPC}]++);
+					var offset = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 					regPairs[#{rpPC}] += (offset & 0x80 ? offset - 0x100 : offset);
 					tstates += 8;
 				} else {
@@ -597,7 +597,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 					regPairs[#{rpPC}]++; /* skip past offset byte */
 					tstates += 3;
 				} else {
-					var offset = memory.read(regPairs[#{rpPC}]++);
+					var offset = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 					regPairs[#{rpPC}] += (offset & 0x80 ? offset - 0x100 : offset);
 					tstates += 8;
 				}
@@ -605,15 +605,15 @@ window.JSSpeccy.buildZ80 = (opts) ->
 
 	JR_N = () ->
 		"""
-			var offset = memory.read(regPairs[#{rpPC}]++);
+			var offset = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 			regPairs[#{rpPC}] += (offset & 0x80 ? offset - 0x100 : offset);
 			tstates += 8;
 		"""
 
 	LD_A_iNNi = () ->
 		"""
-			var l = memory.read(regPairs[#{rpPC}]++);
-			var h = memory.read(regPairs[#{rpPC}]++);
+			var l = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
+			var h = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 			var addr = (h<<8) | l;
 			regs[#{rA}] = memory.read(addr);
 			tstates += 9;
@@ -621,8 +621,8 @@ window.JSSpeccy.buildZ80 = (opts) ->
 
 	LD_iNNi_A = () ->
 		"""
-			var l = memory.read(regPairs[#{rpPC}]++);
-			var h = memory.read(regPairs[#{rpPC}]++);
+			var l = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
+			var h = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 			var addr = (h<<8) | l;
 			memory.write(addr, regs[#{rA}]);
 			tstates += 9;
@@ -630,8 +630,8 @@ window.JSSpeccy.buildZ80 = (opts) ->
 
 	LD_iNNi_RR = (rp) ->
 		"""
-			var l = memory.read(regPairs[#{rpPC}]++);
-			var h = memory.read(regPairs[#{rpPC}]++);
+			var l = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
+			var h = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 			var addr = (h<<8) | l;
 			memory.write(addr, regPairs[#{rp}] & 0xff);
 			memory.write((addr + 1) & 0xffff, regPairs[#{rp}] >> 8);
@@ -640,7 +640,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 
 	LD_iRRi_N = (rp) ->
 		"""
-			var n = memory.read(regPairs[#{rpPC}]++);
+			var n = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 			memory.write(regPairs[#{rp}], n);
 			tstates += 6;
 		"""
@@ -653,18 +653,18 @@ window.JSSpeccy.buildZ80 = (opts) ->
 
 	LD_iRRpNNi_N = (rp) ->
 		"""
-			var offset = memory.read(regPairs[#{rpPC}]++);
+			var offset = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 			if (offset & 0x80) offset -= 0x100;
 			var addr = (regPairs[#{rp}] + offset) & 0xffff;
 			
-			var val = memory.read(regPairs[#{rpPC}]++);
+			var val = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 			memory.write(addr, val);
 			tstates += 11;
 		"""
 
 	LD_iRRpNNi_R = (rp, r) ->
 		"""
-			var offset = memory.read(regPairs[#{rpPC}]++);
+			var offset = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 			if (offset & 0x80) offset -= 0x100;
 			var addr = (regPairs[#{rp}] + offset) & 0xffff;
 			
@@ -680,7 +680,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 
 	LD_R_iRRpNNi = (r, rp) ->
 		"""
-			var offset = memory.read(regPairs[#{rpPC}]++);
+			var offset = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 			if (offset & 0x80) offset -= 0x100;
 			var addr = (regPairs[#{rp}] + offset) & 0xffff;
 			
@@ -690,7 +690,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 
 	LD_R_N = (r) ->
 		"""
-			regs[#{r}] = memory.read(regPairs[#{rpPC}]++);
+			regs[#{r}] = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 			tstates += 3;
 		"""
 
@@ -707,8 +707,8 @@ window.JSSpeccy.buildZ80 = (opts) ->
 
 	LD_RR_iNNi = (rp, shifted) ->
 		"""
-			var l = memory.read(regPairs[#{rpPC}]++);
-			var h = memory.read(regPairs[#{rpPC}]++);
+			var l = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
+			var h = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 			var addr = (h<<8) | l;
 			l = memory.read(addr);
 			h = memory.read((addr + 1) & 0xffff);
@@ -718,8 +718,8 @@ window.JSSpeccy.buildZ80 = (opts) ->
 
 	LD_RR_NN = (rp) ->
 		"""
-			var l = memory.read(regPairs[#{rpPC}]++);
-			var h = memory.read(regPairs[#{rpPC}]++);
+			var l = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
+			var h = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 			regPairs[#{rp}] = (h<<8) | l;
 			tstates += 6;
 		"""
@@ -815,23 +815,23 @@ window.JSSpeccy.buildZ80 = (opts) ->
 
 	OUT_iNi_A = () ->
 		"""
-			var port = memory.read(regPairs[#{rpPC}]++);
+			var port = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 			ioBus.write( (regs[#{rA}] << 8) | port, regs[#{rA}]);
 			tstates += 7;
 		"""
 
 	POP_RR = (rp) ->
 		"""
-			var l = memory.read(regPairs[#{rpSP}]++);
-			var h = memory.read(regPairs[#{rpSP}]++);
+			var l = memory.read(regPairs[#{rpSP}]); regPairs[#{rpSP}]++;
+			var h = memory.read(regPairs[#{rpSP}]); regPairs[#{rpSP}]++;
 			regPairs[#{rp}] = (h<<8) | l;
 			tstates += 6;
 		"""
 
 	PUSH_RR = (rp) ->
 		"""
-			memory.write(--regPairs[#{rpSP}], regPairs[#{rp}] >> 8);
-			memory.write(--regPairs[#{rpSP}], regPairs[#{rp}] & 0xff);
+			regPairs[#{rpSP}]--; memory.write(regPairs[#{rpSP}], regPairs[#{rp}] >> 8);
+			regPairs[#{rpSP}]--; memory.write(regPairs[#{rpSP}], regPairs[#{rp}] & 0xff);
 			tstates += 7;
 		"""
 
@@ -846,8 +846,8 @@ window.JSSpeccy.buildZ80 = (opts) ->
 
 	RET = () ->
 		"""
-			var l = memory.read(regPairs[#{rpSP}]++);
-			var h = memory.read(regPairs[#{rpSP}]++);
+			var l = memory.read(regPairs[#{rpSP}]); regPairs[#{rpSP}]++;
+			var h = memory.read(regPairs[#{rpSP}]); regPairs[#{rpSP}]++; 
 			regPairs[#{rpPC}] = (h<<8) | l;
 			tstates += 6;
 		"""
@@ -857,8 +857,8 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			# branch if flag set
 			"""
 				if (regs[#{rF}] & #{flag}) {
-					var l = memory.read(regPairs[#{rpSP}]++);
-					var h = memory.read(regPairs[#{rpSP}]++);
+					var l = memory.read(regPairs[#{rpSP}]); regPairs[#{rpSP}]++;
+					var h = memory.read(regPairs[#{rpSP}]); regPairs[#{rpSP}]++;
 					regPairs[#{rpPC}] = (h<<8) | l;
 					tstates += 7;
 				} else {
@@ -871,8 +871,8 @@ window.JSSpeccy.buildZ80 = (opts) ->
 				if (regs[#{rF}] & #{flag}) {
 					tstates += 1;
 				} else {
-					var l = memory.read(regPairs[#{rpSP}]++);
-					var h = memory.read(regPairs[#{rpSP}]++);
+					var l = memory.read(regPairs[#{rpSP}]); regPairs[#{rpSP}]++;
+					var h = memory.read(regPairs[#{rpSP}]); regPairs[#{rpSP}]++;
 					regPairs[#{rpPC}] = (h<<8) | l;
 					tstates += 7;
 				}
@@ -963,8 +963,8 @@ window.JSSpeccy.buildZ80 = (opts) ->
 
 	RST = (addr) ->
 		"""
-			memory.write(--regPairs[#{rpSP}], regPairs[#{rpPC}] >> 8);
-			memory.write(--regPairs[#{rpSP}], regPairs[#{rpPC}] & 0xff);
+			regPairs[#{rpSP}]--; memory.write(regPairs[#{rpSP}], regPairs[#{rpPC}] >> 8);
+			regPairs[#{rpSP}]--; memory.write(regPairs[#{rpSP}], regPairs[#{rpPC}] & 0xff);
 			regPairs[#{rpPC}] = #{addr};
 			tstates += 7;
 		"""
@@ -1982,8 +1982,8 @@ window.JSSpeccy.buildZ80 = (opts) ->
 					iff1 = iff2 = 0;
 
 					/* push current PC in readiness for call to interrupt handler */
-					memory.write(--regPairs[#{rpSP}], regPairs[#{rpPC}] >> 8);
-					memory.write(--regPairs[#{rpSP}], regPairs[#{rpPC}] & 0xff);
+					regPairs[#{rpSP}]--; memory.write(regPairs[#{rpSP}], regPairs[#{rpPC}] >> 8);
+					regPairs[#{rpSP}]--; memory.write(regPairs[#{rpSP}], regPairs[#{rpPC}] & 0xff);
 					
 					/* TODO: R register */
 					
@@ -2022,45 +2022,49 @@ window.JSSpeccy.buildZ80 = (opts) ->
 					switch (lastOpcodePrefix) {
 						case '':
 							tstates += 4;
-							opcode = memory.read(regPairs[#{rpPC}]++);
+							opcode = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 							regs[#{rR}] = ((regs[#{rR}] + 1) & 0x7f) | (regs[#{rR}] & 0x80);
 							#{opcodeSwitch(OPCODE_RUN_STRINGS, null, opts.traps)}
 							break;
 						case 'CB':
 							tstates += 4;
-							opcode = memory.read(regPairs[#{rpPC}]++);
+							opcode = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 							regs[#{rR}] = ((regs[#{rR}] + 1) & 0x7f) | (regs[#{rR}] & 0x80);
 							#{opcodeSwitch(OPCODE_RUN_STRINGS_CB)}
 							break;
 						case 'DD':
 							tstates += 4;
-							opcode = memory.read(regPairs[#{rpPC}]++);
+							opcode = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 							regs[#{rR}] = ((regs[#{rR}] + 1) & 0x7f) | (regs[#{rR}] & 0x80);
 							#{opcodeSwitch(OPCODE_RUN_STRINGS_DD)}
 							break;
 						case 'DDCB':
-							offset = memory.read(regPairs[#{rpPC}]++);
+							tstates += 3;
+							offset = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 							if (offset & 0x80) offset -= 0x100;
-							opcode = memory.read(regPairs[#{rpPC}]++);
+							tstates += 4;
+							opcode = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 							regs[#{rR}] = ((regs[#{rR}] + 1) & 0x7f) | (regs[#{rR}] & 0x80);
 							#{opcodeSwitch(OPCODE_RUN_STRINGS_DDCB)}
 							break;
 						case 'ED':
 							tstates += 4;
-							opcode = memory.read(regPairs[#{rpPC}]++);
+							opcode = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 							regs[#{rR}] = ((regs[#{rR}] + 1) & 0x7f) | (regs[#{rR}] & 0x80);
 							#{opcodeSwitch(OPCODE_RUN_STRINGS_ED)}
 							break;
 						case 'FD':
 							tstates += 4;
-							opcode = memory.read(regPairs[#{rpPC}]++);
+							opcode = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 							regs[#{rR}] = ((regs[#{rR}] + 1) & 0x7f) | (regs[#{rR}] & 0x80);
 							#{opcodeSwitch(OPCODE_RUN_STRINGS_FD)}
 							break;
 						case 'FDCB':
-							offset = memory.read(regPairs[#{rpPC}]++);
+							tstates += 3;
+							offset = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 							if (offset & 0x80) offset -= 0x100;
-							opcode = memory.read(regPairs[#{rpPC}]++);
+							tstates += 4;
+							opcode = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 							regs[#{rR}] = ((regs[#{rR}] + 1) & 0x7f) | (regs[#{rR}] & 0x80);
 							#{opcodeSwitch(OPCODE_RUN_STRINGS_FDCB)}
 							break;
