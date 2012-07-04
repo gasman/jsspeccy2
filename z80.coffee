@@ -2014,7 +2014,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 							CONTEND_READ(regPairs[#{rpPC}], 4);
 							opcode = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 							regs[#{rR}] = ((regs[#{rR}] + 1) & 0x7f) | (regs[#{rR}] & 0x80);
-							#{opcodeSwitch(OPCODE_RUN_STRINGS_DD)}
+							#{opcodeSwitch(OPCODE_RUN_STRINGS_DD, OPCODE_RUN_STRINGS)}
 							break;
 						case 'DDCB':
 							offset = READMEM(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
@@ -2034,7 +2034,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 							CONTEND_READ(regPairs[#{rpPC}], 4);
 							opcode = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 							regs[#{rR}] = ((regs[#{rR}] + 1) & 0x7f) | (regs[#{rR}] & 0x80);
-							#{opcodeSwitch(OPCODE_RUN_STRINGS_FD)}
+							#{opcodeSwitch(OPCODE_RUN_STRINGS_FD, OPCODE_RUN_STRINGS)}
 							break;
 						case 'FDCB':
 							offset = READMEM(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
