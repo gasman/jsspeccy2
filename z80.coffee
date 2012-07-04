@@ -72,7 +72,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 	FLAG_V = 0x04
 	FLAG_3 = 0x08
 	FLAG_H = 0x10
-	FLAG_5 = 0x10
+	FLAG_5 = 0x20
 	FLAG_Z = 0x40
 	FLAG_S = 0x80
 
