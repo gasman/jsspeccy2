@@ -1996,7 +1996,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 				var lastOpcodePrefix, offset, opcode;
 
 				interruptPending = true;
-				while (tstates < frameLength) {
+				while (tstates < frameLength || !interruptible) {
 					if (interruptPending && interruptible) {
 						z80Interrupt();
 						interruptPending = false;
