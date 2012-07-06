@@ -521,15 +521,18 @@ window.JSSpeccy.buildZ80 = (opts) ->
 	IN_A_N = () ->
 		"""
 			var val = READMEM(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
-			regs[#{rA}] = ioBus.read( (regs[#{rA}] << 8) | val );
-			tstates += 4;
+			var port = (regs[#{rA}] << 8) | val;
+			CONTEND_PORT_EARLY(port);
+			regs[#{rA}] = ioBus.read(port);
+			CONTEND_PORT_LATE(port);
 		"""
 
 	IN_R_iCi = (r) ->
 		"""
+			CONTEND_PORT_EARLY(regPairs[#{rpBC}]);
 			regs[#{r}] = ioBus.read(regPairs[#{rpBC}]);
+			CONTEND_PORT_LATE(regPairs[#{rpBC}]);
 			regs[#{rF}] = (regs[#{rF}] & #{FLAG_C}) | sz53pTable[regs[#{r}]];
-			tstates += 4;
 		"""
 
 	INC = (param) ->
@@ -802,15 +805,17 @@ window.JSSpeccy.buildZ80 = (opts) ->
 
 	OUT_iCi_R = (r) ->
 		"""
+			CONTEND_PORT_EARLY(regPairs[#{rpBC}]);
 			ioBus.write(regPairs[#{rpBC}], regs[#{r}]);
-			tstates += 4;
+			CONTEND_PORT_LATE(regPairs[#{rpBC}]);
 		"""
 
 	OUT_iNi_A = () ->
 		"""
-			var port = READMEM(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
-			ioBus.write( (regs[#{rA}] << 8) | port, regs[#{rA}]);
-			tstates += 4;
+			var port = (regs[#{rA}] << 8) | READMEM(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
+			CONTEND_PORT_EARLY(port);
+			ioBus.write(port, regs[#{rA}]);
+			CONTEND_PORT_LATE(port);
 		"""
 
 	POP_RR = (rp) ->
@@ -2249,11 +2254,35 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			'(memory.contend($1), tstates += ($2))');
 		defineZ80JS = defineZ80JS.replace(/CONTEND_WRITE_NO_MREQ\((.*?),(.*?)\)/g,
 			'(memory.contend($1), tstates += ($2))');
+		defineZ80JS = defineZ80JS.replace(/CONTEND_PORT_EARLY\((.*?)\)/g,
+			"""
+				var isContendedMemory = memory.isContended($1);
+				var isULAPort = ioBus.isULAPort($1);
+				if (isContendedMemory) ioBus.contend($1);
+				tstates += 1;
+			""");
+		defineZ80JS = defineZ80JS.replace(/CONTEND_PORT_LATE\((.*?)\)/g,
+			"""
+				if (isContendedMemory || isULAPort) {
+					ioBus.contend($1);
+					tstates += 1;
+					if (!isULAPort) {
+						ioBus.contend($1); tstates += 1;
+						ioBus.contend($1); tstates += 1;
+					} else {
+						tstates += 2;
+					}
+				} else {
+					tstates += 3;
+				}
+			""");
 	else
 		defineZ80JS = defineZ80JS.replace(/CONTEND_READ\((.*?),(.*?)\)/g, 'tstates += ($2)');
 		defineZ80JS = defineZ80JS.replace(/CONTEND_WRITE\((.*?),(.*?)\)/g, 'tstates += ($2)');
 		defineZ80JS = defineZ80JS.replace(/CONTEND_READ_NO_MREQ\((.*?),(.*?)\)/g, 'tstates += ($2)');
 		defineZ80JS = defineZ80JS.replace(/CONTEND_WRITE_NO_MREQ\((.*?),(.*?)\)/g, 'tstates += ($2)');
+		defineZ80JS = defineZ80JS.replace(/CONTEND_PORT_EARLY\((.*?)\)/g, 'tstates += 1');
+		defineZ80JS = defineZ80JS.replace(/CONTEND_PORT_LATE\((.*?)\)/g, 'tstates += 3');
 
 	# console.log(defineZ80JS);
 	indirectEval = eval

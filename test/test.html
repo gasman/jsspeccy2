@@ -50,6 +50,10 @@
 					}
 				}
 
+				self.isContended = function(addr) {
+					return ((addr & 0xc000) == 0x4000);
+				}
+
 				self.contend = function(addr) {
 					if (self.oncontend) self.oncontend(addr);
 				}
@@ -94,6 +98,12 @@
 				self.write = function(addr, val) {
 					if (self.onwrite) self.onwrite(addr, val);
 				}
+				self.isULAPort = function(addr) {
+					return ((addr & 0x0001) == 0x0000);
+				}
+				self.contend = function(addr) {
+					if (self.oncontend) self.oncontend(addr);
+				}
 
 				return self;
 			}
@@ -119,6 +129,9 @@
 			}
 			ioBus.onwrite = function(addr, val) {
 				dump(('     ' + z80.getTstates()).substr(-5) + ' PW ' + hexWord(addr) + ' ' + hexByte(val));
+			}
+			ioBus.oncontend = function(addr) {
+				dump(('     ' + z80.getTstates()).substr(-5) + ' PC ' + hexWord(addr));
 			}
 
 			function runTests() {
