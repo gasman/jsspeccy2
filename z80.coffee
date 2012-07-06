@@ -494,10 +494,12 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			var l = READMEM(regPairs[#{rpSP}]);
 			var spPlus1 = (regPairs[#{rpSP}] + 1) & 0xffff;
 			var h = READMEM(spPlus1);
-			WRITEMEM(regPairs[#{rpSP}], regPairs[#{rp}] & 0xff);
+			CONTEND_READ_NO_MREQ(spPlus1, 1);
 			WRITEMEM(spPlus1, regPairs[#{rp}] >> 8);
+			WRITEMEM(regPairs[#{rpSP}], regPairs[#{rp}] & 0xff);
 			regPairs[#{rp}] = (h<<8) | l;
-			tstates += 4;
+			CONTEND_WRITE_NO_MREQ(regPairs[#{rpSP}], 1);
+			CONTEND_WRITE_NO_MREQ(regPairs[#{rpSP}], 1);
 		"""
 
 	EX_RR_RR = (rp1, rp2) ->
@@ -744,7 +746,8 @@ window.JSSpeccy.buildZ80 = (opts) ->
 		# only used for LD SP,HL/IX/IY
 		"""
 			regPairs[#{rp1}] = regPairs[#{rp2}];
-			tstates += 2;
+			CONTEND_READ_NO_MREQ(regPairs[#{rpIR}], 1);
+			CONTEND_READ_NO_MREQ(regPairs[#{rpIR}], 1);
 		"""
 
 	LDBITOP = (regName, opcode, bit, rp) ->
