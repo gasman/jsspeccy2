@@ -747,6 +747,17 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			tstates += 2;
 		"""
 
+	LDSHIFTOP = (regName, opcode, rp) ->
+		# load (rp+nn) into register regName, perform opcode, write back to (rp+nn)
+		regNum = eval("r#{regName}")
+		"""
+			var addr = (regPairs[#{rp}] + offset) & 0xffff;
+			regs[#{regNum}] = READMEM(addr);
+			#{opcode(regName)}
+			CONTEND_READ_NO_MREQ(addr, 1);
+			WRITEMEM(addr, regs[#{regNum}]);
+		"""
+
 	LDD = () ->
 		"""
 			var byteTemp = READMEM(regPairs[#{rpHL}]);
@@ -1387,21 +1398,70 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			rhn = 'IYH'
 			rln = 'IYL'
 		return {
-			
+			0x00: LDSHIFTOP('B', RLC, rp)        # LD B,RLC (REGISTER+dd)
+			0x01: LDSHIFTOP('C', RLC, rp)        # LD C,RLC (REGISTER+dd)
+			0x02: LDSHIFTOP('D', RLC, rp)        # LD D,RLC (REGISTER+dd)
+			0x03: LDSHIFTOP('E', RLC, rp)        # LD E,RLC (REGISTER+dd)
+			0x04: LDSHIFTOP('H', RLC, rp)        # LD H,RLC (REGISTER+dd)
+			0x05: LDSHIFTOP('L', RLC, rp)        # LD L,RLC (REGISTER+dd)
 			0x06: RLC "(#{rpn}+nn)"         # RLC (IX+nn)
-			
+			0x07: LDSHIFTOP('A', RLC, rp)        # LD A,RLC (REGISTER+dd)
+			0x08: LDSHIFTOP('B', RRC, rp)        # LD B,RRC (REGISTER+dd)
+			0x09: LDSHIFTOP('C', RRC, rp)        # LD C,RRC (REGISTER+dd)
+			0x0A: LDSHIFTOP('D', RRC, rp)        # LD D,RRC (REGISTER+dd)
+			0x0B: LDSHIFTOP('E', RRC, rp)        # LD E,RRC (REGISTER+dd)
+			0x0C: LDSHIFTOP('H', RRC, rp)        # LD H,RRC (REGISTER+dd)
+			0x0D: LDSHIFTOP('L', RRC, rp)        # LD L,RRC (REGISTER+dd)
 			0x0E: RRC "(#{rpn}+nn)"         # RRC (IX+nn)
-			
+			0x0F: LDSHIFTOP('A', RRC, rp)        # LD A,RRC (REGISTER+dd)
+			0x10: LDSHIFTOP('B', RL, rp)        # LD B,RL (REGISTER+dd)
+			0x11: LDSHIFTOP('C', RL, rp)        # LD C,RL (REGISTER+dd)
+			0x12: LDSHIFTOP('D', RL, rp)        # LD D,RL (REGISTER+dd)
+			0x13: LDSHIFTOP('E', RL, rp)        # LD E,RL (REGISTER+dd)
+			0x14: LDSHIFTOP('H', RL, rp)        # LD H,RL (REGISTER+dd)
+			0x15: LDSHIFTOP('L', RL, rp)        # LD L,RL (REGISTER+dd)
 			0x16: RL "(#{rpn}+nn)"         # RL (IX+nn)
-			
+			0x17: LDSHIFTOP('A', RL, rp)        # LD A,RL (REGISTER+dd)
+			0x18: LDSHIFTOP('B', RR, rp)        # LD B,RR (REGISTER+dd)
+			0x19: LDSHIFTOP('C', RR, rp)        # LD C,RR (REGISTER+dd)
+			0x1A: LDSHIFTOP('D', RR, rp)        # LD D,RR (REGISTER+dd)
+			0x1B: LDSHIFTOP('E', RR, rp)        # LD E,RR (REGISTER+dd)
+			0x1C: LDSHIFTOP('H', RR, rp)        # LD H,RR (REGISTER+dd)
+			0x1D: LDSHIFTOP('L', RR, rp)        # LD L,RR (REGISTER+dd)
 			0x1E: RR "(#{rpn}+nn)"         # RR (IX+nn)
-			
+			0x1F: LDSHIFTOP('A', RR, rp)        # LD A,RR (REGISTER+dd)
+			0x20: LDSHIFTOP('B', SLA, rp)        # LD B,SLA (REGISTER+dd)
+			0x21: LDSHIFTOP('C', SLA, rp)        # LD C,SLA (REGISTER+dd)
+			0x22: LDSHIFTOP('D', SLA, rp)        # LD D,SLA (REGISTER+dd)
+			0x23: LDSHIFTOP('E', SLA, rp)        # LD E,SLA (REGISTER+dd)
+			0x24: LDSHIFTOP('H', SLA, rp)        # LD H,SLA (REGISTER+dd)
+			0x25: LDSHIFTOP('L', SLA, rp)        # LD L,SLA (REGISTER+dd)
 			0x26: SLA "(#{rpn}+nn)"         # SLA (IX+nn)
-			
+			0x27: LDSHIFTOP('A', SLA, rp)        # LD A,SLA (REGISTER+dd)
+			0x28: LDSHIFTOP('B', SRA, rp)        # LD B,SRA (REGISTER+dd)
+			0x29: LDSHIFTOP('C', SRA, rp)        # LD C,SRA (REGISTER+dd)
+			0x2A: LDSHIFTOP('D', SRA, rp)        # LD D,SRA (REGISTER+dd)
+			0x2B: LDSHIFTOP('E', SRA, rp)        # LD E,SRA (REGISTER+dd)
+			0x2C: LDSHIFTOP('H', SRA, rp)        # LD H,SRA (REGISTER+dd)
+			0x2D: LDSHIFTOP('L', SRA, rp)        # LD L,SRA (REGISTER+dd)
 			0x2E: SRA "(#{rpn}+nn)"         # SRA (IX+nn)
-			
+			0x2F: LDSHIFTOP('A', SRA, rp)        # LD A,SRA (REGISTER+dd)
+			0x30: LDSHIFTOP('B', SLL, rp)        # LD B,SLL (REGISTER+dd)
+			0x31: LDSHIFTOP('C', SLL, rp)        # LD C,SLL (REGISTER+dd)
+			0x32: LDSHIFTOP('D', SLL, rp)        # LD D,SLL (REGISTER+dd)
+			0x33: LDSHIFTOP('E', SLL, rp)        # LD E,SLL (REGISTER+dd)
+			0x34: LDSHIFTOP('H', SLL, rp)        # LD H,SLL (REGISTER+dd)
+			0x35: LDSHIFTOP('L', SLL, rp)        # LD L,SLL (REGISTER+dd)
+			0x36: SLL "(#{rpn}+nn)"         # SLL (IX+nn)
+			0x37: LDSHIFTOP('A', SLL, rp)        # LD A,SLL (REGISTER+dd)
+			0x38: LDSHIFTOP('B', SRL, rp)        # LD B,SRL (REGISTER+dd)
+			0x39: LDSHIFTOP('C', SRL, rp)        # LD C,SRL (REGISTER+dd)
+			0x3A: LDSHIFTOP('D', SRL, rp)        # LD D,SRL (REGISTER+dd)
+			0x3B: LDSHIFTOP('E', SRL, rp)        # LD E,SRL (REGISTER+dd)
+			0x3C: LDSHIFTOP('H', SRL, rp)        # LD H,SRL (REGISTER+dd)
+			0x3D: LDSHIFTOP('L', SRL, rp)        # LD L,SRL (REGISTER+dd)
 			0x3E: SRL "(#{rpn}+nn)"         # SRL (IX+nn)
-			
+			0x3F: LDSHIFTOP('A', SRL, rp)        # LD A,SRL (REGISTER+dd)
 			0x40: BIT_N_iRRpNNi(0, rp)         # BIT 0,(IX+nn)
 			0x41: BIT_N_iRRpNNi(0, rp)         # BIT 0,(IX+nn)
 			0x42: BIT_N_iRRpNNi(0, rp)         # BIT 0,(IX+nn)
@@ -2073,7 +2133,6 @@ window.JSSpeccy.buildZ80 = (opts) ->
 							CONTEND_READ_NO_MREQ(regPairs[#{rpPC}], 1);
 							CONTEND_READ_NO_MREQ(regPairs[#{rpPC}], 1);
 							regPairs[#{rpPC}]++;
-							regs[#{rR}] = ((regs[#{rR}] + 1) & 0x7f) | (regs[#{rR}] & 0x80);
 							#{opcodeSwitch(OPCODE_RUN_STRINGS_DDCB)}
 							break;
 						case 'ED':
@@ -2096,7 +2155,6 @@ window.JSSpeccy.buildZ80 = (opts) ->
 							CONTEND_READ_NO_MREQ(regPairs[#{rpPC}], 1);
 							CONTEND_READ_NO_MREQ(regPairs[#{rpPC}], 1);
 							regPairs[#{rpPC}]++;
-							regs[#{rR}] = ((regs[#{rR}] + 1) & 0x7f) | (regs[#{rR}] & 0x80);
 							#{opcodeSwitch(OPCODE_RUN_STRINGS_FDCB)}
 							break;
 						default:
