@@ -298,7 +298,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 		if bit == 7
 			updateSignFlag = "if (value & 0x80) regs[#{rF}] |= #{FLAG_S};"
 		else
-			updateSignFlag == ""
+			updateSignFlag = ""
 
 		"""
 			var addr = (regPairs[#{rp}] + offset) & 0xffff;
@@ -306,14 +306,14 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			regs[#{rF}] = ( regs[#{rF}] & #{FLAG_C} ) | #{FLAG_H} | ( ( addr >> 8 ) & #{FLAG_3 | FLAG_5} );
 			if ( !(value & #{0x01 << bit}) ) regs[#{rF}] |= #{FLAG_P | FLAG_Z};
 			#{updateSignFlag}
-			tstates += 9;
+			CONTEND_READ_NO_MREQ(addr, 1);
 		"""
 
 	BIT_N_iHLi = (bit) ->
 		if bit == 7
 			updateSignFlag = "if (value & 0x80) regs[#{rF}] |= #{FLAG_S};"
 		else
-			updateSignFlag == ""
+			updateSignFlag = ""
 
 		"""
 			var addr = regPairs[#{rpHL}];
@@ -328,7 +328,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 		if bit == 7
 			updateSignFlag = "if (regs[#{r}] & 0x80) regs[#{rF}] |= #{FLAG_S};"
 		else
-			updateSignFlag == ""
+			updateSignFlag = ""
 		"""
 			regs[#{rF}] = ( regs[#{rF}] & #{FLAG_C} ) | #{FLAG_H} | ( regs[#{r}] & #{FLAG_3 | FLAG_5} );
 			if( !(regs[#{r}] & #{0x01 << bit}) ) regs[#{rF}] |= #{FLAG_P | FLAG_Z};
