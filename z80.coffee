@@ -747,13 +747,13 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			tstates += 2;
 		"""
 
-	LDSHIFTOP = (regName, opcode, rp) ->
+	LDBITOP = (regName, opcode, bit, rp) ->
 		# load (rp+nn) into register regName, perform opcode, write back to (rp+nn)
 		regNum = eval("r#{regName}")
 		"""
 			var addr = (regPairs[#{rp}] + offset) & 0xffff;
 			regs[#{regNum}] = READMEM(addr);
-			#{opcode(regName)}
+			#{opcode(bit, regName)}
 			CONTEND_READ_NO_MREQ(addr, 1);
 			WRITEMEM(addr, regs[#{regNum}]);
 		"""
@@ -810,6 +810,17 @@ window.JSSpeccy.buildZ80 = (opts) ->
 				tstates += 2;
 			}
 			regPairs[#{rpHL}]++; regPairs[#{rpDE}]++;
+		"""
+
+	LDSHIFTOP = (regName, opcode, rp) ->
+		# load (rp+nn) into register regName, perform opcode, write back to (rp+nn)
+		regNum = eval("r#{regName}")
+		"""
+			var addr = (regPairs[#{rp}] + offset) & 0xffff;
+			regs[#{regNum}] = READMEM(addr);
+			#{opcode(regName)}
+			CONTEND_READ_NO_MREQ(addr, 1);
+			WRITEMEM(addr, regs[#{regNum}]);
 		"""
 
 	NEG = () ->
@@ -1526,39 +1537,134 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			0x7D: BIT_N_iRRpNNi(7, rp)         # BIT 7,(IX+nn)
 			0x7E: BIT_N_iRRpNNi(7, rp)         # BIT 7,(IX+nn)
 			0x7F: BIT_N_iRRpNNi(7, rp)         # BIT 7,(IX+nn)
-			
+			0x80: LDBITOP('B', RES, 0, rp)        # LD B,RES 0,(IX+dd)
+			0x81: LDBITOP('C', RES, 0, rp)        # LD C,RES 0,(IX+dd)
+			0x82: LDBITOP('D', RES, 0, rp)        # LD D,RES 0,(IX+dd)
+			0x83: LDBITOP('E', RES, 0, rp)        # LD E,RES 0,(IX+dd)
+			0x84: LDBITOP('H', RES, 0, rp)        # LD H,RES 0,(IX+dd)
+			0x85: LDBITOP('L', RES, 0, rp)        # LD L,RES 0,(IX+dd)
 			0x86: RES 0, "(#{rpn}+nn)"         # RES 0,(IX+nn)
-			
+			0x87: LDBITOP('A', RES, 0, rp)        # LD A,RES 0,(IX+dd)
+			0x88: LDBITOP('B', RES, 1, rp)        # LD B,RES 1,(IX+dd)
+			0x89: LDBITOP('C', RES, 1, rp)        # LD C,RES 1,(IX+dd)
+			0x8A: LDBITOP('D', RES, 1, rp)        # LD D,RES 1,(IX+dd)
+			0x8B: LDBITOP('E', RES, 1, rp)        # LD E,RES 1,(IX+dd)
+			0x8C: LDBITOP('H', RES, 1, rp)        # LD H,RES 1,(IX+dd)
+			0x8D: LDBITOP('L', RES, 1, rp)        # LD L,RES 1,(IX+dd)
 			0x8E: RES 1, "(#{rpn}+nn)"         # RES 1,(IX+nn)
-			
+			0x8F: LDBITOP('A', RES, 1, rp)        # LD A,RES 1,(IX+dd)
+			0x90: LDBITOP('B', RES, 2, rp)        # LD B,RES 2,(IX+dd)
+			0x91: LDBITOP('C', RES, 2, rp)        # LD C,RES 2,(IX+dd)
+			0x92: LDBITOP('D', RES, 2, rp)        # LD D,RES 2,(IX+dd)
+			0x93: LDBITOP('E', RES, 2, rp)        # LD E,RES 2,(IX+dd)
+			0x94: LDBITOP('H', RES, 2, rp)        # LD H,RES 2,(IX+dd)
+			0x95: LDBITOP('L', RES, 2, rp)        # LD L,RES 2,(IX+dd)
 			0x96: RES 2, "(#{rpn}+nn)"         # RES 2,(IX+nn)
-			
+			0x97: LDBITOP('A', RES, 2, rp)        # LD A,RES 2,(IX+dd)
+			0x98: LDBITOP('B', RES, 3, rp)        # LD B,RES 3,(IX+dd)
+			0x99: LDBITOP('C', RES, 3, rp)        # LD C,RES 3,(IX+dd)
+			0x9A: LDBITOP('D', RES, 3, rp)        # LD D,RES 3,(IX+dd)
+			0x9B: LDBITOP('E', RES, 3, rp)        # LD E,RES 3,(IX+dd)
+			0x9C: LDBITOP('H', RES, 3, rp)        # LD H,RES 3,(IX+dd)
+			0x9D: LDBITOP('L', RES, 3, rp)        # LD L,RES 3,(IX+dd)
 			0x9E: RES 3, "(#{rpn}+nn)"         # RES 3,(IX+nn)
-			
+			0x9F: LDBITOP('A', RES, 3, rp)        # LD A,RES 3,(IX+dd)
+			0xA0: LDBITOP('B', RES, 4, rp)        # LD B,RES 4,(IX+dd)
+			0xA1: LDBITOP('C', RES, 4, rp)        # LD C,RES 4,(IX+dd)
+			0xA2: LDBITOP('D', RES, 4, rp)        # LD D,RES 4,(IX+dd)
+			0xA3: LDBITOP('E', RES, 4, rp)        # LD E,RES 4,(IX+dd)
+			0xA4: LDBITOP('H', RES, 4, rp)        # LD H,RES 4,(IX+dd)
+			0xA5: LDBITOP('L', RES, 4, rp)        # LD L,RES 4,(IX+dd)
 			0xA6: RES 4, "(#{rpn}+nn)"         # RES 4,(IX+nn)
-			
+			0xA7: LDBITOP('A', RES, 4, rp)        # LD A,RES 4,(IX+dd)
+			0xA8: LDBITOP('B', RES, 5, rp)        # LD B,RES 5,(IX+dd)
+			0xA9: LDBITOP('C', RES, 5, rp)        # LD C,RES 5,(IX+dd)
+			0xAA: LDBITOP('D', RES, 5, rp)        # LD D,RES 5,(IX+dd)
+			0xAB: LDBITOP('E', RES, 5, rp)        # LD E,RES 5,(IX+dd)
+			0xAC: LDBITOP('H', RES, 5, rp)        # LD H,RES 5,(IX+dd)
+			0xAD: LDBITOP('L', RES, 5, rp)        # LD L,RES 5,(IX+dd)
 			0xAE: RES 5, "(#{rpn}+nn)"         # RES 5,(IX+nn)
-			
+			0xAF: LDBITOP('A', RES, 5, rp)        # LD A,RES 5,(IX+dd)
+			0xB0: LDBITOP('B', RES, 6, rp)        # LD B,RES 6,(IX+dd)
+			0xB1: LDBITOP('C', RES, 6, rp)        # LD C,RES 6,(IX+dd)
+			0xB2: LDBITOP('D', RES, 6, rp)        # LD D,RES 6,(IX+dd)
+			0xB3: LDBITOP('E', RES, 6, rp)        # LD E,RES 6,(IX+dd)
+			0xB4: LDBITOP('H', RES, 6, rp)        # LD H,RES 6,(IX+dd)
+			0xB5: LDBITOP('L', RES, 6, rp)        # LD L,RES 6,(IX+dd)
 			0xB6: RES 6, "(#{rpn}+nn)"         # RES 6,(IX+nn)
-			
+			0xB7: LDBITOP('A', RES, 6, rp)        # LD A,RES 6,(IX+dd)
+			0xB8: LDBITOP('B', RES, 7, rp)        # LD B,RES 7,(IX+dd)
+			0xB9: LDBITOP('C', RES, 7, rp)        # LD C,RES 7,(IX+dd)
+			0xBA: LDBITOP('D', RES, 7, rp)        # LD D,RES 7,(IX+dd)
+			0xBB: LDBITOP('E', RES, 7, rp)        # LD E,RES 7,(IX+dd)
+			0xBC: LDBITOP('H', RES, 7, rp)        # LD H,RES 7,(IX+dd)
+			0xBD: LDBITOP('L', RES, 7, rp)        # LD L,RES 7,(IX+dd)
 			0xBE: RES 7, "(#{rpn}+nn)"         # RES 7,(IX+nn)
-			
+			0xBF: LDBITOP('A', RES, 7, rp)        # LD A,RES 7,(IX+dd)
+			0xC0: LDBITOP('B', SET, 0, rp)        # LD B,SET 0,(IX+dd)
+			0xC1: LDBITOP('C', SET, 0, rp)        # LD C,SET 0,(IX+dd)
+			0xC2: LDBITOP('D', SET, 0, rp)        # LD D,SET 0,(IX+dd)
+			0xC3: LDBITOP('E', SET, 0, rp)        # LD E,SET 0,(IX+dd)
+			0xC4: LDBITOP('H', SET, 0, rp)        # LD H,SET 0,(IX+dd)
+			0xC5: LDBITOP('L', SET, 0, rp)        # LD L,SET 0,(IX+dd)
 			0xC6: SET 0, "(#{rpn}+nn)"         # SET 0,(IX+nn)
-			
+			0xC7: LDBITOP('A', SET, 0, rp)        # LD A,SET 0,(IX+dd)
+			0xC8: LDBITOP('B', SET, 1, rp)        # LD B,SET 1,(IX+dd)
+			0xC9: LDBITOP('C', SET, 1, rp)        # LD C,SET 1,(IX+dd)
+			0xCA: LDBITOP('D', SET, 1, rp)        # LD D,SET 1,(IX+dd)
+			0xCB: LDBITOP('E', SET, 1, rp)        # LD E,SET 1,(IX+dd)
+			0xCC: LDBITOP('H', SET, 1, rp)        # LD H,SET 1,(IX+dd)
+			0xCD: LDBITOP('L', SET, 1, rp)        # LD L,SET 1,(IX+dd)
 			0xCE: SET 1, "(#{rpn}+nn)"         # SET 1,(IX+nn)
-			
+			0xCF: LDBITOP('A', SET, 1, rp)        # LD A,SET 1,(IX+dd)
+			0xD0: LDBITOP('B', SET, 2, rp)        # LD B,SET 2,(IX+dd)
+			0xD1: LDBITOP('C', SET, 2, rp)        # LD C,SET 2,(IX+dd)
+			0xD2: LDBITOP('D', SET, 2, rp)        # LD D,SET 2,(IX+dd)
+			0xD3: LDBITOP('E', SET, 2, rp)        # LD E,SET 2,(IX+dd)
+			0xD4: LDBITOP('H', SET, 2, rp)        # LD H,SET 2,(IX+dd)
+			0xD5: LDBITOP('L', SET, 2, rp)        # LD L,SET 2,(IX+dd)
 			0xD6: SET 2, "(#{rpn}+nn)"         # SET 2,(IX+nn)
-			
+			0xD7: LDBITOP('A', SET, 2, rp)        # LD A,SET 2,(IX+dd)
+			0xD8: LDBITOP('B', SET, 3, rp)        # LD B,SET 3,(IX+dd)
+			0xD9: LDBITOP('C', SET, 3, rp)        # LD C,SET 3,(IX+dd)
+			0xDA: LDBITOP('D', SET, 3, rp)        # LD D,SET 3,(IX+dd)
+			0xDB: LDBITOP('E', SET, 3, rp)        # LD E,SET 3,(IX+dd)
+			0xDC: LDBITOP('H', SET, 3, rp)        # LD H,SET 3,(IX+dd)
+			0xDD: LDBITOP('L', SET, 3, rp)        # LD L,SET 3,(IX+dd)
 			0xDE: SET 3, "(#{rpn}+nn)"         # SET 3,(IX+nn)
-			
+			0xDF: LDBITOP('A', SET, 3, rp)        # LD A,SET 3,(IX+dd)
+			0xE0: LDBITOP('B', SET, 4, rp)        # LD B,SET 4,(IX+dd)
+			0xE1: LDBITOP('C', SET, 4, rp)        # LD C,SET 4,(IX+dd)
+			0xE2: LDBITOP('D', SET, 4, rp)        # LD D,SET 4,(IX+dd)
+			0xE3: LDBITOP('E', SET, 4, rp)        # LD E,SET 4,(IX+dd)
+			0xE4: LDBITOP('H', SET, 4, rp)        # LD H,SET 4,(IX+dd)
+			0xE5: LDBITOP('L', SET, 4, rp)        # LD L,SET 4,(IX+dd)
 			0xE6: SET 4, "(#{rpn}+nn)"         # SET 4,(IX+nn)
-			
+			0xE7: LDBITOP('A', SET, 4, rp)        # LD A,SET 4,(IX+dd)
+			0xE8: LDBITOP('B', SET, 5, rp)        # LD B,SET 5,(IX+dd)
+			0xE9: LDBITOP('C', SET, 5, rp)        # LD C,SET 5,(IX+dd)
+			0xEA: LDBITOP('D', SET, 5, rp)        # LD D,SET 5,(IX+dd)
+			0xEB: LDBITOP('E', SET, 5, rp)        # LD E,SET 5,(IX+dd)
+			0xEC: LDBITOP('H', SET, 5, rp)        # LD H,SET 5,(IX+dd)
+			0xED: LDBITOP('L', SET, 5, rp)        # LD L,SET 5,(IX+dd)
 			0xEE: SET 5, "(#{rpn}+nn)"         # SET 5,(IX+nn)
-			
+			0xEF: LDBITOP('A', SET, 5, rp)        # LD A,SET 5,(IX+dd)
+			0xF0: LDBITOP('B', SET, 6, rp)        # LD B,SET 6,(IX+dd)
+			0xF1: LDBITOP('C', SET, 6, rp)        # LD C,SET 6,(IX+dd)
+			0xF2: LDBITOP('D', SET, 6, rp)        # LD D,SET 6,(IX+dd)
+			0xF3: LDBITOP('E', SET, 6, rp)        # LD E,SET 6,(IX+dd)
+			0xF4: LDBITOP('H', SET, 6, rp)        # LD H,SET 6,(IX+dd)
+			0xF5: LDBITOP('L', SET, 6, rp)        # LD L,SET 6,(IX+dd)
 			0xF6: SET 6, "(#{rpn}+nn)"         # SET 6,(IX+nn)
-			
+			0xF7: LDBITOP('A', SET, 6, rp)        # LD A,SET 6,(IX+dd)
+			0xF8: LDBITOP('B', SET, 7, rp)        # LD B,SET 7,(IX+dd)
+			0xF9: LDBITOP('C', SET, 7, rp)        # LD C,SET 7,(IX+dd)
+			0xFA: LDBITOP('D', SET, 7, rp)        # LD D,SET 7,(IX+dd)
+			0xFB: LDBITOP('E', SET, 7, rp)        # LD E,SET 7,(IX+dd)
+			0xFC: LDBITOP('H', SET, 7, rp)        # LD H,SET 7,(IX+dd)
+			0xFD: LDBITOP('L', SET, 7, rp)        # LD L,SET 7,(IX+dd)
 			0xFE: SET 7, "(#{rpn}+nn)"         # SET 7,(IX+nn)
-			
+			0xFF: LDBITOP('A', SET, 7, rp)        # LD A,SET 7,(IX+dd)
 			0x100: 'ddcb'
 		}
 
