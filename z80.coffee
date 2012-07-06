@@ -185,19 +185,27 @@ window.JSSpeccy.buildZ80 = (opts) ->
 				getter = ''
 			else
 				getter = """
-					var offset = READMEM(regPairs[#{rpPC}]); regPairs[#{rpPC}]++; tstates += 4;
+					var offset = READMEM(regPairs[#{rpPC}]);
 					if (offset & 0x80) offset -= 0x100;
+					CONTEND_READ_NO_MREQ(regPairs[#{rpPC}], 1);
+					CONTEND_READ_NO_MREQ(regPairs[#{rpPC}], 1);
+					CONTEND_READ_NO_MREQ(regPairs[#{rpPC}], 1);
+					CONTEND_READ_NO_MREQ(regPairs[#{rpPC}], 1);
+					CONTEND_READ_NO_MREQ(regPairs[#{rpPC}], 1);
+					regPairs[#{rpPC}]++;
 				"""
 			getter += """
 				var addr = (regPairs[#{rp}] + offset) & 0xffff;
 				var val = READMEM(addr);
-				tstates += 1;
 			"""
 			{
 				'getter': getter
 				'v': 'val'
 				'trunc': '& 0xff'
-				'setter': "WRITEMEM(addr, val); tstates += 1;"
+				'setter': """
+					CONTEND_READ_NO_MREQ(addr, 1);
+					WRITEMEM(addr, val);
+				"""
 			}
 		else if param == 'add'
 			# special case for incorporating ADD/SUB into DAA calculation using a custom variable 'add'
@@ -656,19 +664,26 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			if (offset & 0x80) offset -= 0x100;
 			var addr = (regPairs[#{rp}] + offset) & 0xffff;
 			
-			var val = READMEM(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
+			var val = READMEM(regPairs[#{rpPC}]);
+			CONTEND_READ_NO_MREQ(regPairs[#{rpPC}], 1);
+			CONTEND_READ_NO_MREQ(regPairs[#{rpPC}], 1);
+			regPairs[#{rpPC}]++;
 			WRITEMEM(addr, val);
-			tstates += 2;
 		"""
 
 	LD_iRRpNNi_R = (rp, r) ->
 		"""
-			var offset = READMEM(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
+			var offset = READMEM(regPairs[#{rpPC}]);
+			CONTEND_READ_NO_MREQ(regPairs[#{rpPC}], 1);
+			CONTEND_READ_NO_MREQ(regPairs[#{rpPC}], 1);
+			CONTEND_READ_NO_MREQ(regPairs[#{rpPC}], 1);
+			CONTEND_READ_NO_MREQ(regPairs[#{rpPC}], 1);
+			CONTEND_READ_NO_MREQ(regPairs[#{rpPC}], 1);
+			regPairs[#{rpPC}]++;
 			if (offset & 0x80) offset -= 0x100;
 			var addr = (regPairs[#{rp}] + offset) & 0xffff;
 			
 			WRITEMEM(addr, regs[#{r}]);
-			tstates += 5;
 		"""
 
 	LD_R_iRRi = (r, rp) ->
@@ -678,12 +693,17 @@ window.JSSpeccy.buildZ80 = (opts) ->
 
 	LD_R_iRRpNNi = (r, rp) ->
 		"""
-			var offset = READMEM(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
+			var offset = READMEM(regPairs[#{rpPC}]);
+			CONTEND_READ_NO_MREQ(regPairs[#{rpPC}], 1);
+			CONTEND_READ_NO_MREQ(regPairs[#{rpPC}], 1);
+			CONTEND_READ_NO_MREQ(regPairs[#{rpPC}], 1);
+			CONTEND_READ_NO_MREQ(regPairs[#{rpPC}], 1);
+			CONTEND_READ_NO_MREQ(regPairs[#{rpPC}], 1);
+			regPairs[#{rpPC}]++;
 			if (offset & 0x80) offset -= 0x100;
 			var addr = (regPairs[#{rp}] + offset) & 0xffff;
 			
 			regs[#{r}] = READMEM(addr);
-			tstates += 5;
 		"""
 
 	LD_R_N = (r) ->
@@ -2048,8 +2068,11 @@ window.JSSpeccy.buildZ80 = (opts) ->
 						case 'DDCB':
 							offset = READMEM(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 							if (offset & 0x80) offset -= 0x100;
-							CONTEND_READ(regPairs[#{rpPC}], 4);
-							opcode = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
+							CONTEND_READ(regPairs[#{rpPC}], 3);
+							opcode = memory.read(regPairs[#{rpPC}]);
+							CONTEND_READ_NO_MREQ(regPairs[#{rpPC}], 1);
+							CONTEND_READ_NO_MREQ(regPairs[#{rpPC}], 1);
+							regPairs[#{rpPC}]++;
 							regs[#{rR}] = ((regs[#{rR}] + 1) & 0x7f) | (regs[#{rR}] & 0x80);
 							#{opcodeSwitch(OPCODE_RUN_STRINGS_DDCB)}
 							break;
@@ -2068,8 +2091,11 @@ window.JSSpeccy.buildZ80 = (opts) ->
 						case 'FDCB':
 							offset = READMEM(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 							if (offset & 0x80) offset -= 0x100;
-							CONTEND_READ(regPairs[#{rpPC}], 4);
-							opcode = memory.read(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
+							CONTEND_READ(regPairs[#{rpPC}], 3);
+							opcode = memory.read(regPairs[#{rpPC}]);
+							CONTEND_READ_NO_MREQ(regPairs[#{rpPC}], 1);
+							CONTEND_READ_NO_MREQ(regPairs[#{rpPC}], 1);
+							regPairs[#{rpPC}]++;
 							regs[#{rR}] = ((regs[#{rR}] + 1) & 0x7f) | (regs[#{rR}] & 0x80);
 							#{opcodeSwitch(OPCODE_RUN_STRINGS_FDCB)}
 							break;
