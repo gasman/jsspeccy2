@@ -8,7 +8,7 @@ JSSpeccy.Spectrum = function(opts) {
 	var controller = opts.controller;
 
 	var memory = JSSpeccy.Memory({
-		model: (model === JSSpeccy.Spectrum.MODEL_48K ? JSSpeccy.Memory.MODEL_48K : JSSpeccy.Memory.MODEL_128K)
+		model: model
 	});
 
 	var display = JSSpeccy.Display({
@@ -20,7 +20,8 @@ JSSpeccy.Spectrum = function(opts) {
 	var ioBus = JSSpeccy.IOBus({
 		keyboard: keyboard,
 		display: display,
-		memory: memory
+		memory: memory,
+		contentionTable: model.contentionTable
 	});
 
 	var processor = JSSpeccy.Z80({
@@ -97,13 +98,36 @@ JSSpeccy.Spectrum = function(opts) {
 
 	return self;
 };
+
+
+JSSpeccy.buildContentionTables = function(model) {
+	function buildTable(pattern) {
+		var table = new Uint8Array(model.frameLength);
+		for (var line = 0; line < 192; line++) {
+			var lineStartTime = model.tstatesUntilOrigin + (line * model.tstatesPerScanline);
+			for (var x = 0; x < 128; x++) {
+				table[lineStartTime + x] = pattern[x % 8];
+			}
+		}
+		return table;
+	}
+
+	model.contentionTable = buildTable(model.contentionPattern);
+	model.noContentionTable = buildTable([0,0,0,0,0,0,0,0]);
+};
+
 JSSpeccy.Spectrum.MODEL_48K = {
 	tstatesUntilOrigin: 14336,
 	tstatesPerScanline: 224,
-	frameLength: 69888
+	frameLength: 69888,
+	contentionPattern: [6,5,4,3,2,1,0,0]
 };
+JSSpeccy.buildContentionTables(JSSpeccy.Spectrum.MODEL_48K);
+
 JSSpeccy.Spectrum.MODEL_128K = {
 	tstatesUntilOrigin: 14362,
 	tstatesPerScanline: 228,
-	frameLength: 70908
+	frameLength: 70908,
+	contentionPattern: [6,5,4,3,2,1,0,0]
 };
+JSSpeccy.buildContentionTables(JSSpeccy.Spectrum.MODEL_128K);

@@ -155,7 +155,7 @@ function JSSpeccy(container, opts) {
 
 	JSSpeccy.buildZ80({
 		traps: z80Traps,
-		applyContention: false
+		applyContention: true
 	});
 
 	var spectrum = JSSpeccy.Spectrum({

@@ -2565,18 +2565,18 @@ window.JSSpeccy.buildZ80 = (opts) ->
 	defineZ80JS = defineZ80JS.replace(/WRITEMEM\((.*?),(.*?)\)/g, '(CONTEND_WRITE($1, 3), memory.write($1,$2))');
 	if opts.applyContention
 		defineZ80JS = defineZ80JS.replace(/CONTEND_READ\((.*?),(.*?)\)/g,
-			'(memory.contend($1), tstates += ($2))');
+			'(tstates += memory.contend($1, tstates) + ($2))');
 		defineZ80JS = defineZ80JS.replace(/CONTEND_WRITE\((.*?),(.*?)\)/g,
-			'(memory.contend($1), tstates += ($2))');
+			'(tstates += memory.contend($1, tstates) + ($2))');
 		defineZ80JS = defineZ80JS.replace(/CONTEND_READ_NO_MREQ\((.*?),(.*?)\)/g,
-			'(memory.contend($1), tstates += ($2))');
+			'(tstates += memory.contend($1, tstates) + ($2))');
 		defineZ80JS = defineZ80JS.replace(/CONTEND_WRITE_NO_MREQ\((.*?),(.*?)\)/g,
-			'(memory.contend($1), tstates += ($2))');
+			'(tstates += memory.contend($1, tstates) + ($2))');
 		defineZ80JS = defineZ80JS.replace(/CONTEND_PORT_EARLY\((.*?)\)/g,
 			"""
 				var isContendedMemory = memory.isContended($1);
 				var isULAPort = ioBus.isULAPort($1);
-				if (isContendedMemory) ioBus.contend($1);
+				if (isContendedMemory) tstates += ioBus.contend($1, tstates);
 				tstates += 1;
 			""");
 		defineZ80JS = defineZ80JS.replace(/CONTEND_PORT_LATE\((.*?)\)/g,

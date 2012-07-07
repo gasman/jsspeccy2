@@ -54,8 +54,9 @@
 					return ((addr & 0xc000) == 0x4000);
 				}
 
-				self.contend = function(addr) {
+				self.contend = function(addr, tstate) {
 					if (self.oncontend) self.oncontend(addr);
+					return 0;
 				}
 
 				self.read = function(addr) {
@@ -103,6 +104,7 @@
 				}
 				self.contend = function(addr) {
 					if (self.oncontend) self.oncontend(addr);
+					return 0;
 				}
 
 				return self;

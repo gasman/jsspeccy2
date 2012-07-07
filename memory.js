@@ -1,16 +1,22 @@
 JSSpeccy.Memory = function(opts) {
 	var self = {};
-	var model = opts.model || JSSpeccy.Memory.MODEL_128K;
+	var model = opts.model || JSSpeccy.Spectrum.MODEL_128K;
 
-	function MemoryPage(data) {
+	var contentionTableLength = model.frameLength;
+
+	var noContentionTable = model.noContentionTable;
+	var contentionTable = model.contentionTable;
+
+	function MemoryPage(data, isContended) {
 		var self = {};
 		self.memory = (data || new Uint8Array(0x4000));
+		self.contentionTable = (isContended ? contentionTable : noContentionTable);
 		return self;
 	}
 	
 	var ramPages = [];
 	for (var i = 0; i < 8; i++) {
-		ramPages[i] = MemoryPage();
+		ramPages[i] = MemoryPage(null, i & 0x01); /* for MODEL_128K (and implicitly 48K), odd pages are contended */
 	}
 
 	var romPages = {
@@ -22,7 +28,7 @@ JSSpeccy.Memory = function(opts) {
 	var scratch = MemoryPage();
 	
 	var readSlots = [
-		model === JSSpeccy.Memory.MODEL_48K ? romPages['48.rom'].memory : romPages['128-0.rom'].memory,
+		model === JSSpeccy.Spectrum.MODEL_48K ? romPages['48.rom'].memory : romPages['128-0.rom'].memory,
 		ramPages[5].memory,
 		ramPages[2].memory,
 		ramPages[0].memory
@@ -35,13 +41,19 @@ JSSpeccy.Memory = function(opts) {
 		ramPages[0].memory
 	];
 
+	var contentionBySlot = [
+		noContentionTable,
+		contentionTable,
+		noContentionTable,
+		noContentionTable
+	];
+
 	self.isContended = function(addr) {
-		return ((addr & 0xc000) == 0x4000);
+		return (contentionBySlot[addr >> 14] == contentionTable);
 	};
 
-	self.contend = function(addr) {
-		if (self.oncontend) self.oncontend(addr);
-		return 0;
+	self.contend = function(addr, tstate) {
+		return contentionBySlot[addr >> 14][tstate % contentionTableLength];
 	};
 
 	self.read = function(addr) {
@@ -59,10 +71,12 @@ JSSpeccy.Memory = function(opts) {
 	};
 
 	var pagingIsLocked = false;
-	if (model === JSSpeccy.Memory.MODEL_128K) {
+	if (model === JSSpeccy.Spectrum.MODEL_128K) {
 		self.setPaging = function(val) {
 			if (pagingIsLocked) return;
-			readSlots[3] = writeSlots[3] = ramPages[val & 0x07].memory;
+			var highMemoryPage = ramPages[val & 0x07];
+			readSlots[3] = writeSlots[3] = highMemoryPage.memory;
+			contentionBySlot[3] = highMemoryPage.contentionTable;
 			readSlots[0] = (val & 0x10) ? romPages['128-1.rom'].memory : romPages['128-0.rom'].memory;
 			screenPage = (val & 0x08) ? ramPages[7].memory : ramPages[5].memory;
 			pagingIsLocked = val & 0x20;
@@ -89,5 +103,3 @@ JSSpeccy.Memory = function(opts) {
 
 	return self;
 };
-JSSpeccy.Memory.MODEL_48K = 1;
-JSSpeccy.Memory.MODEL_128K = 2;
