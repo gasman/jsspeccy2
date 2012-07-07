@@ -380,39 +380,48 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			regs[#{rF}] = ( cptemp & 0x100 ? #{FLAG_C} : ( cptemp ? 0 : #{FLAG_Z} ) ) | #{FLAG_N} | halfcarrySubTable[lookup & 0x07] | overflowSubTable[lookup >> 4] | ( #{operand.v} & #{FLAG_3 | FLAG_5} ) | ( cptemp & #{FLAG_S} );
 		"""
 
-	CPDR = () ->
+	CPI_CPD = (modifier) ->
 		"""
 			var value = READMEM(regPairs[#{rpHL}]);
 			var bytetemp = (regs[#{rA}] - value) & 0xff;
-			var lookup = ( (regs[#{rA}] & 0x08) >> 3 ) | ( (value & 0x08) >> 2 ) | ( (bytetemp & 0x08) >> 1 );
-			regPairs[#{rpBC}]--;
-			regs[#{rF}] = (regs[#{rF}] & #{FLAG_C}) | ( regPairs[#{rpBC}] ? #{FLAG_V | FLAG_N} : #{FLAG_N} ) | halfcarrySubTable[lookup] | (bytetemp ? 0 : #{FLAG_Z}) | (bytetemp & #{FLAG_S});
+			var lookup = ((regs[#{rA}] & 0x08) >> 3) | ((value & 0x08) >> 2) | ((bytetemp & 0x08) >> 1);
+			var originalHL = regPairs[#{rpHL}];
+			CONTEND_READ_NO_MREQ(originalHL, 1);
+			CONTEND_READ_NO_MREQ(originalHL, 1);
+			CONTEND_READ_NO_MREQ(originalHL, 1);
+			CONTEND_READ_NO_MREQ(originalHL, 1);
+			CONTEND_READ_NO_MREQ(originalHL, 1);
+			regPairs[#{rpHL}]#{modifier}; regPairs[#{rpBC}]--;
+			regs[#{rF}] = (regs[#{rF}] & #{FLAG_C}) | (regPairs[#{rpBC}] ? #{FLAG_V | FLAG_N} : #{FLAG_N}) | halfcarrySubTable[lookup] | (bytetemp ? 0 : #{FLAG_Z}) | (bytetemp & #{FLAG_S});
 			if (regs[#{rF}] & #{FLAG_H}) bytetemp--;
 			regs[#{rF}] |= (bytetemp & #{FLAG_3}) | ( (bytetemp & 0x02) ? #{FLAG_5} : 0 );
-			if ((regs[#{rF}] & #{FLAG_V | FLAG_Z}) == #{FLAG_V}) {
-				regPairs[#{rpPC}] -= 2;
-				tstates += 5;
-			}
-			regPairs[#{rpHL}]--;
-			tstates += 5;
 		"""
 
-	CPIR = () ->
+	CPIR_CPDR = (modifier) ->
 		"""
-			var value = READMEM(regPairs[#{rpHL}]);
-			var bytetemp = (regs[#{rA}] - value) & 0xff;
-			var lookup = ( (regs[#{rA}] & 0x08) >> 3 ) | ( (value & 0x08) >> 2 ) | ( (bytetemp & 0x08) >> 1 );
-			regPairs[#{rpBC}]--;
-			regs[#{rF}] = (regs[#{rF}] & #{FLAG_C}) | ( regPairs[#{rpBC}] ? #{FLAG_V | FLAG_N} : #{FLAG_N} ) | halfcarrySubTable[lookup] | (bytetemp ? 0 : #{FLAG_Z}) | (bytetemp & #{FLAG_S});
-			if (regs[#{rF}] & #{FLAG_H}) bytetemp--;
-			regs[#{rF}] |= (bytetemp & #{FLAG_3}) | ( (bytetemp & 0x02) ? #{FLAG_5} : 0 );
+			#{CPI_CPD(modifier)}
 			if ((regs[#{rF}] & #{FLAG_V | FLAG_Z}) == #{FLAG_V}) {
 				regPairs[#{rpPC}] -= 2;
-				tstates += 5;
+				CONTEND_READ_NO_MREQ(originalHL, 1);
+				CONTEND_READ_NO_MREQ(originalHL, 1);
+				CONTEND_READ_NO_MREQ(originalHL, 1);
+				CONTEND_READ_NO_MREQ(originalHL, 1);
+				CONTEND_READ_NO_MREQ(originalHL, 1);
 			}
-			regPairs[#{rpHL}]++;
-			tstates += 5;
 		"""
+
+	CPD = () ->
+		CPI_CPD('--')
+
+	CPI = () ->
+		CPI_CPD('++')
+
+	CPDR = () ->
+		CPIR_CPDR('--')
+
+	CPIR = () ->
+		CPIR_CPDR('++')
+
 
 	DAA = () ->
 		subClause = SUB_A('add')
@@ -1916,8 +1925,10 @@ window.JSSpeccy.buildZ80 = (opts) ->
 		0x7E: IM(2)         # IM 2
 
 		0xA0: LDI()         # LDI
+		0xA1: CPI()         # CPI
 
 		0xA8: LDD()         # LDD
+		0xA9: CPD()         # CPD
 		
 		0xB0: LDIR()         # LDIR
 		0xb1: CPIR()         # CPIR
