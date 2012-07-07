@@ -75,13 +75,21 @@ JSSpeccy.UI = function(opts) {
 		showPanel(openFilePanel);
 	};
 
+	var aboutButton = addToolbarButton('about', 'about');
+	aboutButton.onclick = function() {
+		showPanel(aboutPanel);
+	};
+
 	var panels = [];
 
-	function createPanel() {
+	function createPanel(className) {
 		var panel = document.createElement('div');
 		panel.className = 'panel';
 		container.appendChild(panel);
 		panels.push(panel);
+		if (className) {
+			panel.className += ' ' + className;
+		}
 
 		var close = document.createElement('button');
 		setInnerText(close, 'close');
@@ -214,6 +222,15 @@ JSSpeccy.UI = function(opts) {
 			wosDownloads.dblclick(loadSelectedFile);
 		})(jQuery);
 	}
+
+	var aboutPanel = createPanel('about');
+	var aboutContent = document.createElement('div');
+	aboutPanel.appendChild(aboutContent);
+	aboutContent.innerHTML += '<h1>JSSpeccy</h1><h2>a ZX Spectrum emulator in Javascript</h2>';
+	aboutContent.innerHTML += '<p>By <a href="http://matt.west.co.tt/">Matt Westcott</a></p>';
+	aboutContent.innerHTML += '<p><a href="http://matt.west.co.tt/category/javascript/jsspeccy/">JSSpeccy homepage</a> (including downloads and source code)</p>';
+	aboutContent.innerHTML += '<p>Based on <a href="http://fuse-emulator.sourceforge.net/">Fuse</a> by Philip Kendall et al. Icons from <a href="http://www.icon-king.com/projects/nuvola/">Nuvola</a> by David Vignoni.</p>';
+	aboutContent.innerHTML += '<div class="licence"><p>This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.</p><p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.</p><p>You should have received a copy of the GNU General Public License along with this program.  If not, see &lt;<a href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>&gt;.</p></div>';
 
 	function showPanel(requestedPanel) {
 		for (var i = 0; i < panels.length; i++) {

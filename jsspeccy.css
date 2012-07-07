@@ -38,13 +38,17 @@
 .jsspeccy .toolbar .open {
 	background-image: url(images/48x48_folder_blue_open.png);
 }
+.jsspeccy .toolbar .about {
+	background-image: url(images/48x48_messagebox_info.png);
+}
 
 .jsspeccy .panel {
 	top: 30px;
 	left: 50%;
 	margin-left: -300px;
 	padding-left: 10px;
-	width: 600px;
+	padding-right: 10px;
+	width: 580px;
 	height: 400px;
 	background-color: white;
 	display: none;
@@ -53,5 +57,20 @@
 }
 
 .jsspeccy .panel .close {
-	float: right;
+	position: absolute;
+	right: 0px;
+}
+
+.jsspeccy .about {
+	text-align: center;
+}
+.jsspeccy .about h1 {
+	font-size: 18pt;
+	margin-bottom: 0;
+}
+.jsspeccy .about h2 {
+	font-size: 12pt;
+}
+.jsspeccy .about .licence {
+	font-size: 9pt;
 }
