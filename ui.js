@@ -4,6 +4,17 @@ JSSpeccy.UI = function(opts) {
 	var container = opts.container;
 	var controller = opts.controller;
 	var scaleFactor = opts.scaleFactor || 2;
+
+	var setInnerText;
+	if (document.getElementsByTagName("body")[0].innerText !== undefined) {
+		setInnerText = function (elem, text) {
+			elem.innerText = text;
+		};
+	} else {
+		setInnerText = function (elem, text) {
+			elem.textContent = text;
+		};
+	}
 	
 	container.className += ' jsspeccy';
 	self.canvas = document.createElement('canvas');
@@ -32,7 +43,7 @@ JSSpeccy.UI = function(opts) {
 	function addToolbarButton(className, text) {
 		var button = document.createElement('button');
 		button.className = className;
-		button.innerText = text;
+		setInnerText(button, text);
 		var li = document.createElement('li');
 		toolbar.appendChild(li);
 		li.appendChild(button);
@@ -73,7 +84,7 @@ JSSpeccy.UI = function(opts) {
 		panels.push(panel);
 
 		var close = document.createElement('button');
-		close.innerText = 'close';
+		setInnerText(close, 'close');
 		close.className = 'close';
 		close.onclick = function() {hidePanels();};
 		panel.appendChild(close);
@@ -83,7 +94,7 @@ JSSpeccy.UI = function(opts) {
 	var openFilePanel = createPanel();
 
 	var loadFromDiskHeader = document.createElement('h2');
-	loadFromDiskHeader.innerText = 'Load from disk:';
+	setInnerText(loadFromDiskHeader, 'Load from disk:');
 	openFilePanel.appendChild(loadFromDiskHeader);
 	var fileSelect = document.createElement('input');
 	fileSelect.type = 'file';
@@ -94,12 +105,12 @@ JSSpeccy.UI = function(opts) {
 	};
 
 	var loadFromWebHeader = document.createElement('h2');
-	loadFromWebHeader.innerText = 'Load from web:';
+	setInnerText(loadFromWebHeader, 'Load from web:');
 	openFilePanel.appendChild(loadFromWebHeader);
 	var urlField = document.createElement('input');
 	openFilePanel.appendChild(urlField);
 	var openUrlButton = document.createElement('button');
-	openUrlButton.innerText = 'Open URL';
+	setInnerText(openUrlButton, 'Open URL');
 	openFilePanel.appendChild(openUrlButton);
 	openUrlButton.onclick = function() {
 		var url = urlField.value;
