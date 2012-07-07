@@ -932,11 +932,30 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			regs[#{rF}] = (outitemp & 0x80 ? #{FLAG_N} : 0) | ( (outitemp2 < outitemp) ? #{FLAG_H | FLAG_C} : 0) | (parityTable[ (outitemp2 & 0x07) ^ regs[#{rB}] ] ? #{FLAG_P} : 0 ) | sz53Table[ regs[#{rB}] ];
 		"""
 
+	OTIR_OTDR = (modifier) ->
+		"""
+			#{OUTI_OUTD(modifier)}
+			if (regs[#{rB}]) {
+				regPairs[#{rpPC}]-=2;
+				CONTEND_READ_NO_MREQ(regPairs[#{rpBC}], 1);
+				CONTEND_READ_NO_MREQ(regPairs[#{rpBC}], 1);
+				CONTEND_READ_NO_MREQ(regPairs[#{rpBC}], 1);
+				CONTEND_READ_NO_MREQ(regPairs[#{rpBC}], 1);
+				CONTEND_READ_NO_MREQ(regPairs[#{rpBC}], 1);
+			}
+		"""
+
 	OUTD = () ->
 		OUTI_OUTD('--');
 
 	OUTI = () ->
 		OUTI_OUTD('++');
+
+	OTDR = () ->
+		OTIR_OTDR('--');
+
+	OTIR = () ->
+		OTIR_OTDR('++');
 
 	POP_RR = (rp) ->
 		"""
@@ -1983,10 +2002,12 @@ window.JSSpeccy.buildZ80 = (opts) ->
 		0xB0: LDIR()         # LDIR
 		0xb1: CPIR()         # CPIR
 		0xB2: INIR()         # INIR
+		0xB3: OTIR()         # OTIR
 		
 		0xB8: LDDR()         # LDDR
 		0xb9: CPDR()         # CPDR
 		0xBA: INDR()         # INDR
+		0xBB: OTDR()         # OTDR
 		
 		0x100: 'ed'
 	}
