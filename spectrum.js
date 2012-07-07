@@ -14,7 +14,7 @@ JSSpeccy.Spectrum = function(opts) {
 	var display = JSSpeccy.Display({
 		ui: ui,
 		memory: memory,
-		model: (model === JSSpeccy.Spectrum.MODEL_48K ? JSSpeccy.Display.MODEL_48K : JSSpeccy.Display.MODEL_128K)
+		model: model
 	});
 
 	var ioBus = JSSpeccy.IOBus({
@@ -97,6 +97,13 @@ JSSpeccy.Spectrum = function(opts) {
 
 	return self;
 };
-JSSpeccy.Spectrum.MODEL_48K = 1;
-JSSpeccy.Spectrum.MODEL_128K = 2;
-
+JSSpeccy.Spectrum.MODEL_48K = {
+	tstatesUntilOrigin: 14336,
+	tstatesPerScanline: 224,
+	frameLength: 69888
+};
+JSSpeccy.Spectrum.MODEL_128K = {
+	tstatesUntilOrigin: 14362,
+	tstatesPerScanline: 228,
+	frameLength: 70908
+};
