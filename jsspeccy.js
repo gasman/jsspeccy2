@@ -1,3 +1,5 @@
+if (!window.DataView) window.DataView = jDataView;
+
 function JSSpeccy(container, opts) {
 	if (typeof(container) === 'string') {
 		container = document.getElementById(container);
