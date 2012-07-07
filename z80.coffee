@@ -781,26 +781,25 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			var byteTemp = READMEM(regPairs[#{rpHL}]);
 			regPairs[#{rpBC}]--;
 			WRITEMEM(regPairs[#{rpDE}],bytetemp);
+			var originalDE = regPairs[#{rpDE}];
 			regPairs[#{rpDE}]--; regPairs[#{rpHL}]--;
 			bytetemp = (bytetemp + regs[#{rA}]) & 0xff;
 			regs[#{rF}] = (regs[#{rF}] & #{FLAG_C | FLAG_Z | FLAG_S}) | (regPairs[#{rpBC}] ? #{FLAG_V} : 0) | (bytetemp & #{FLAG_3}) | ((bytetemp & 0x02) ? #{FLAG_5} : 0);
-			tstates += 2;
+			CONTEND_READ_NO_MREQ(originalDE, 1);
+			CONTEND_READ_NO_MREQ(originalDE, 1);
 		"""
 
 	LDDR = () ->
 		"""
-			var bytetemp = READMEM(regPairs[#{rpHL}]);
-			WRITEMEM(regPairs[#{rpDE}],bytetemp);
-			regPairs[#{rpBC}]--;
-			bytetemp = (bytetemp + regs[#{rA}]) & 0xff;
-			regs[#{rF}] = (regs[#{rF}] & #{FLAG_C | FLAG_Z | FLAG_S}) | (regPairs[#{rpBC}] ? #{FLAG_V} : 0) | (bytetemp & #{FLAG_3}) | ((bytetemp & 0x02) ? #{FLAG_5} : 0);
+			#{LDD()}
 			if (regPairs[#{rpBC}]) {
 				regPairs[#{rpPC}]-=2;
-				tstates += 7;
-			} else {
-				tstates += 2;
+				CONTEND_READ_NO_MREQ(originalDE, 1);
+				CONTEND_READ_NO_MREQ(originalDE, 1);
+				CONTEND_READ_NO_MREQ(originalDE, 1);
+				CONTEND_READ_NO_MREQ(originalDE, 1);
+				CONTEND_READ_NO_MREQ(originalDE, 1);
 			}
-			regPairs[#{rpHL}]--; regPairs[#{rpDE}]--;
 		"""
 
 	LDI = () ->
@@ -808,26 +807,25 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			var bytetemp = READMEM(regPairs[#{rpHL}]);
 			regPairs[#{rpBC}]--;
 			WRITEMEM(regPairs[#{rpDE}],bytetemp);
+			var originalDE = regPairs[#{rpDE}];
 			regPairs[#{rpDE}]++; regPairs[#{rpHL}]++;
 			bytetemp = (bytetemp + regs[#{rA}]) & 0xff;
 			regs[#{rF}] = (regs[#{rF}] & #{FLAG_C | FLAG_Z | FLAG_S}) | (regPairs[#{rpBC}] ? #{FLAG_V} : 0 ) | (bytetemp & #{FLAG_3}) | ( (bytetemp & 0x02) ? #{FLAG_5} : 0 );
-			tstates += 2;
+			CONTEND_READ_NO_MREQ(originalDE, 1);
+			CONTEND_READ_NO_MREQ(originalDE, 1);
 		"""
 
 	LDIR = () ->
 		"""
-			var bytetemp = READMEM(regPairs[#{rpHL}]);
-			WRITEMEM(regPairs[#{rpDE}],bytetemp);
-			regPairs[#{rpBC}]--;
-			bytetemp = (bytetemp + regs[#{rA}]) & 0xff;
-			regs[#{rF}] = (regs[#{rF}] & #{FLAG_C | FLAG_Z | FLAG_S}) | ( regPairs[#{rpBC}] ? #{FLAG_V} : 0 ) | (bytetemp & #{FLAG_3}) | ((bytetemp & 0x02) ? #{FLAG_5} : 0);
+			#{LDI()}
 			if (regPairs[#{rpBC}]) {
 				regPairs[#{rpPC}]-=2;
-				tstates += 7;
-			} else {
-				tstates += 2;
+				CONTEND_READ_NO_MREQ(originalDE, 1);
+				CONTEND_READ_NO_MREQ(originalDE, 1);
+				CONTEND_READ_NO_MREQ(originalDE, 1);
+				CONTEND_READ_NO_MREQ(originalDE, 1);
+				CONTEND_READ_NO_MREQ(originalDE, 1);
 			}
-			regPairs[#{rpHL}]++; regPairs[#{rpDE}]++;
 		"""
 
 	LDSHIFTOP = (regName, opcode, rp) ->
