@@ -590,10 +590,25 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			var initemp = ioBus.read(regPairs[#{rpBC}]);
 			CONTEND_PORT_LATE(regPairs[#{rpBC}]);
 			WRITEMEM(regPairs[#{rpHL}], initemp);
-			regs[#{rB}]--; regPairs[#{rpHL}]#{modifier}#{modifier};
+			regs[#{rB}]--;
+			var originalHL = regPairs[#{rpHL}];
+			regPairs[#{rpHL}]#{modifier}#{modifier};
 			var initemp2 = (initemp + regs[#{rC}] #{modifier} 1) & 0xff;
 
 			regs[#{rF}] = (initemp & 0x80 ? #{FLAG_N} : 0) | ((initemp2 < initemp) ? #{FLAG_H | FLAG_C} : 0 ) | ( parityTable[ (initemp2 & 0x07) ^ regs[#{rB}] ] ? #{FLAG_P} : 0 ) | sz53Table[regs[#{rB}]];
+		"""
+
+	INIR_INDR = (modifier) ->
+		"""
+			#{INI_IND(modifier)}
+			if (regs[#{rB}]) {
+				CONTEND_WRITE_NO_MREQ(originalHL, 1);
+				CONTEND_WRITE_NO_MREQ(originalHL, 1);
+				CONTEND_WRITE_NO_MREQ(originalHL, 1);
+				CONTEND_WRITE_NO_MREQ(originalHL, 1);
+				CONTEND_WRITE_NO_MREQ(originalHL, 1);
+				regPairs[#{rpPC}] -= 2;
+			}
 		"""
 
 	INI = () ->
@@ -601,6 +616,12 @@ window.JSSpeccy.buildZ80 = (opts) ->
 
 	IND = () ->
 		INI_IND('-')
+
+	INIR = () ->
+		INIR_INDR('+')
+
+	INDR = () ->
+		INIR_INDR('-')
 
 	JP_C_NN = (flag, sense) ->
 		condition = "regs[#{rF}] & #{flag}"
@@ -1961,9 +1982,11 @@ window.JSSpeccy.buildZ80 = (opts) ->
 		
 		0xB0: LDIR()         # LDIR
 		0xb1: CPIR()         # CPIR
+		0xB2: INIR()         # INIR
 		
 		0xB8: LDDR()         # LDDR
 		0xb9: CPDR()         # CPDR
+		0xBA: INDR()         # INDR
 		
 		0x100: 'ed'
 	}
