@@ -31,6 +31,7 @@ JSSpeccy.Spectrum = function(opts) {
 
 	self.runFrame = function() {
 		display.startFrame();
+		processor.z80Interrupt();
 		processor.runFrame(display.frameLength);
 		display.endFrame();
 		processor.setTstates(processor.getTstates() - display.frameLength);

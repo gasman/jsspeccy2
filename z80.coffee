@@ -135,7 +135,6 @@ window.JSSpeccy.buildZ80 = (opts) ->
 		}
 
 		var interruptible = true;
-		var interruptPending = false;
 		var opcodePrefix = '';
 	"""
 
@@ -908,7 +907,6 @@ window.JSSpeccy.buildZ80 = (opts) ->
 
 	RETN = () ->
 		"""
-			console.log('hello from retn: ', opcode);
 			iff1 = iff2;
 			#{RET()}
 		"""
@@ -2174,7 +2172,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 
 			#{setUpStateJS}
 
-			z80Interrupt = function() {
+			self.z80Interrupt = function() {
 				if (iff1) {
 					if (halted) {
 						/* move PC on from the HALT opcode */
@@ -2214,12 +2212,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			self.runFrame = function(frameLength) {
 				var lastOpcodePrefix, offset, opcode;
 
-				interruptPending = true;
 				while (tstates < frameLength || !interruptible) {
-					if (interruptPending && interruptible) {
-						z80Interrupt();
-						interruptPending = false;
-					}
 					interruptible = true; /* unless overridden by opcode */
 					lastOpcodePrefix = opcodePrefix;
 					opcodePrefix = '';
