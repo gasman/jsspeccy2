@@ -539,9 +539,10 @@ window.JSSpeccy.buildZ80 = (opts) ->
 
 	IN_R_iCi = (r) ->
 		"""
-			CONTEND_PORT_EARLY(regPairs[#{rpBC}]);
-			regs[#{r}] = ioBus.read(regPairs[#{rpBC}]);
-			CONTEND_PORT_LATE(regPairs[#{rpBC}]);
+			var port = regPairs[#{rpBC}];
+			CONTEND_PORT_EARLY(port);
+			regs[#{r}] = ioBus.read(port);
+			CONTEND_PORT_LATE(port);
 			regs[#{rF}] = (regs[#{rF}] & #{FLAG_C}) | sz53pTable[regs[#{r}]];
 		"""
 
@@ -716,8 +717,8 @@ window.JSSpeccy.buildZ80 = (opts) ->
 	LD_R_R = (r1, r2) ->
 		if r1 == rI || r2 == rI || r1 == rR || r2 == rR
 			"""
+				CONTEND_READ_NO_MREQ(regPairs[#{rpIR}], 1);
 				regs[#{r1}] = regs[#{r2}];
-				tstates += 1;
 			"""
 		else
 			"""
@@ -903,6 +904,13 @@ window.JSSpeccy.buildZ80 = (opts) ->
 				var h = READMEM(regPairs[#{rpSP}]); regPairs[#{rpSP}]++;
 				regPairs[#{rpPC}] = (h<<8) | l;
 			}
+		"""
+
+	RETN = () ->
+		"""
+			console.log('hello from retn: ', opcode);
+			iff1 = iff2;
+			#{RET()}
 		"""
 
 	RL = (param) ->
@@ -1822,7 +1830,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 		0x42: SBC_HL_RR(rpBC)         # SBC HL,BC
 		0x43: LD_iNNi_RR(rpBC)         # LD (nnnn),BC
 		0x44: NEG()         # NEG
-		
+		0x45: RETN()        # RETN
 		0x46: IM(0)         # IM 0
 		0x47: LD_R_R(rI, rA)         # LD I,A
 		0x48: IN_R_iCi(rC)         # IN C,(C)
@@ -1830,7 +1838,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 		0x4A: ADC_HL_RR(rpBC)        # ADC HL,BC
 		0x4B: LD_RR_iNNi(rpBC)         # LD BC,(nnnn)
 		0x4C: NEG()         # NEG
-		
+		0x4D: RETN()        # RETN
 		0x4E: IM(0)         # IM 0
 		0x4F: LD_R_R(rR, rA)         # LD R,A
 		0x50: IN_R_iCi(rD)         # IN D,(C)
@@ -1838,7 +1846,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 		0x52: SBC_HL_RR(rpDE)         # SBC HL,DE
 		0x53: LD_iNNi_RR(rpDE)         # LD (nnnn),DE
 		0x54: NEG()         # NEG
-		
+		0x55: RETN()        # RETN
 		0x56: IM(1)         # IM 1
 		0x57: LD_R_R(rA, rI)         # LD A,I
 		0x58: IN_R_iCi(rE)         # IN E,(C)
@@ -1846,7 +1854,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 		0x5A: ADC_HL_RR(rpDE)        # ADC HL,DE
 		0x5B: LD_RR_iNNi(rpDE)         # LD DE,(nnnn)
 		0x5C: NEG()         # NEG
-		
+		0x5D: RETN()        # RETN
 		0x5E: IM(2)         # IM 2
 		0x5F: LD_R_R(rA, rR)         # LD A,R
 		0x60: IN_R_iCi(rH)         # IN H,(C)
@@ -1854,7 +1862,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 		0x62: SBC_HL_RR(rpHL)         # SBC HL,HL
 		0x63: LD_iNNi_RR(rpHL)         # LD (nnnn),HL
 		0x64: NEG()         # NEG
-		
+		0x65: RETN()        # RETN
 		0x66: IM(0)         # IM 0
 		0x67: RRD()        # RRD
 		0x68: IN_R_iCi(rL)         # IN L,(C)
@@ -1862,14 +1870,14 @@ window.JSSpeccy.buildZ80 = (opts) ->
 		0x6A: ADC_HL_RR(rpHL)        # ADC HL,HL
 		0x6B: LD_RR_iNNi(rpHL, true)         # LD HL,(nnnn)
 		0x6C: NEG()         # NEG
-
+		0x6D: RETN()        # RETN
 		0x6E: IM(0)         # IM 0
 		0x6F: RLD()        # RLD
 		
 		0x72: SBC_HL_RR(rpSP)         # SBC HL,SP
 		0x73: LD_iNNi_RR(rpSP)         # LD (nnnn),SP
 		0x74: NEG()         # NEG
-		
+		0x75: RETN()        # RETN
 		0x76: IM(1)         # IM 1
 
 		0x78: IN_R_iCi(rA)         # IN A,(C)
@@ -1877,7 +1885,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 		0x7A: ADC_HL_RR(rpSP)        # ADC HL,SP
 		0x7B: LD_RR_iNNi(rpSP)         # LD SP,(nnnn)
 		0x7C: NEG()         # NEG
-		
+		0x7D: RETN()        # RETN
 		0x7E: IM(2)         # IM 2
 
 		0xA0: LDI()         # LDI
