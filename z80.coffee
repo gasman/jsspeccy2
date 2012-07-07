@@ -804,22 +804,22 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			WRITEMEM(addr, regs[#{regNum}]);
 		"""
 
-	LDD = () ->
+	LDI_LDD = (modifier) ->
 		"""
-			var byteTemp = READMEM(regPairs[#{rpHL}]);
+			var bytetemp = READMEM(regPairs[#{rpHL}]);
 			regPairs[#{rpBC}]--;
 			WRITEMEM(regPairs[#{rpDE}],bytetemp);
 			var originalDE = regPairs[#{rpDE}];
-			regPairs[#{rpDE}]--; regPairs[#{rpHL}]--;
+			regPairs[#{rpDE}]#{modifier}; regPairs[#{rpHL}]#{modifier};
 			bytetemp = (bytetemp + regs[#{rA}]) & 0xff;
 			regs[#{rF}] = (regs[#{rF}] & #{FLAG_C | FLAG_Z | FLAG_S}) | (regPairs[#{rpBC}] ? #{FLAG_V} : 0) | (bytetemp & #{FLAG_3}) | ((bytetemp & 0x02) ? #{FLAG_5} : 0);
 			CONTEND_READ_NO_MREQ(originalDE, 1);
 			CONTEND_READ_NO_MREQ(originalDE, 1);
 		"""
 
-	LDDR = () ->
+	LDIR_LDDR = (modifier) ->
 		"""
-			#{LDD()}
+			#{LDI_LDD(modifier)}
 			if (regPairs[#{rpBC}]) {
 				regPairs[#{rpPC}]-=2;
 				CONTEND_READ_NO_MREQ(originalDE, 1);
@@ -831,30 +831,16 @@ window.JSSpeccy.buildZ80 = (opts) ->
 		"""
 
 	LDI = () ->
-		"""
-			var bytetemp = READMEM(regPairs[#{rpHL}]);
-			regPairs[#{rpBC}]--;
-			WRITEMEM(regPairs[#{rpDE}],bytetemp);
-			var originalDE = regPairs[#{rpDE}];
-			regPairs[#{rpDE}]++; regPairs[#{rpHL}]++;
-			bytetemp = (bytetemp + regs[#{rA}]) & 0xff;
-			regs[#{rF}] = (regs[#{rF}] & #{FLAG_C | FLAG_Z | FLAG_S}) | (regPairs[#{rpBC}] ? #{FLAG_V} : 0 ) | (bytetemp & #{FLAG_3}) | ( (bytetemp & 0x02) ? #{FLAG_5} : 0 );
-			CONTEND_READ_NO_MREQ(originalDE, 1);
-			CONTEND_READ_NO_MREQ(originalDE, 1);
-		"""
+		LDI_LDD('++')
+
+	LDD = () ->
+		LDI_LDD('--')
 
 	LDIR = () ->
-		"""
-			#{LDI()}
-			if (regPairs[#{rpBC}]) {
-				regPairs[#{rpPC}]-=2;
-				CONTEND_READ_NO_MREQ(originalDE, 1);
-				CONTEND_READ_NO_MREQ(originalDE, 1);
-				CONTEND_READ_NO_MREQ(originalDE, 1);
-				CONTEND_READ_NO_MREQ(originalDE, 1);
-				CONTEND_READ_NO_MREQ(originalDE, 1);
-			}
-		"""
+		LDIR_LDDR('++')
+
+	LDDR = () ->
+		LDIR_LDDR('--')
 
 	LDSHIFTOP = (regName, opcode, rp) ->
 		# load (rp+nn) into register regName, perform opcode, write back to (rp+nn)
