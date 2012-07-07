@@ -945,10 +945,14 @@ window.JSSpeccy.buildZ80 = (opts) ->
 	RLD = () ->
 		"""
 			var bytetemp =  READMEM(regPairs[#{rpHL}]);
-			WRITEMEM(regPairs[#{rpHL}], (bytetemp << 4) | (regs[#{rA}] & 0x0f));
+			CONTEND_READ_NO_MREQ(regPairs[#{rpHL}], 1);
+			CONTEND_READ_NO_MREQ(regPairs[#{rpHL}], 1);
+			CONTEND_READ_NO_MREQ(regPairs[#{rpHL}], 1);
+			CONTEND_READ_NO_MREQ(regPairs[#{rpHL}], 1);
+			var val = (bytetemp << 4) | (regs[#{rA}] & 0x0f);
+			WRITEMEM(regPairs[#{rpHL}], val);
 			regs[#{rA}] = (regs[#{rA}] & 0xf0) | (bytetemp >> 4);
 			regs[#{rF}] = (regs[#{rF}] & #{FLAG_C}) | sz53pTable[regs[#{rA}]];
-			tstates += 4;
 		"""
 
 	RLCA = () ->
@@ -994,10 +998,14 @@ window.JSSpeccy.buildZ80 = (opts) ->
 	RRD = () ->
 		"""
 			var bytetemp = READMEM(regPairs[#{rpHL}]);
-			WRITEMEM(regPairs[#{rpHL}], (regs[#{rA}] << 4) | (bytetemp >> 4));
+			CONTEND_READ_NO_MREQ(regPairs[#{rpHL}], 1);
+			CONTEND_READ_NO_MREQ(regPairs[#{rpHL}], 1);
+			CONTEND_READ_NO_MREQ(regPairs[#{rpHL}], 1);
+			CONTEND_READ_NO_MREQ(regPairs[#{rpHL}], 1);
+			var val = (regs[#{rA}] << 4) | (bytetemp >> 4);
+			WRITEMEM(regPairs[#{rpHL}], val);
 			regs[#{rA}] = (regs[#{rA}] & 0xf0) | (bytetemp & 0x0f);
 			regs[#{rF}] = (regs[#{rF}] & #{FLAG_C}) | sz53pTable[regs[#{rA}]];
-			tstates += 4;
 		"""
 
 	RST = (addr) ->
