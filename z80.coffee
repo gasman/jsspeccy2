@@ -536,6 +536,16 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			CONTEND_PORT_LATE(port);
 		"""
 
+	IN_F_iCi = () ->
+		# as IN_R_iCi, but result is written to a local variable rather than a register
+		"""
+			var port = regPairs[#{rpBC}];
+			CONTEND_PORT_EARLY(port);
+			var result = ioBus.read(port);
+			CONTEND_PORT_LATE(port);
+			regs[#{rF}] = (regs[#{rF}] & #{FLAG_C}) | sz53pTable[result];
+		"""
+
 	IN_R_iCi = (r) ->
 		"""
 			var port = regPairs[#{rpBC}];
@@ -851,6 +861,13 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			
 			regs[#{rA}] |= #{operand.v};
 			regs[#{rF}] = sz53pTable[regs[#{rA}]];
+		"""
+
+	OUT_iCi_0 = (r) ->
+		"""
+			CONTEND_PORT_EARLY(regPairs[#{rpBC}]);
+			ioBus.write(regPairs[#{rpBC}], 0);
+			CONTEND_PORT_LATE(regPairs[#{rpBC}]);
 		"""
 
 	OUT_iCi_R = (r) ->
@@ -1884,7 +1901,8 @@ window.JSSpeccy.buildZ80 = (opts) ->
 		0x6D: RETN()        # RETN
 		0x6E: IM(0)         # IM 0
 		0x6F: RLD()        # RLD
-		
+		0x70: IN_F_iCi()        # IN F,(C)
+		0x71: OUT_iCi_0()        # OUT (C),0
 		0x72: SBC_HL_RR(rpSP)         # SBC HL,SP
 		0x73: LD_iNNi_RR(rpSP)         # LD (nnnn),SP
 		0x74: NEG()         # NEG
