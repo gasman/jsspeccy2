@@ -715,10 +715,15 @@ window.JSSpeccy.buildZ80 = (opts) ->
 
 	LD_R_R = (r1, r2) ->
 		if r1 == rI || r2 == rI || r1 == rR || r2 == rR
-			"""
+			output = """
 				CONTEND_READ_NO_MREQ(regPairs[#{rpIR}], 1);
 				regs[#{r1}] = regs[#{r2}];
 			"""
+			if (r1 == rA)
+				output += """
+					regs[#{rF}] = (regs[#{rF}] & #{FLAG_C}) | sz53Table[regs[#{rA}]] | ( iff2 ? #{FLAG_V} : 0 );
+				"""
+			output
 		else
 			"""
 				regs[#{r1}] = regs[#{r2}];
