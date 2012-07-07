@@ -18,10 +18,11 @@ Everything, basically... it's a ground-up rewrite. In particular:
 * More Javascript-ish architecture - the Z80 instruction set is built up
   through copious use of closures, rather than borrowing Fuse's Perl generator
   script wholesale. (It's still heavily based on Fuse's Z80 core though.)
-* Proper scanline-based display generation. It isn't fully accurate (memory
-  contention isn't emulated yet) but things like border stripes display
-  correctly.
 * 128K support!
+* 99% accurate display emulation, for multicolour effects and the like
+* TZX file support (only via tape traps; custom loaders won't work)
+* Integration with the World Of Spectrum API, for instant loading of thousands
+  of software titles
 
 [0] https://developer.mozilla.org/en/javascript_typed_arrays
 
@@ -35,7 +36,7 @@ perl and CoffeeScript[1] are required. To build:
 
 Browser support
 ---------------
-Tested successfully on Chrome 12 and Firefox 5. Support for typed arrays and
+Tested successfully on Chrome 20 and Firefox 13. Support for typed arrays and
 the PixelData API are absolutely required, and it'll almost certainly stay that
 way.
 
