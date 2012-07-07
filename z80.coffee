@@ -911,6 +911,26 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			CONTEND_PORT_LATE(port);
 		"""
 
+	OUTI_OUTD = (modifier) ->
+		"""
+			CONTEND_READ_NO_MREQ(regPairs[#{rpIR}], 1);
+			var outitemp = READMEM(regPairs[#{rpHL}]);
+			regs[#{rB}]--;	/* This does happen first, despite what the specs say */
+			CONTEND_PORT_EARLY(regPairs[#{rpBC}]);
+			ioBus.write(regPairs[#{rpBC}], outitemp);
+			CONTEND_PORT_LATE(regPairs[#{rpBC}]);
+
+			regPairs[#{rpHL}]#{modifier};
+			outitemp2 = (outitemp + regs[#{rL}]) & 0xff;
+			regs[#{rF}] = (outitemp & 0x80 ? #{FLAG_N} : 0) | ( (outitemp2 < outitemp) ? #{FLAG_H | FLAG_C} : 0) | (parityTable[ (outitemp2 & 0x07) ^ regs[#{rB}] ] ? #{FLAG_P} : 0 ) | sz53Table[ regs[#{rB}] ];
+		"""
+
+	OUTD = () ->
+		OUTI_OUTD('--');
+
+	OUTI = () ->
+		OUTI_OUTD('++');
+
 	POP_RR = (rp) ->
 		"""
 			var l = READMEM(regPairs[#{rpSP}]); regPairs[#{rpSP}]++;
@@ -1946,10 +1966,12 @@ window.JSSpeccy.buildZ80 = (opts) ->
 		0xA0: LDI()         # LDI
 		0xA1: CPI()         # CPI
 		0xA2: INI()         # INI
+		0xA3: OUTI()        # OUTI
 
 		0xA8: LDD()         # LDD
 		0xA9: CPD()         # CPD
 		0xAA: IND()         # IND
+		0xAB: OUTD()        # OUTD
 		
 		0xB0: LDIR()         # LDIR
 		0xb1: CPIR()         # CPIR
