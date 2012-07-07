@@ -135,6 +135,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 		}
 
 		var interruptible = true;
+		var interruptPending = false;
 		var opcodePrefix = '';
 	"""
 
@@ -2285,7 +2286,13 @@ window.JSSpeccy.buildZ80 = (opts) ->
 
 			#{setUpStateJS}
 
-			self.z80Interrupt = function() {
+			self.requestInterrupt = function() {
+				interruptPending = true;
+				/* TODO: use event scheduling to keep the interrupt line active for a fixed
+				~48T window, to support retriggered interrupts and interrupt blocking via
+				chains of EI or DD/FD prefixes */
+			}
+			var z80Interrupt = function() {
 				if (iff1) {
 					if (halted) {
 						/* move PC on from the HALT opcode */
@@ -2325,7 +2332,11 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			self.runFrame = function(frameLength) {
 				var lastOpcodePrefix, offset, opcode;
 
-				while (tstates < frameLength || !interruptible) {
+				while (tstates < frameLength || opcodePrefix) {
+					if (interruptible && interruptPending) {
+						z80Interrupt();
+						interruptPending = false;
+					}
 					interruptible = true; /* unless overridden by opcode */
 					lastOpcodePrefix = opcodePrefix;
 					opcodePrefix = '';
