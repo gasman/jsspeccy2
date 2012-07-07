@@ -1,27 +1,48 @@
 JSSpeccy.Memory = function(opts) {
 	var self = {};
 	var model = opts.model || JSSpeccy.Memory.MODEL_128K;
+
+	function MemoryPage(data) {
+		var self = {};
+		self.memory = (data || new Uint8Array(0x4000));
+		return self;
+	}
 	
 	var ramPages = [];
 	for (var i = 0; i < 8; i++) {
-		ramPages[i] = new Uint8Array(0x4000);
+		ramPages[i] = MemoryPage();
 	}
-	
-	var scratch = new Uint8Array(0x4000);
+
+	var romPages = {
+		'48.rom': MemoryPage(JSSpeccy.roms['48.rom']),
+		'128-0.rom': MemoryPage(JSSpeccy.roms['128-0.rom']),
+		'128-1.rom': MemoryPage(JSSpeccy.roms['128-1.rom'])
+	};
+
+	var scratch = MemoryPage();
 	
 	var readSlots = [
-		model === JSSpeccy.Memory.MODEL_48K ? JSSpeccy.roms['48.rom'] : JSSpeccy.roms['128-0.rom'],
-		ramPages[5],
-		ramPages[2],
-		ramPages[0]
+		model === JSSpeccy.Memory.MODEL_48K ? romPages['48.rom'].memory : romPages['128-0.rom'].memory,
+		ramPages[5].memory,
+		ramPages[2].memory,
+		ramPages[0].memory
 	];
 
 	var writeSlots = [
-		scratch,
-		ramPages[5],
-		ramPages[2],
-		ramPages[0]
+		scratch.memory,
+		ramPages[5].memory,
+		ramPages[2].memory,
+		ramPages[0].memory
 	];
+
+	self.isContended = function(addr) {
+		return ((addr & 0xc000) == 0x4000);
+	};
+
+	self.contend = function(addr) {
+		if (self.oncontend) self.oncontend(addr);
+		return 0;
+	};
 
 	self.read = function(addr) {
 		var page = readSlots[addr >> 14];
@@ -32,7 +53,7 @@ JSSpeccy.Memory = function(opts) {
 		page[addr & 0x3fff] = val;
 	};
 	
-	var screenPage = ramPages[5];
+	var screenPage = ramPages[5].memory;
 	self.readScreen = function(addr) {
 		return screenPage[addr];
 	};
@@ -41,9 +62,9 @@ JSSpeccy.Memory = function(opts) {
 	if (model === JSSpeccy.Memory.MODEL_128K) {
 		self.setPaging = function(val) {
 			if (pagingIsLocked) return;
-			readSlots[3] = writeSlots[3] = ramPages[val & 0x07];
-			readSlots[0] = (val & 0x10) ? JSSpeccy.roms['128-1.rom'] : JSSpeccy.roms['128-0.rom'];
-			screenPage = (val & 0x08) ? ramPages[7] : ramPages[5];
+			readSlots[3] = writeSlots[3] = ramPages[val & 0x07].memory;
+			readSlots[0] = (val & 0x10) ? romPages['128-1.rom'].memory : romPages['128-0.rom'].memory;
+			screenPage = (val & 0x08) ? ramPages[7].memory : ramPages[5].memory;
 			pagingIsLocked = val & 0x20;
 		};
 	} else {
@@ -53,8 +74,10 @@ JSSpeccy.Memory = function(opts) {
 	
 	self.loadFromSnapshot = function(snapshotPages) {
 		for (var p in snapshotPages) {
+			var ramPage = ramPages[p].memory;
+			var snapshotPage = snapshotPages[p];
 			for (var i = 0; i < 0x4000; i++) {
-				ramPages[p][i] = snapshotPages[p][i];
+				ramPage[i] = snapshotPage[i];
 			}
 		}
 	};

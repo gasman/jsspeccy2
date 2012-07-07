@@ -153,7 +153,10 @@ function JSSpeccy(container, opts) {
 		[0x0111, 0xc0, 'JSSpeccy.traps.tapeLoad()']
 	];
 
-	JSSpeccy.buildZ80({traps: z80Traps});
+	JSSpeccy.buildZ80({
+		traps: z80Traps,
+		applyContention: false
+	});
 
 	var spectrum = JSSpeccy.Spectrum({
 		ui: ui,
