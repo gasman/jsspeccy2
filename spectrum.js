@@ -30,12 +30,18 @@ JSSpeccy.Spectrum = function(opts) {
 		display: display
 	});
 
+	/* internal state to allow picking up mid-frame (e.g. when loading from a snapshot) */
+	var startNextFrameWithInterrupt = true;
+
 	self.runFrame = function() {
 		display.startFrame();
-		processor.requestInterrupt();
+		if (startNextFrameWithInterrupt) {
+			processor.requestInterrupt();
+		}
 		processor.runFrame(display.frameLength);
 		display.endFrame();
 		processor.setTstates(processor.getTstates() - display.frameLength);
+		startNextFrameWithInterrupt = true;
 	};
 	self.reset = function() {
 		processor.reset();
@@ -44,8 +50,15 @@ JSSpeccy.Spectrum = function(opts) {
 
 	self.loadSnapshot = function(snapshot) {
 		memory.loadFromSnapshot(snapshot.memoryPages);
+		if ('pagingFlags' in snapshot.ulaState) {
+			memory.setPaging(snapshot.ulaState.pagingFlags);
+		}
 		processor.loadFromSnapshot(snapshot.registers);
 		display.setBorder(snapshot.ulaState.borderColour);
+		if ('tstates' in snapshot) {
+			processor.setTstates(snapshot.tstates);
+			startNextFrameWithInterrupt = false;
+		}
 	};
 
 	JSSpeccy.traps.tapeLoad = function() {

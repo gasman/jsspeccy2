@@ -19,13 +19,14 @@ CORE_JS_FILES=\
 	tap_file.js \
 	tzx_file.js \
 	viewport.js \
-	z80.js
+	z80.js \
+	z80_file.js
 
 jsspeccy-core.min.js: $(CORE_JS_FILES)
 	java -jar compiler.jar \
 		--js=jsspeccy.js --js=display.js --js=io_bus.js --js=keyboard.js \
 		--js=memory.js --js=roms.js --js=sna_file.js --js=spectrum.js --js=tap_file.js \
-		--js=tzx_file.js --js=viewport.js --js=z80.js \
+		--js=tzx_file.js --js=viewport.js --js=z80.js --js=z80_file.js \
 		--js_output_file=jsspeccy-core.min.js
 
 .PHONY: clean

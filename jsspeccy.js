@@ -119,6 +119,9 @@ function JSSpeccy(container, opts) {
 			case 'sna':
 				loadSnapshot(JSSpeccy.SnaFile(data));
 				break;
+			case 'z80':
+				loadSnapshot(JSSpeccy.Z80File(data));
+				break;
 			case 'tap':
 				self.currentTape = JSSpeccy.TapFile(data);
 				break;
