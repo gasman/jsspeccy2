@@ -160,11 +160,6 @@ function JSSpeccy(container, opts) {
 		keyboard.active = true;
 	};
 
-	var ui = JSSpeccy.UI({
-		container: container,
-		controller: self
-	});
-
 	var keyboard = JSSpeccy.Keyboard();
 
 	/* define a list of rules to be triggered when the Z80 executes an opcode at a specified address;
@@ -190,6 +185,8 @@ function JSSpeccy(container, opts) {
 	if (!('autostart' in opts) || opts['autostart']) {
 		self.start();
 	}
+
+	return self;
 }
 JSSpeccy.traps = {};
 JSSpeccy.traps.tapeLoad = function() {

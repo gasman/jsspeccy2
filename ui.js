@@ -2,6 +2,9 @@ JSSpeccy.UI = function(opts) {
 	var self = {};
 	
 	var container = opts.container;
+	if (typeof(container) === 'string') {
+		container = document.getElementById(container);
+	}
 	var controller = opts.controller;
 
 	var setInnerText;

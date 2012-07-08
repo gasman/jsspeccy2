@@ -3,7 +3,6 @@
 	<head>
 		<title>jsspeccy</title>
 		<link rel="stylesheet" href="jsspeccy.css">
-		<script src="jquery-1.7.2.min.js"></script>
 		<script src="jdataview.js"></script>
 		<script src="jsspeccy.js"></script>
 		<script src="roms.js"></script>
@@ -12,13 +11,15 @@
 		<script src="keyboard.js"></script>
 		<script src="io_bus.js"></script>
 		<script src="z80.js"></script>
-		<script src="ui.js"></script>
 		<script src="viewport.js"></script>
 		<script src="spectrum.js"></script>
 		<script src="sna_loader.js"></script>
 		<script src="tap_file.js"></script>
 		<script src="tzx_file.js"></script>
 		
+		<script src="jquery-1.7.2.min.js"></script>
+		<script src="ui.js"></script>
+
 		<style>
 			body {
 				background-color: black;
@@ -27,8 +28,17 @@
 				margin: 25px auto;
 			}
 		</style>
+		<script>
+			function go() {
+				var jsspeccy = JSSpeccy('speccy', {'autostart': true});
+				JSSpeccy.UI({
+					container: 'speccy',
+					controller: jsspeccy
+				});
+			}
+		</script>
 	</head>
-	<body onload="JSSpeccy('speccy', {'autostart': true})">
+	<body onload="go();">
 		<div id="speccy"></div>
 	</body>
 </html>
