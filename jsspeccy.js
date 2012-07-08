@@ -184,6 +184,10 @@ function JSSpeccy(container, opts) {
 		controller: self
 	});
 
+	if (opts.loadFile) {
+		self.loadFromUrl(opts.loadFile);
+	}
+
 	if (!('autostart' in opts) || opts['autostart']) {
 		self.start();
 	}
