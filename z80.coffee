@@ -40,6 +40,10 @@ window.JSSpeccy.buildZ80 = (opts) ->
 	rpSP = 11
 	rpPC = 12
 
+	registerPairIndexes = {
+		'IX': 8, 'IY': 9
+	}
+
 	if isBigEndian
 		rA = 0; rF = 1
 		rB = 2; rC = 3
@@ -52,6 +56,14 @@ window.JSSpeccy.buildZ80 = (opts) ->
 		rIXH = 16; rIXL = 17
 		rIYH = 18; rIYL = 19
 		rI = 20; rR = 21
+		registerIndexes = {
+			A: 0, F: 1
+			B: 2, C: 3
+			D: 4, E: 5
+			H: 6, L: 7
+			IXH: 16, IXL: 17
+			IYH: 18, IYL: 19
+		}
 	else
 		# little-endian
 		rF = 0; rA = 1
@@ -65,6 +77,14 @@ window.JSSpeccy.buildZ80 = (opts) ->
 		rIXL = 16; rIXH = 17
 		rIYL = 18; rIYH = 19
 		rR = 20; rI = 21
+		registerIndexes = {
+			F: 0, A: 1
+			C: 2, B: 3
+			E: 4, D: 5
+			L: 6, H: 7
+			IXL: 16, IXH: 17
+			IYL: 18, IYH: 19
+		}
 
 	FLAG_C = 0x01
 	FLAG_N = 0x02
@@ -155,7 +175,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 	###
 	getParamBoilerplate = (param, hasIXOffsetAlready = false) ->
 		if param.match(/^[AFBCDEHL]|I[XY][HL]$/)
-			regNum = eval("r#{param}")
+			regNum = registerIndexes[param]
 			{
 				'getter': ''
 				'v': "regs[#{regNum}]"
@@ -180,7 +200,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 				'setter': ''
 			}
 		else if (match = param.match(/^\((I[XY])\+nn\)$/))
-			rp = eval("rp" + match[1])
+			rp = registerPairIndexes[match[1]]
 			if hasIXOffsetAlready
 				getter = ''
 			else
@@ -817,7 +837,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 
 	LDBITOP = (regName, opcode, bit, rp) ->
 		# load (rp+nn) into register regName, perform opcode, write back to (rp+nn)
-		regNum = eval("r#{regName}")
+		regNum = registerIndexes[regName]
 		"""
 			var addr = (regPairs[#{rp}] + offset) & 0xffff;
 			regs[#{regNum}] = READMEM(addr);
@@ -866,7 +886,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 
 	LDSHIFTOP = (regName, opcode, rp) ->
 		# load (rp+nn) into register regName, perform opcode, write back to (rp+nn)
-		regNum = eval("r#{regName}")
+		regNum = registerIndexes[regName]
 		"""
 			var addr = (regPairs[#{rp}] + offset) & 0xffff;
 			regs[#{regNum}] = READMEM(addr);

@@ -28,11 +28,12 @@ Everything, basically... it's a ground-up rewrite. In particular:
 
 Building
 --------
-perl and CoffeeScript[1] are required. To build:
+perl, CoffeeScript[1] and Closure Compiler[2] are required. To build:
 
     make
 
 [1] http://jashkenas.github.com/coffee-script/
+[2] https://developers.google.com/closure/compiler/
 
 Browser support
 ---------------
