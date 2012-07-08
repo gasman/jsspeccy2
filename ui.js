@@ -3,7 +3,6 @@ JSSpeccy.UI = function(opts) {
 	
 	var container = opts.container;
 	var controller = opts.controller;
-	var scaleFactor = opts.scaleFactor || 2;
 
 	var setInnerText;
 	if (document.getElementsByTagName("body")[0].innerText !== undefined) {
@@ -17,24 +16,6 @@ JSSpeccy.UI = function(opts) {
 	}
 	
 	container.className += ' jsspeccy';
-	self.canvas = document.createElement('canvas');
-	container.appendChild(self.canvas);
-	self.canvas.style.imageRendering = '-webkit-optimize-contrast';
-	
-	/* set up drag event on canvas to load files */
-	self.canvas.ondragenter = function() {
-		// Needed for web browser compatibility
-		return false;
-	};
-	self.canvas.ondragover = function () {
-		// Needed for web browser compatibility
-		return false;
-	};
-	self.canvas.ondrop = function(evt) {
-		var files = evt.dataTransfer.files;
-		controller.loadLocalFile(files[0]);
-		return false;
-	};
 	
 	var toolbar = document.createElement('ul');
 	container.appendChild(toolbar);
@@ -246,15 +227,5 @@ JSSpeccy.UI = function(opts) {
 		controller.activateKeyboard();
 	}
 
-	self.setResolution = function(width, height) {
-		container.style.width = width * scaleFactor + 'px';
-		
-		self.canvas.width = width;
-		self.canvas.height = height;
-		
-		self.canvas.style.width = width * scaleFactor + 'px';
-		self.canvas.style.height = height * scaleFactor + 'px';
-	};
-	
 	return self;
 };

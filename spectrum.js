@@ -3,7 +3,7 @@ JSSpeccy.Spectrum = function(opts) {
 
 	var model = opts.model || JSSpeccy.Spectrum.MODEL_128K;
 
-	var ui = opts.ui;
+	var viewport = opts.viewport;
 	var keyboard = opts.keyboard;
 	var controller = opts.controller;
 
@@ -12,7 +12,7 @@ JSSpeccy.Spectrum = function(opts) {
 	});
 
 	var display = JSSpeccy.Display({
-		ui: ui,
+		viewport: viewport,
 		memory: memory,
 		model: model
 	});

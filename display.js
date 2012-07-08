@@ -1,7 +1,7 @@
 JSSpeccy.Display = function(opts) {
 	var self = {};
 	
-	var ui = opts.ui;
+	var viewport = opts.viewport;
 	var memory = opts.memory;
 	var model = opts.model || JSSpeccy.Spectrum.MODEL_128K;
 	
@@ -43,8 +43,8 @@ JSSpeccy.Display = function(opts) {
 	var CANVAS_WIDTH = 256 + 8 * (LEFT_BORDER_CHARS + RIGHT_BORDER_CHARS);
 	var CANVAS_HEIGHT = 192 + TOP_BORDER_LINES + BOTTOM_BORDER_LINES;
 	
-	ui.setResolution(CANVAS_WIDTH, CANVAS_HEIGHT);
-	var ctx = ui.canvas.getContext('2d');
+	viewport.setResolution(CANVAS_WIDTH, CANVAS_HEIGHT);
+	var ctx = viewport.canvas.getContext('2d');
 	var imageData = ctx.createImageData(CANVAS_WIDTH, CANVAS_HEIGHT);
 	var pixels = imageData.data;
 	

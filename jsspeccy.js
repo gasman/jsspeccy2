@@ -1,12 +1,34 @@
 if (!window.DataView) window.DataView = jDataView;
 
 function JSSpeccy(container, opts) {
+	var self = {};
+
 	if (typeof(container) === 'string') {
 		container = document.getElementById(container);
 	}
 	if (!opts) {
 		opts = {};
 	}
+
+	var viewport = JSSpeccy.Viewport({
+		container: container,
+		scaleFactor: opts.scaleFactor || 2
+	});
+
+	/* set up drag event on canvas to load files */
+	viewport.canvas.ondragenter = function() {
+		// Needed for web browser compatibility
+		return false;
+	};
+	viewport.canvas.ondragover = function () {
+		// Needed for web browser compatibility
+		return false;
+	};
+	viewport.canvas.ondrop = function(evt) {
+		var files = evt.dataTransfer.files;
+		self.loadLocalFile(files[0]);
+		return false;
+	};
 
 	function Event() {
 		var self = {};
@@ -35,18 +57,17 @@ function JSSpeccy(container, opts) {
 		return self;
 	}
 
-	var controller = {};
-	controller.reset = function() {
+	self.reset = function() {
 		spectrum.reset();
 	};
-	controller.loadLocalFile = function(file) {
+	self.loadLocalFile = function(file) {
 		var reader = new FileReader();
 		reader.onloadend = function() {
-			controller.loadFile(file.name, this.result);
+			self.loadFile(file.name, this.result);
 		};
 		reader.readAsArrayBuffer(file);
 	};
-	controller.loadFromUrl = function(url) {
+	self.loadFromUrl = function(url) {
 		var request = new XMLHttpRequest();
 
 		request.addEventListener('error', function(e) {
@@ -55,7 +76,7 @@ function JSSpeccy(container, opts) {
 
 		request.addEventListener('load', function(e) {
 			data = request.response;
-			controller.loadFile(url, data);
+			self.loadFile(url, data);
 			/* URL is not ideal for passing as the 'filename' argument - e.g. the file
 			may be served through a server-side script with a non-indicative file
 			extension - but it's better than nothing, and hopefully the heuristics
@@ -70,7 +91,7 @@ function JSSpeccy(container, opts) {
 		request.send();
 	};
 
-	controller.loadFile = function(name, data) {
+	self.loadFile = function(name, data) {
 		var fileType = 'unknown';
 		if (name && name.match(/\.sna$/i)) {
 			fileType = 'sna';
@@ -94,55 +115,54 @@ function JSSpeccy(container, opts) {
 			case 'sna':
 				var snapshot = JSSpeccy.loadSna(data);
 				spectrum = JSSpeccy.Spectrum({
-					ui: ui,
+					viewport: viewport,
 					keyboard: keyboard,
 					model: snapshot.model
 				});
 				spectrum.loadSnapshot(snapshot);
 				break;
 			case 'tap':
-				controller.currentTape = JSSpeccy.TapFile(data);
+				self.currentTape = JSSpeccy.TapFile(data);
 				break;
 			case 'tzx':
-				controller.currentTape = JSSpeccy.TzxFile(data);
+				self.currentTape = JSSpeccy.TzxFile(data);
 				break;
 		}
 	};
 
-	controller.isRunning = false;
-	controller.currentTape = null;
+	self.isRunning = false;
+	self.currentTape = null;
 
 	function tick() {
 		var startTime = (new Date()).getTime();
-		if (!controller.isRunning) return;
+		if (!self.isRunning) return;
 		spectrum.runFrame();
 		var endTime = (new Date()).getTime();
 		var waitTime = 20 - (endTime - startTime);
 		setTimeout(tick, Math.max(0, waitTime));
 	}
 
-	controller.onStart = Event();
-	controller.start = function() {
-		controller.isRunning = true;
-		controller.onStart.trigger();
+	self.onStart = Event();
+	self.start = function() {
+		self.isRunning = true;
+		self.onStart.trigger();
 		tick();
 	};
-	controller.onStop = Event();
-	controller.stop = function() {
-		controller.isRunning = false;
-		controller.onStop.trigger();
+	self.onStop = Event();
+	self.stop = function() {
+		self.isRunning = false;
+		self.onStop.trigger();
 	};
-	controller.deactivateKeyboard = function() {
+	self.deactivateKeyboard = function() {
 		keyboard.active = false;
 	};
-	controller.activateKeyboard = function() {
+	self.activateKeyboard = function() {
 		keyboard.active = true;
 	};
 
 	var ui = JSSpeccy.UI({
 		container: container,
-		controller: controller,
-		scaleFactor: opts.scaleFactor || 2
+		controller: self
 	});
 
 	var keyboard = JSSpeccy.Keyboard();
@@ -161,14 +181,14 @@ function JSSpeccy(container, opts) {
 	});
 
 	var spectrum = JSSpeccy.Spectrum({
-		ui: ui,
+		viewport: viewport,
 		keyboard: keyboard,
 		model: JSSpeccy.Spectrum.MODEL_128K,
-		controller: controller
+		controller: self
 	});
 
 	if (!('autostart' in opts) || opts['autostart']) {
-		controller.start();
+		self.start();
 	}
 }
 JSSpeccy.traps = {};
