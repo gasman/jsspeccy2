@@ -95,12 +95,14 @@ function JSSpeccy(container, opts) {
 
 	self.loadFile = function(name, data) {
 		var fileType = 'unknown';
-		if (name && name.match(/\.sna$/i)) {
+		if (name && name.match(/\.sna(\.zip)?$/i)) {
 			fileType = 'sna';
-		} else if (name && name.match(/\.tap$/i)) {
+		} else if (name && name.match(/\.tap(\.zip)?$/i)) {
 			fileType = 'tap';
-		} else if (name && name.match(/\.tzx$/i)) {
+		} else if (name && name.match(/\.tzx(\.zip)?$/i)) {
 			fileType = 'tzx';
+		} else if (name && name.match(/\.z80(\.zip)?$/i)) {
+			fileType = 'z80';
 		} else {
 			var signatureBytes = new Uint8Array(data, 0, 8);
 			var signature = String.fromCharCode.apply(null, signatureBytes);
