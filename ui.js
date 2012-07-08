@@ -48,6 +48,12 @@ JSSpeccy.UI = function(opts) {
 	controller.onStop.bind(function() {
 		stopStartButton.className = 'start';
 	});
+	/* set initial state */
+	if (controller.isRunning) {
+		stopStartButton.className = 'stop';
+	} else {
+		stopStartButton.className = 'start';
+	}
 
 	var resetButton = addToolbarButton('reset', 'reset');
 	resetButton.onclick = function() {
