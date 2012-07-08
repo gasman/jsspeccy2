@@ -1,4 +1,4 @@
-JSSpeccy.loadSna = function(data) {
+JSSpeccy.SnaFile = function(data) {
 	if (data.byteLength === 49179) {
 		var sna = new DataView(data);
 		var snapshot = {
