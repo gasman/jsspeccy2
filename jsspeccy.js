@@ -15,20 +15,22 @@ function JSSpeccy(container, opts) {
 		scaleFactor: opts.scaleFactor || 2
 	});
 
-	/* set up drag event on canvas to load files */
-	viewport.canvas.ondragenter = function() {
-		// Needed for web browser compatibility
-		return false;
-	};
-	viewport.canvas.ondragover = function () {
-		// Needed for web browser compatibility
-		return false;
-	};
-	viewport.canvas.ondrop = function(evt) {
-		var files = evt.dataTransfer.files;
-		self.loadLocalFile(files[0]);
-		return false;
-	};
+	if (!('dragToLoad' in opts) || opts['dragToLoad']) {
+		/* set up drag event on canvas to load files */
+		viewport.canvas.ondragenter = function() {
+			// Needed for web browser compatibility
+			return false;
+		};
+		viewport.canvas.ondragover = function () {
+			// Needed for web browser compatibility
+			return false;
+		};
+		viewport.canvas.ondrop = function(evt) {
+			var files = evt.dataTransfer.files;
+			self.loadLocalFile(files[0]);
+			return false;
+		};
+	}
 
 	function Event() {
 		var self = {};
