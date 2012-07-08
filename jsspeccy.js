@@ -117,13 +117,7 @@ function JSSpeccy(container, opts) {
 
 		switch (fileType) {
 			case 'sna':
-				var snapshot = JSSpeccy.loadSna(data);
-				spectrum = JSSpeccy.Spectrum({
-					viewport: viewport,
-					keyboard: keyboard,
-					model: snapshot.model
-				});
-				spectrum.loadSnapshot(snapshot);
+				loadSnapshot(JSSpeccy.loadSna(data));
 				break;
 			case 'tap':
 				self.currentTape = JSSpeccy.TapFile(data);
@@ -133,6 +127,17 @@ function JSSpeccy(container, opts) {
 				break;
 		}
 	};
+
+	/* Load a snapshot from a snapshot object (i.e. the result of loadSna) */
+	function loadSnapshot(snapshot) {
+		spectrum = JSSpeccy.Spectrum({
+			viewport: viewport,
+			keyboard: keyboard,
+			model: snapshot.model,
+			controller: self
+		});
+		spectrum.loadSnapshot(snapshot);
+	}
 
 	self.isRunning = false;
 	self.currentTape = null;

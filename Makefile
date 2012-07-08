@@ -14,7 +14,7 @@ CORE_JS_FILES=\
 	keyboard.js \
 	memory.js \
 	roms.js \
-	sna_loader.js \
+	sna_file.js \
 	spectrum.js \
 	tap_file.js \
 	tzx_file.js \
@@ -24,7 +24,7 @@ CORE_JS_FILES=\
 jsspeccy-core.min.js: $(CORE_JS_FILES)
 	java -jar compiler.jar \
 		--js=jsspeccy.js --js=display.js --js=io_bus.js --js=keyboard.js \
-		--js=memory.js --js=roms.js --js=sna_loader.js --js=spectrum.js --js=tap_file.js \
+		--js=memory.js --js=roms.js --js=sna_file.js --js=spectrum.js --js=tap_file.js \
 		--js=tzx_file.js --js=viewport.js --js=z80.js \
 		--js_output_file=jsspeccy-core.min.js
 
