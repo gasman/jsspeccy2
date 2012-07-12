@@ -1,8 +1,8 @@
 .PHONY: all
 
-all: build/jsspeccy-core.min.js lib/jdataview.js lib/jquery-1.7.2.min.js index.html ui.js jsspeccy.css images/*
+all: build/jsspeccy-core.min.js lib/jdataview.js lib/jquery-1.7.2.min.js ui/index.html ui/ui.js ui/jsspeccy.css ui/images/*
 	mkdir -p dist
-	cp -r build/jsspeccy-core.min.js lib/jdataview.js lib/jquery-1.7.2.min.js index.html ui.js jsspeccy.css images dist
+	cp -r build/jsspeccy-core.min.js lib/jdataview.js lib/jquery-1.7.2.min.js ui/index.html ui/ui.js ui/jsspeccy.css ui/images dist
 
 build/roms.js: bin2js.pl roms/*
 	mkdir -p build
