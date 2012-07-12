@@ -1,5 +1,6 @@
 .jsspeccy {
 	position: relative;
+	width: 640px;
 }
 .jsspeccy canvas {
 	padding: 0;
