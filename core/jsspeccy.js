@@ -62,14 +62,14 @@ function JSSpeccy(container, opts) {
 	self.reset = function() {
 		spectrum.reset();
 	};
-	self.loadLocalFile = function(file) {
+	self.loadLocalFile = function(file, opts) {
 		var reader = new FileReader();
 		reader.onloadend = function() {
-			self.loadFile(file.name, this.result);
+			self.loadFile(file.name, this.result, opts);
 		};
 		reader.readAsArrayBuffer(file);
 	};
-	self.loadFromUrl = function(url) {
+	self.loadFromUrl = function(url, opts) {
 		var request = new XMLHttpRequest();
 
 		request.addEventListener('error', function(e) {
@@ -78,7 +78,7 @@ function JSSpeccy(container, opts) {
 
 		request.addEventListener('load', function(e) {
 			data = request.response;
-			self.loadFile(url, data);
+			self.loadFile(url, data, opts);
 			/* URL is not ideal for passing as the 'filename' argument - e.g. the file
 			may be served through a server-side script with a non-indicative file
 			extension - but it's better than nothing, and hopefully the heuristics
@@ -93,7 +93,9 @@ function JSSpeccy(container, opts) {
 		request.send();
 	};
 
-	self.loadFile = function(name, data) {
+	self.loadFile = function(name, data, opts) {
+		if (!opts) opts = {};
+
 		var fileType = 'unknown';
 		if (name && name.match(/\.sna(\.zip)?$/i)) {
 			fileType = 'sna';
@@ -123,10 +125,10 @@ function JSSpeccy(container, opts) {
 				loadSnapshot(JSSpeccy.Z80File(data));
 				break;
 			case 'tap':
-				self.currentTape = JSSpeccy.TapFile(data);
+				loadTape(JSSpeccy.TapFile(data), opts);
 				break;
 			case 'tzx':
-				self.currentTape = JSSpeccy.TzxFile(data);
+				loadTape(JSSpeccy.TzxFile(data), opts);
 				break;
 		}
 	};
@@ -138,6 +140,15 @@ function JSSpeccy(container, opts) {
 			active machine, and current machine state would interfere with the snapshot loading -
 			e.g. paging is locked */
 		spectrum.loadSnapshot(snapshot);
+	}
+	function loadTape(tape, opts) {
+		if (!opts) opts = {};
+		self.currentTape = tape;
+		if (opts.autoload) {
+			var snapshotBuffer = JSSpeccy.autoloaders[currentModel.tapeAutoloader].buffer;
+			var snapshot = JSSpeccy.Z80File(snapshotBuffer);
+			loadSnapshot(snapshot);
+		}
 	}
 
 	self.isRunning = false;

@@ -96,7 +96,7 @@ JSSpeccy.UI = function(opts) {
 
 	var fileSelect = openFilePanel.find('input[type="file"]');
 	fileSelect.change(function() {
-		controller.loadLocalFile(this.files[0]);
+		controller.loadLocalFile(this.files[0], {'autoload': true});
 		hidePanels();
 	});
 
@@ -104,7 +104,7 @@ JSSpeccy.UI = function(opts) {
 	openFilePanel.find('button.open-url').click(function() {
 		var url = urlField.val();
 		if (url !== '') {
-			controller.loadFromUrl(url);
+			controller.loadFromUrl(url, {'autoload': true});
 			hidePanels();
 		}
 	});
@@ -195,7 +195,10 @@ JSSpeccy.UI = function(opts) {
 	function loadSelectedFile() {
 		var url = wosDownloads.val();
 		if (url) {
-			controller.loadFromUrl(url.replace('ftp://ftp.worldofspectrum.org/pub/sinclair/', 'http://wosproxy.zxdemo.org/unzip/'));
+			controller.loadFromUrl(
+				url.replace('ftp://ftp.worldofspectrum.org/pub/sinclair/', 'http://wosproxy.zxdemo.org/unzip/'),
+				{'autoload': true}
+			);
 			hidePanels();
 		}
 	}

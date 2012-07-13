@@ -132,6 +132,7 @@ JSSpeccy.buildContentionTables = function(model) {
 JSSpeccy.Spectrum.MODEL_48K = {
 	id: '48k',
 	name: 'Spectrum 48K',
+	tapeAutoloader: 'tape_48.z80',
 	tstatesUntilOrigin: 14336,
 	tstatesPerScanline: 224,
 	frameLength: 69888,
@@ -142,6 +143,7 @@ JSSpeccy.buildContentionTables(JSSpeccy.Spectrum.MODEL_48K);
 JSSpeccy.Spectrum.MODEL_128K = {
 	id: '128k',
 	name: 'Spectrum 128K',
+	tapeAutoloader: 'tape_128.z80',
 	tstatesUntilOrigin: 14362,
 	tstatesPerScanline: 228,
 	frameLength: 70908,
