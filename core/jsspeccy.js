@@ -133,12 +133,10 @@ function JSSpeccy(container, opts) {
 
 	/* Load a snapshot from a snapshot object (i.e. the result of loadSna) */
 	function loadSnapshot(snapshot) {
-		spectrum = JSSpeccy.Spectrum({
-			viewport: viewport,
-			keyboard: keyboard,
-			model: snapshot.model,
-			controller: self
-		});
+		self.setModel(snapshot.model);
+		self.reset(); /* required for the scenario that setModel does not change the current
+			active machine, and current machine state would interfere with the snapshot loading -
+			e.g. paging is locked */
 		spectrum.loadSnapshot(snapshot);
 	}
 
@@ -187,12 +185,25 @@ function JSSpeccy(container, opts) {
 		applyContention: true
 	});
 
-	var spectrum = JSSpeccy.Spectrum({
-		viewport: viewport,
-		keyboard: keyboard,
-		model: JSSpeccy.Spectrum.MODEL_128K,
-		controller: self
-	});
+	var currentModel, spectrum;
+
+	self.onChangeModel = Event();
+	self.getModel = function() {
+		return currentModel;
+	};
+	self.setModel = function(newModel) {
+		if (newModel != currentModel) {
+			spectrum = JSSpeccy.Spectrum({
+				viewport: viewport,
+				keyboard: keyboard,
+				model: newModel,
+				controller: self
+			});
+			currentModel = newModel;
+			self.onChangeModel.trigger(newModel);
+		}
+	};
+	self.setModel(JSSpeccy.Spectrum.MODEL_128K);
 
 	if (opts.loadFile) {
 		self.loadFromUrl(opts.loadFile);

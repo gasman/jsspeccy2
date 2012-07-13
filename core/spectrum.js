@@ -1,7 +1,7 @@
 JSSpeccy.Spectrum = function(opts) {
 	var self = {};
 
-	var model = opts.model || JSSpeccy.Spectrum.MODEL_128K;
+	model = opts.model || JSSpeccy.Spectrum.MODEL_128K;
 
 	var viewport = opts.viewport;
 	var keyboard = opts.keyboard;
@@ -130,6 +130,8 @@ JSSpeccy.buildContentionTables = function(model) {
 };
 
 JSSpeccy.Spectrum.MODEL_48K = {
+	id: '48k',
+	name: 'Spectrum 48K',
 	tstatesUntilOrigin: 14336,
 	tstatesPerScanline: 224,
 	frameLength: 69888,
@@ -138,9 +140,16 @@ JSSpeccy.Spectrum.MODEL_48K = {
 JSSpeccy.buildContentionTables(JSSpeccy.Spectrum.MODEL_48K);
 
 JSSpeccy.Spectrum.MODEL_128K = {
+	id: '128k',
+	name: 'Spectrum 128K',
 	tstatesUntilOrigin: 14362,
 	tstatesPerScanline: 228,
 	frameLength: 70908,
 	contentionPattern: [6,5,4,3,2,1,0,0]
 };
 JSSpeccy.buildContentionTables(JSSpeccy.Spectrum.MODEL_128K);
+
+JSSpeccy.Spectrum.MODELS = [
+	JSSpeccy.Spectrum.MODEL_48K,
+	JSSpeccy.Spectrum.MODEL_128K
+];

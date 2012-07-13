@@ -55,6 +55,24 @@ JSSpeccy.UI = function(opts) {
 		showPanel('.about');
 	});
 
+	var selectModel = $('select.select-model', toolbar);
+	var modelsById = {};
+	for (var i = 0; i < JSSpeccy.Spectrum.MODELS.length; i++) {
+		var model = JSSpeccy.Spectrum.MODELS[i];
+		modelsById[model.id] = model;
+		selectModel.append(
+			$('<option></option>').text(model.name).attr({'value': model.id})
+		);
+	}
+	selectModel.change(function() {
+		var modelId = $(this).val();
+		controller.setModel(modelsById[modelId]);
+	});
+	function refreshModel() {
+		selectModel.val(controller.getModel().id);
+	}
+	refreshModel();
+	controller.onChangeModel.bind(refreshModel);
 
 	/* Set up panels */
 	var panels = [];
