@@ -2414,11 +2414,8 @@ window.JSSpeccy.buildZ80 = (opts) ->
 						default:
 							throw("Unknown opcode prefix: " + lastOpcodePrefix);
 					}
-						
-					while (display.nextEventTime != null && display.nextEventTime <= tstates) {
-						display.doEvent();
-					}
 				}
+				while (display.nextEventTime != null && display.nextEventTime <= tstates) display.doEvent();
 			};
 
 			self.reset = function() {
@@ -2582,7 +2579,11 @@ window.JSSpeccy.buildZ80 = (opts) ->
 	"""
 	# Apply macro expansions
 	defineZ80JS = defineZ80JS.replace(/READMEM\((.*?)\)/g, '(CONTEND_READ($1, 3), memory.read($1))');
-	defineZ80JS = defineZ80JS.replace(/WRITEMEM\((.*?),(.*?)\)/g, '(CONTEND_WRITE($1, 3), memory.write($1,$2))');
+	defineZ80JS = defineZ80JS.replace(/WRITEMEM\((.*?),(.*?)\)/g, """
+		CONTEND_WRITE($1, 3);
+		while (display.nextEventTime != null && display.nextEventTime < tstates) display.doEvent();
+		memory.write($1,$2);
+	""");
 	if opts.applyContention
 		defineZ80JS = defineZ80JS.replace(/CONTEND_READ\((.*?),(.*?)\)/g,
 			'(tstates += memory.contend($1, tstates) + ($2))');
@@ -2598,6 +2599,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 				var isULAPort = ioBus.isULAPort($1);
 				if (isContendedMemory) tstates += ioBus.contend($1, tstates);
 				tstates += 1;
+				while (display.nextEventTime != null && display.nextEventTime < tstates) display.doEvent();
 			""");
 		defineZ80JS = defineZ80JS.replace(/CONTEND_PORT_LATE\((.*?)\)/g,
 			"""
