@@ -1,4 +1,6 @@
 .jsspeccy {
+	font-family: Helvetica, Arial, sans-serif;
+	font-size: 11pt;
 	position: relative;
 	width: 640px;
 }
@@ -70,6 +72,11 @@
 .jsspeccy .about {
 	text-align: center;
 }
+
+.jsspeccy .open-file .search-wos input[type=search] {
+	width: 400px;
+}
+
 .jsspeccy .about h1 {
 	font-size: 18pt;
 	margin-bottom: 0;
