@@ -230,6 +230,8 @@ function JSSpeccy(container, opts) {
 
 	if (!('autostart' in opts) || opts['autostart']) {
 		self.start();
+	} else {
+		self.stop();
 	}
 
 	return self;
