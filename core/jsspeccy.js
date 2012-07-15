@@ -64,7 +64,9 @@ function JSSpeccy(container, opts) {
 	};
 	self.loadLocalFile = function(file, opts) {
 		var reader = new FileReader();
+		viewport.showIcon('loading');
 		reader.onloadend = function() {
+			viewport.showIcon(null);
 			self.loadFile(file.name, this.result, opts);
 		};
 		reader.readAsArrayBuffer(file);
@@ -77,6 +79,7 @@ function JSSpeccy(container, opts) {
 		});
 
 		request.addEventListener('load', function(e) {
+			viewport.showIcon(null);
 			data = request.response;
 			self.loadFile(url, data, opts);
 			/* URL is not ideal for passing as the 'filename' argument - e.g. the file
@@ -90,6 +93,7 @@ function JSSpeccy(container, opts) {
 		/* trigger XHR */
 		request.open('GET', url, true);
 		request.responseType = "arraybuffer";
+		viewport.showIcon('loading');
 		request.send();
 	};
 
