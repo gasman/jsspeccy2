@@ -143,6 +143,12 @@ JSSpeccy.Display = function(opts) {
 	self.endFrame = function() {
 		ctx.putImageData(imageData, 0, 0);
 	};
+
+	self.drawFullScreen = function() {
+		self.startFrame();
+		while (self.nextEventTime) self.doEvent();
+		self.endFrame();
+	};
 	
 	return self;
 };

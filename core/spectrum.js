@@ -61,6 +61,10 @@ JSSpeccy.Spectrum = function(opts) {
 		}
 	};
 
+	self.drawFullScreen = function() {
+		display.drawFullScreen();
+	}
+
 	JSSpeccy.traps.tapeLoad = function() {
 		if (!controller.currentTape) return true; /* no current tape, so return from trap;
 			resume the trapped instruction */

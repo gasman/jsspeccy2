@@ -161,6 +161,9 @@ function JSSpeccy(container, opts) {
 			active machine, and current machine state would interfere with the snapshot loading -
 			e.g. paging is locked */
 		spectrum.loadSnapshot(snapshot);
+		if (!self.isRunning) {
+			spectrum.drawFullScreen();
+		}
 	}
 	function loadTape(tape, opts) {
 		if (!opts) opts = {};
