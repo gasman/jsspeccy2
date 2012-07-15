@@ -63,11 +63,25 @@ function JSSpeccy(container, opts) {
 	self.reset = function() {
 		spectrum.reset();
 	};
+
+	function updateViewportIcon() {
+		if (self.isLoading) {
+			viewport.showIcon('loading');
+		} else if (!self.isRunning) {
+			viewport.showIcon('play');
+		} else {
+			viewport.showIcon(null);
+		}
+	}
+
+	self.isLoading = false;
 	self.loadLocalFile = function(file, opts) {
 		var reader = new FileReader();
-		viewport.showIcon('loading');
+		self.isLoading = true;
+		updateViewportIcon();
 		reader.onloadend = function() {
-			viewport.showIcon(null);
+			self.isLoading = false;
+			updateViewportIcon();
 			self.loadFile(file.name, this.result, opts);
 		};
 		reader.readAsArrayBuffer(file);
@@ -80,7 +94,8 @@ function JSSpeccy(container, opts) {
 		});
 
 		request.addEventListener('load', function(e) {
-			viewport.showIcon(null);
+			self.isLoading = false;
+			updateViewportIcon();
 			data = request.response;
 			self.loadFile(url, data, opts);
 			/* URL is not ideal for passing as the 'filename' argument - e.g. the file
@@ -94,7 +109,8 @@ function JSSpeccy(container, opts) {
 		/* trigger XHR */
 		request.open('GET', url, true);
 		request.responseType = "arraybuffer";
-		viewport.showIcon('loading');
+		self.isLoading = true;
+		updateViewportIcon();
 		request.send();
 	};
 
@@ -172,14 +188,14 @@ function JSSpeccy(container, opts) {
 	self.start = function() {
 		if (self.isRunning) return;
 		self.isRunning = true;
-		viewport.showIcon(null);
+		updateViewportIcon();
 		self.onStart.trigger();
 		tick();
 	};
 	self.onStop = Event();
 	self.stop = function() {
 		self.isRunning = false;
-		viewport.showIcon('play');
+		updateViewportIcon();
 		self.onStop.trigger();
 	};
 	self.deactivateKeyboard = function() {
