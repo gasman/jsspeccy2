@@ -59,6 +59,7 @@
 	width: 580px;
 	height: 400px;
 	background-color: white;
+	color: black;
 	display: none;
 	position: absolute;
 	border: 1px solid #444;
@@ -67,6 +68,17 @@
 .jsspeccy .panel .close {
 	position: absolute;
 	right: 0px;
+}
+
+.jsspeccy .panel h1, .jsspeccy .panel h2 {
+	margin-top: 0.8em;
+	margin-bottom: 0.8em;
+}
+
+.jsspeccy .panel .note {
+	font-weight: normal;
+	font-style: italic;
+	font-size: 10pt;
 }
 
 .jsspeccy .about {

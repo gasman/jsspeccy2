@@ -11,23 +11,65 @@
 
 		<style>
 			body {
-				background-color: #111;
+				margin: 0;
+				padding: 0;
+				font-family: Helvetica, Arial, sans-serif;
+				background-color: #222;
+				color: #ddd;
+			}
+			h1, h2 {
+				padding: 0; margin: 0;
+			}
+			a:link {
+				color: #77f;
+			}
+			a:visited {
+				color: #97f;
+			}
+			a:hover, a:active {
+				color: #99f;
 			}
 			#jsspeccy {
-				margin: 25px auto;
+				margin: 10px;
+				padding-right: 10px;
+				float: left;
+			}
+
+			.commentary {
+				float: left;
+				width: 350px;
+				padding-top: 10px;
+			}
+			.commentary h1 {
+				background-image: url('images/spectrum48k.png');
+				line-height: 100px;
+				padding-left: 138px;
+				background-repeat: no-repeat;
+			}
+			.commentary h2 {
+				font-size: 12pt;
 			}
 		</style>
 		<script>
-			function go() {
+			$(function() {
 				var jsspeccy = JSSpeccy('jsspeccy-viewport', {'autostart': true});
 				JSSpeccy.UI({
 					container: 'jsspeccy',
 					controller: jsspeccy
 				});
-			}
+				$('#example-games').change(function() {
+					var filename = $(this).val();
+					if (filename) {
+						jsspeccy.loadFromUrl(
+							'http://jsspeccy.zxdemo.org/games/' + filename,
+							{'autoload': true}
+						);
+					}
+				})
+			});
 		</script>
 	</head>
-	<body onload="go();">
+	<body>
 		<div id="jsspeccy">
 			<div id="jsspeccy-viewport"></div>
 			<ul class="toolbar">
@@ -48,7 +90,7 @@
 			<div class="panel open-file">
 				<button class="close">close</button>
 
-				<h2>Load from disk:</h2><input type="file">
+				<h2>Load from disk: <span class="note">.tap, .tzx, .sna, .z80 files supported</span></h2><input type="file">
 
 				<h2>Load from web:</h2><input type="url"><button class="open-url">Open URL</button>
 
@@ -74,7 +116,28 @@
 					<p>This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.</p><p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.</p><p>You should have received a copy of the GNU General Public License along with this program.  If not, see &lt;<a href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>&gt;.</p>
 				</div>
 			</div>
-
+		</div>
+		<div class="commentary">
+			<h1>JSSpeccy</h1>
+			<h2>A ZX Spectrum emulator in Javascript</h2>
+			<p>This is a (mostly) accurate recreation of the 48K and 128K Spectrums. Features currently unsupported are:</p>
+			<ul>
+				<li>Sound</li>
+				<li>Custom tape loaders</li>
+				<li>Some particularly complex multicolour tricks</li>
+			</ul>
+			<p>Not sure what to play? Choose a game from this list to get started...</p>
+			<select id="example-games" style="width: 100%">
+				<option value="">Select one...</option>
+				<option value="fairlight128.z80">Fairlight (1985, The Edge)</option>
+				<option value="the_great_escape.z80">The Great Escape (1986, Ocean Software)</option>
+				<option value="head_over_heels.z80">Head Over Heels (1987, Ocean Software)</option>
+				<option value="quazatron.z80">Quazatron (1986, Hewson Consultants)</option>
+				<option value="rainbow_islands.z80">Rainbow Islands (1990, Ocean Software)</option>
+				<option value="skool_daze.z80">Skool Daze (1984, Microsphere)</option>
+			</select>
+			<p>Grab the <a href="https://github.com/gasman/jsspeccy2">source code on Github</a>.</p>
+			<p>Created by <a href="http://matt.west.co.tt/">Matt Westcott</a>. <a href="https://twitter.com/gasmanic">Follow me on Twitter</a></p>
 		</div>
 	</body>
 </html>
