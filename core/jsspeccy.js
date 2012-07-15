@@ -244,7 +244,7 @@ function JSSpeccy(container, opts) {
 	self.setModel(JSSpeccy.Spectrum.MODEL_128K);
 
 	if (opts.loadFile) {
-		self.loadFromUrl(opts.loadFile);
+		self.loadFromUrl(opts.loadFile, {'autoload': opts.autoload});
 	}
 
 	if (!('autostart' in opts) || opts['autostart']) {
