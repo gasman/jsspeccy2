@@ -1,6 +1,8 @@
 JSSpeccy: A ZX Spectrum emulator in pure Javascript
 ===================================================
 
+https://github.com/gasman/jsspeccy2
+
 Foreword to version 2.x
 -----------------------
 When I started this project in 2009, writing an emulator in Javascript was a
@@ -31,6 +33,8 @@ Building
 perl, CoffeeScript[1] and Closure Compiler[2] are required. To build:
 
     make
+
+This will place all web-distributable files into the 'dist' folder.
 
 [1] http://jashkenas.github.com/coffee-script/
 [2] https://developers.google.com/closure/compiler/
