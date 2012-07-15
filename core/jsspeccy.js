@@ -12,7 +12,8 @@ function JSSpeccy(container, opts) {
 
 	var viewport = JSSpeccy.Viewport({
 		container: container,
-		scaleFactor: opts.scaleFactor || 2
+		scaleFactor: opts.scaleFactor || 2,
+		onClickIcon: function() {self.start();}
 	});
 
 	if (!('dragToLoad' in opts) || opts['dragToLoad']) {
@@ -169,13 +170,16 @@ function JSSpeccy(container, opts) {
 
 	self.onStart = Event();
 	self.start = function() {
+		if (self.isRunning) return;
 		self.isRunning = true;
+		viewport.showIcon(null);
 		self.onStart.trigger();
 		tick();
 	};
 	self.onStop = Event();
 	self.stop = function() {
 		self.isRunning = false;
+		viewport.showIcon('play');
 		self.onStop.trigger();
 	};
 	self.deactivateKeyboard = function() {
