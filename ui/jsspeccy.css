@@ -27,6 +27,11 @@
 	background-repeat: no-repeat;
 }
 
+.jsspeccy .toolbar label {
+	color: white;
+}
+
+
 .jsspeccy .toolbar .stop {
 	background-image: url(images/48x48_player_pause.png);
 }
