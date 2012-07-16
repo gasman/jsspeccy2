@@ -46,11 +46,14 @@
 				padding-left: 138px;
 				background-repeat: no-repeat;
 			}
+			.commentary .version {
+				font-size: 0.4em;
+			}
 			.commentary h2 {
 				font-size: 12pt;
 			}
-			.commentary .credit {
-				font-size: 0.9em;
+			.commentary small {
+				font-size: 0.8em;
 				color: #ccc;
 			}
 		</style>
@@ -122,7 +125,7 @@
 			</div>
 		</div>
 		<div class="commentary">
-			<h1>JSSpeccy</h1>
+			<h1>JSSpeccy <span class="version">v2.1</span></h1>
 			<h2>A ZX Spectrum emulator in Javascript</h2>
 			<p>This is a (mostly) accurate recreation of the 48K and 128K Spectrums. Features currently unsupported are:</p>
 			<ul>
@@ -160,9 +163,11 @@
 				<option value="turbo_esprit.z80">Turbo Esprit (1986, Durell Software)</option>
 				<option value="wotef.z80">Way Of The Exploding Fist (1985, Melbourne House)</option>
 			</select>
-			<p>Grab the <a href="https://github.com/gasman/jsspeccy2">source code on Github</a>.</p>
-			<p class="credit">Created by <a href="http://matt.west.co.tt/">Matt Westcott</a>. <a href="https://twitter.com/gasmanic">Follow me on Twitter</a></p>
-			<p class="credit"><a href="http://en.wikipedia.org/wiki/File:ZXSpectrum48k.jpg">Spectrum photo</a> by Bill Bertram</p>
+			<small>
+				<p>Grab the <a href="https://github.com/gasman/jsspeccy2">source code on Github</a>. Want to include JSSpeccy on your website? <a href="https://github.com/gasman/jsspeccy2/blob/master/Embedding.txt">Embedding instructions</a></p>
+				<p>Created by <a href="http://matt.west.co.tt/">Matt Westcott</a>. <a href="https://twitter.com/gasmanic">Follow me on Twitter</a></p>
+				<p><a href="http://en.wikipedia.org/wiki/File:ZXSpectrum48k.jpg">Spectrum photo</a> by Bill Bertram</p>
+			</small>
 		</div>
 	</body>
 </html>
