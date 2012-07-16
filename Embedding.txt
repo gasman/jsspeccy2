@@ -1,0 +1,172 @@
+Embedding JSSpeccy into your own webpages
+=========================================
+
+JSSpeccy has been designed to allow embedding the main emulator window into
+your own web pages, independently of the outer UI controls - for example, a
+website for a new Spectrum game could have a live instance of the game running
+within the browser. 
+
+* Download and unpack the distribution archive:
+  https://github.com/gasman/jsspeccy2/downloads
+
+* Place jsspeccy-core.min.js and jdataview.js somewhere accessible on your web
+  space. (jdataview.js is optional, but strongly recommended to ensure Firefox
+  compatibility)
+
+* In the <head> section of your page, import jsspeccy-core.min.js and
+  jdataview.js :
+
+        <script src="/mysite/js/jdataview.js"></script>
+        <script src="/mysite/js/jsspeccy-core.min.js"></script>
+
+* In the place in your page where you want the emulator to appear, add an empty
+  HTML element with an ID such as 'speccy':
+
+        <div id="speccy"></div>
+
+* Add a snippet of Javascript to call the 'JSSpeccy' function on page load,
+  passing in the element ID (or alternatively the element itself) and
+  optionally a collection of configuration settings. A simple complete example
+  would be as follows:
+
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <title>My wonderful page</title>
+        <script src="jdataview.js"></script>
+        <script src="jsspeccy-core.min.js"></script>
+        
+        <script>
+            function go() {
+                var jsspeccy = JSSpeccy('speccy', {
+                    'autostart': false,
+                    'autoload': true,
+                    'scaleFactor': 1,
+                    'loadFile': 'http://jsspeccy.zxdemo.org/games/manic_miner.z80'
+                });
+            }
+        </script>
+    </head>
+    <body onload="go()">
+        <div id="speccy"></div>
+    </body>
+</html>
+
+If you're using jQuery on your page, it makes sense to place this in a
+document 'ready' handler:
+
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <title>My wonderful page</title>
+        <script src="jdataview.js"></script>
+        <script src="jsspeccy-core.min.js"></script>
+        
+        <script>
+            $(function() {
+                var jsspeccy = JSSpeccy('speccy', {
+                    'autostart': false,
+                    'autoload': true,
+                    'scaleFactor': 1,
+                    'loadFile': 'http://jsspeccy.zxdemo.org/games/manic_miner.z80'
+                });
+            });
+        </script>
+    </head>
+    <body>
+        <div id="speccy"></div>
+    </body>
+</html>
+
+
+
+Configuration settings
+----------------------
+The following options can be passed in the JSSpeccy call to customise
+the behaviour:
+
+autoload (default = false)
+    If true, and a tape file is specified in loadFile, the tape will be loaded
+    automatically (i.e. the user will not have to enter LOAD "" or select the
+    128 Tape Loader option).
+autostart (default = true)
+    If true, start the emulator running immediately on page load; if false, the
+    emulation is initially paused.
+dragToLoad (default = true)
+    If true, the user can load files by dragging them onto the emulator window.
+loadFile
+    The URL of a tape or snapshot file to load on startup. Note that if this
+    file is hosted on a different domain to the calling page, you'll need to
+    configure it to allow a remote AJAX request, which typically means having
+    it return the HTTP header:
+        Access-Control-Allow-Origin: *
+    Also, note that FTP URLs are not supported.
+scaleFactor (default = 2)
+    How big the emulator window should be, as a multiple of the Spectrum's
+    native screen size (e.g. a scaleFactor of 1 will give one screen pixel for
+    each Spectrum pixel).
+
+API methods
+-----------
+The object returned from the 'JSSpeccy' function has a number of method calls
+and properties that can be used to interact with the running emulator:
+
+start()
+    Start the emulator, if it is currently paused
+stop()
+    Pause the emulation
+isRunning
+    Indicates whether the emulator is currently running, rather than paused
+isDownloading
+    Indicates whether the emulator is currently retrieving a file from a
+    remote URL
+loadLocalFile(file, opts)
+    Load a tape or snapshot file into the emulator. The file is passed as a
+    File object: http://www.w3.org/TR/FileAPI/
+    'opts' is a collection of properties to specify how the file is handled;
+    supported properties are:
+        autoload - if true, and file is a tape file, it will be loaded
+            automatically (i.e. the user will not have to enter LOAD "")
+reset()
+    Reset the Spectrum
+loadFromUrl(url, opts)
+    Load a tape or snapshot file from the given URL. Files are fetched with
+    XMLHttpRequest, so are subject to the standard browser security
+    restrictions on loading remote files. In particular, files hosted on
+    remote domains will probably need to return an Access-Control-Allow-Origin
+    HTTP header.
+    'opts' is a collection of properties to specify how the file is handled;
+    supported properties are:
+        autoload - if true, and file is a tape file, it will be loaded
+            automatically (i.e. the user will not have to enter LOAD "")
+setModel(model)
+    Set the currently-emulated model of Spectrum. 'model' is a structure of
+    various properties relating to that model, and currently two such models
+    are defined: JSSpeccy.Spectrum.MODEL_48K and JSSpeccy.Spectrum.MODEL_128K.
+    The array JSSpeccy.Spectrum.MODELS contains all available models (this may
+    be extended in future versions).
+getModel()
+    Return the currently-emulated model of Spectrum, as a structure of
+    properties relating to that model (see setModel).
+deactivateKeyboard()
+    Stop the emulator responding to keypresses; you probably want to do this
+    while dialog boxes or other interactive items on your page are active.
+activateKeyboard()
+    Resume responding to keypresses after a previous call to
+    deactivateKeyboard().
+
+Events
+------
+The jsspeccy object also includes a number of event handlers - you can
+attach callback functions via the event's 'bind' method to be invoked whenever
+a particular event happens. For example:
+
+    jsspeccy.onStart.bind(function() {alert('Here we go!');});
+
+onStart
+    Fired when emulation is started / unpaused
+onStop
+    Fired when emulation is paused
+onChangeModel
+    Fired when the currently emulated model of Spectrum is changed; the model
+    structure (see setModel above) is passed as a parameter to the callback.

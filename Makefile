@@ -8,6 +8,7 @@ DIST_FILES=\
 	ui/ui.js \
 	ui/jsspeccy.css \
 	README \
+	Embedding.txt \
 	COPYING
 
 all: $(DIST_FILES) ui/images/*

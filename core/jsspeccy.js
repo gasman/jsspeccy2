@@ -65,7 +65,7 @@ function JSSpeccy(container, opts) {
 	};
 
 	function updateViewportIcon() {
-		if (self.isLoading) {
+		if (self.isDownloading) {
 			viewport.showIcon('loading');
 		} else if (!self.isRunning) {
 			viewport.showIcon('play');
@@ -74,13 +74,13 @@ function JSSpeccy(container, opts) {
 		}
 	}
 
-	self.isLoading = false;
+	self.isDownloading = false;
 	self.loadLocalFile = function(file, opts) {
 		var reader = new FileReader();
-		self.isLoading = true;
+		self.isDownloading = true;
 		updateViewportIcon();
 		reader.onloadend = function() {
-			self.isLoading = false;
+			self.isDownloading = false;
 			updateViewportIcon();
 			self.loadFile(file.name, this.result, opts);
 		};
@@ -94,7 +94,7 @@ function JSSpeccy(container, opts) {
 		});
 
 		request.addEventListener('load', function(e) {
-			self.isLoading = false;
+			self.isDownloading = false;
 			updateViewportIcon();
 			data = request.response;
 			self.loadFile(url, data, opts);
@@ -109,7 +109,7 @@ function JSSpeccy(container, opts) {
 		/* trigger XHR */
 		request.open('GET', url, true);
 		request.responseType = "arraybuffer";
-		self.isLoading = true;
+		self.isDownloading = true;
 		updateViewportIcon();
 		request.send();
 	};
