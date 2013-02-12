@@ -7,7 +7,7 @@ website for a new Spectrum game could have a live instance of the game running
 within the browser. 
 
 * Download and unpack the distribution archive:
-  https://github.com/gasman/jsspeccy2/downloads
+  http://jsspeccy.zxdemo.org/downloads/
 
 * Place jsspeccy-core.min.js and jdataview.js somewhere accessible on your web
   space. (jdataview.js is optional, but strongly recommended to ensure Firefox
