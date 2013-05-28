@@ -33,6 +33,7 @@ CORE_JS_FILES=\
 	core/io_bus.js \
 	core/keyboard.js \
 	core/memory.js \
+	core/sound.js \
 	build/roms.js \
 	build/autoloaders.js \
 	core/sna_file.js \
@@ -46,7 +47,8 @@ CORE_JS_FILES=\
 build/jsspeccy-core.min.js: $(CORE_JS_FILES)
 	mkdir -p build
 	java -jar compiler.jar \
-		--js=core/jsspeccy.js --js=core/display.js --js=core/io_bus.js --js=core/keyboard.js \
+	    --compilation_level=WHITESPACE_ONLY \
+		--js=core/jsspeccy.js --js=core/display.js --js=core/io_bus.js --js=core/keyboard.js --js=core/sound.js \
 		--js=core/memory.js --js=build/roms.js --js=build/autoloaders.js --js=core/sna_file.js --js=core/spectrum.js \
 		--js=core/tap_file.js --js=core/tzx_file.js --js=core/viewport.js --js=build/z80.js \
 		--js=core/z80_file.js \
