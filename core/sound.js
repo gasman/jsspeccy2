@@ -83,7 +83,7 @@ JSSpeccy.Sound = function(opts) {
 	}
 	
 	self.createSoundData = function (size, val) {
-		size = Math.round(size);
+		size = Math.floor(size);
 		if (size>=1) {
 			for (var i=0; i<size; i++) {
 				soundData.push(val);
