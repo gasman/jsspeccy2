@@ -11,20 +11,25 @@ JSSpeccy.Sound = function(opts) {
 	var soundData = new Array();
 	var soundDataFrameBytes = 0;
 
-	var audio = new Audio();
-
-	var ay_registers = new Array;
-	var ay_reg_select = 0;
-
 	var lastaudio = 0;
 	
 	var frameCount = 0;
 
-	audio.mozSetup(1, sampleRate);
+	var audio = null;
+	var audioContext = null;
+	var audioNode = null;
+	
+	if (typeof(webkitAudioContext)!='undefined') {
+		audioContext = new webkitAudioContext();
+		audioNode = audioContext.createJavaScriptNode(8192, 1, 1);
+	}
 
-	function writeSoundData() {
-		var buffer = Float32Array(soundData.length / oversampleRate);
-		
+	if (audioNode==null && typeof(Audio)!='undefined') {
+		audio = new Audio();
+		audio.mozSetup(1, sampleRate);
+	}
+	
+	function fillbuffer(buffer) {
 		var n = 0;
 		
 		for (var i=0; i<buffer.length; i++) {
@@ -36,11 +41,36 @@ JSSpeccy.Sound = function(opts) {
 			buffer[i] = avg *0.7;
 		}
 		
-		var written = audio.mozWriteAudio(buffer);
-		soundData = new Array();
+		if (n>soundData.Length) {
+			soundData = new Array();
+		}
+		else {
+			soundData.splice(0,n);
+		}
+	}
+
+	function processData(e) {
+		var buffer = e.outputBuffer.getChannelData(0);
+		fillbuffer(buffer);
 	}
 	
-	self.updateBuzzer = function(val) {
+	function writeSoundData() {	
+		if (audio!=null) {
+			var buffer = Float32Array(soundData.length / oversampleRate);
+			
+			fillbuffer(buffer);
+		
+			var written = audio.mozWriteAudio(buffer);
+		}
+
+		if (audioNode!=null && audioNode.onaudioprocess != processData) {
+			audioNode.onaudioprocess = processData;
+			audioNode.connect(audioContext.destination);
+		}
+	
+	}
+	
+		self.updateBuzzer = function(val) {
 		if (val==0) val = -1;
 
 		if (buzzer_val!=val) {	
