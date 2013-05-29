@@ -41,7 +41,7 @@ JSSpeccy.Sound = function(opts) {
 			buffer[i] = avg *0.7;
 		}
 		
-		if (n>soundData.Length) {
+		if (n>=soundData.Length) {
 			soundData = new Array();
 		}
 		else {
@@ -101,7 +101,7 @@ JSSpeccy.Sound = function(opts) {
 		self.createSoundData(sampleRate * oversampleRate / 50 - soundDataFrameBytes, buzzer_val);	
 		lastaudio = 0;
 		soundDataFrameBytes = 0;	
-		if (!frameCount++) return;
+		if (frameCount++<2) return;
 		writeSoundData();
 		
 	}
