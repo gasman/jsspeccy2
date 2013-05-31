@@ -34,13 +34,14 @@ JSSpeccy.Spectrum = function(opts) {
 		ioBus: ioBus,
 		display: display
 	});
+	
+	sound.setProcessor(processor);
 
 	/* internal state to allow picking up mid-frame (e.g. when loading from a snapshot) */
 	var startNextFrameWithInterrupt = true;
 
 	self.runFrame = function() {
 		display.startFrame();
-		sound.startFrame(processor);
 		if (startNextFrameWithInterrupt) {
 			processor.requestInterrupt();
 		}
@@ -53,6 +54,7 @@ JSSpeccy.Spectrum = function(opts) {
 	self.reset = function() {
 		processor.reset();
 		memory.reset();
+		sound.reset();
 	};
 
 	self.loadSnapshot = function(snapshot) {

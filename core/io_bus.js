@@ -14,7 +14,10 @@ JSSpeccy.IOBus = function(opts) {
 		} else if ((addr & 0x00e0) === 0x0000) {
 			/* kempston joystick */
 			return 0;
-		} else {
+		} else if (addr == 0xfffd) {
+			return sound.readSoundRegister();
+		}
+		else {
 			return 0xff;
 		}
 	};
@@ -27,6 +30,15 @@ JSSpeccy.IOBus = function(opts) {
 		if (!(addr & 0x8002)) {
 			memory.setPaging(val);
 		}
+		
+		if (addr==0xfffd) {
+			sound.selectSoundRegister( val & 0xF );
+		}
+		
+		if (addr==0xbffd || addr == 0xbefd) {
+			sound.writeSoundRegister(val);
+		}
+		
 	};
 
 	self.isULAPort = function(addr) {
