@@ -17,10 +17,15 @@ JSSpeccy.Spectrum = function(opts) {
 		model: model
 	});
 
+	var sound = JSSpeccy.Sound({
+		display : display
+	});
+
 	var ioBus = JSSpeccy.IOBus({
 		keyboard: keyboard,
 		display: display,
 		memory: memory,
+		sound: sound, 
 		contentionTable: model.contentionTable
 	});
 
@@ -29,6 +34,8 @@ JSSpeccy.Spectrum = function(opts) {
 		ioBus: ioBus,
 		display: display
 	});
+	
+	sound.setProcessor(processor);
 
 	/* internal state to allow picking up mid-frame (e.g. when loading from a snapshot) */
 	var startNextFrameWithInterrupt = true;
@@ -40,12 +47,14 @@ JSSpeccy.Spectrum = function(opts) {
 		}
 		processor.runFrame(display.frameLength);
 		display.endFrame();
+		sound.endFrame();
 		processor.setTstates(processor.getTstates() - display.frameLength);
 		startNextFrameWithInterrupt = true;
 	};
 	self.reset = function() {
 		processor.reset();
 		memory.reset();
+		sound.reset();
 	};
 
 	self.loadSnapshot = function(snapshot) {
