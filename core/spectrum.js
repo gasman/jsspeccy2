@@ -6,6 +6,7 @@ JSSpeccy.Spectrum = function(opts) {
 	var viewport = opts.viewport;
 	var keyboard = opts.keyboard;
 	var controller = opts.controller;
+	var soundBackend = opts.soundBackend;
 
 	var memory = JSSpeccy.Memory({
 		model: model
@@ -17,15 +18,16 @@ JSSpeccy.Spectrum = function(opts) {
 		model: model
 	});
 
-	var sound = JSSpeccy.Sound({
-		model : model
+	var sound = JSSpeccy.SoundGenerator({
+		model: model,
+		soundBackend: soundBackend
 	});
 
 	var ioBus = JSSpeccy.IOBus({
 		keyboard: keyboard,
 		display: display,
 		memory: memory,
-		sound: sound, 
+		sound: sound,
 		contentionTable: model.contentionTable
 	});
 
@@ -70,7 +72,7 @@ JSSpeccy.Spectrum = function(opts) {
 
 	self.drawFullScreen = function() {
 		display.drawFullScreen();
-	}
+	};
 
 	JSSpeccy.traps.tapeLoad = function() {
 		if (!controller.currentTape) return true; /* no current tape, so return from trap;

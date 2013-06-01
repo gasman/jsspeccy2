@@ -49,6 +49,8 @@ function JSSpeccy(container, opts) {
 		};
 	}
 
+	var soundBackend = JSSpeccy.SoundBackend();
+
 	function Event() {
 		var self = {};
 		var listeners = [];
@@ -251,6 +253,7 @@ function JSSpeccy(container, opts) {
 				viewport: viewport,
 				keyboard: keyboard,
 				model: newModel,
+				soundBackend: soundBackend,
 				controller: self
 			});
 			currentModel = newModel;

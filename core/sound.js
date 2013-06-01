@@ -32,12 +32,13 @@
 //
 // *******************************************************************************/
 
-JSSpeccy.Sound = function(opts) {
+JSSpeccy.SoundGenerator = function(opts) {
 	var self = {};
-	
-	var frameLength = opts.model.frameLength;
 
-	var sampleRate = 44100;
+	var frameLength = opts.model.frameLength;
+	var backend = opts.soundBackend;
+	var sampleRate = backend.sampleRate;
+
 	var oversampleRate = 8;
 	var buzzer_val = 0;
 
@@ -45,7 +46,7 @@ JSSpeccy.Sound = function(opts) {
 	var soundDataFrameBytes = 0;
 
 	var lastaudio = 0;
-	
+
 	var frameCount = 0;
 
 	var audio = null;
@@ -61,7 +62,7 @@ JSSpeccy.Sound = function(opts) {
 
 	var ayRegSelected = 0;
 	var lastAyAudio = 0;
-	
+
 	//ay stuff
 	var MAX_OUTPUT = 63;
     var AY_STEP = 32768;
@@ -122,20 +123,6 @@ JSSpeccy.Sound = function(opts) {
 	
 	var AY_OutNoise = 0;
 	AY8912_init(1773000, sampleRate, 8);
-
-	if (typeof(webkitAudioContext)!='undefined') {
-		audioContext = new webkitAudioContext();
-		audioNode = audioContext.createJavaScriptNode(8192, 1, 1);
-	}
-
-	if (audioNode === null && typeof(Audio) != 'undefined') {
-		audio = new Audio();
-		if (audio.mozSetup) {
-			audio.mozSetup(1, sampleRate);
-		} else {
-			audio = null;
-		}
-	}
 
 	function AY8912_reset() {
 		AY8912_register_latch = 0;
@@ -704,7 +691,7 @@ JSSpeccy.Sound = function(opts) {
 
 	
 	
-	function fillbuffer(buffer) {
+	function fillBuffer(buffer) {
 		var n = 0;
 		
 		for (var i=0; i<buffer.length; i++) {
@@ -734,27 +721,8 @@ JSSpeccy.Sound = function(opts) {
 		}
 		
 	}
+	backend.setSource(fillBuffer);
 
-	function processData(e) {
-		var buffer = e.outputBuffer.getChannelData(0);
-		fillbuffer(buffer);
-	}
-	
-	function writeSoundData() {	
-		if (audio!=null) {
-			var buffer = Float32Array(soundData.length / oversampleRate);
-			
-			fillbuffer(buffer);	
-			var written = audio.mozWriteAudio(buffer);
-		}
-		
-		if (audioNode!=null && audioNode.onaudioprocess != processData) {
-			audioNode.onaudioprocess = processData;
-			audioNode.connect(audioContext.destination);
-		}
-	
-	}
-	
 	function handleAySound(size) {
 		size = Math.floor(size);
 		while (size--) {
@@ -802,7 +770,7 @@ JSSpeccy.Sound = function(opts) {
 		soundDataFrameBytes = 0;
 		soundDataAyFrameBytes = 0;		
 		if (frameCount++<2) return;
-		writeSoundData();
+		backend.notifyReady(soundData.length / oversampleRate);
 		
 	}
 	
@@ -831,3 +799,72 @@ JSSpeccy.Sound = function(opts) {
 
 	return self;
 };
+
+JSSpeccy.SoundBackend = function() {
+	var self = {};
+
+	/* Regardless of the underlying implementation, an instance of SoundBackend exposes the API:
+		sampleRate: sample rate required by this backend
+		setSource(fn): specify a function fn to be called whenever we want to receive audio data.
+			fn is passed a buffer object to be filled
+		notifyReady(dataLength): tell the backend that there is dataLength samples of audio data
+			ready to be received via the callback we set with setSource. Ignored for event-based
+			backends (= Web Audio) that trigger the callback whenever they feel like it...
+	*/
+
+	var AudioContext = window.AudioContext || window.webkitAudioContext;
+	var fillBuffer = null;
+
+	if (AudioContext) {
+		/* Use Web Audio API as backend */
+		var audioContext = new AudioContext();
+		var audioNode = audioContext.createJavaScriptNode(8192, 1, 1);
+
+		self.sampleRate = 44100;
+		self.setSource = function(fillBufferCallback) {
+			audioNode.onaudioprocess = function(e) {
+				var buffer = e.outputBuffer.getChannelData(0);
+				fillBufferCallback(buffer);
+			};
+			audioNode.connect(audioContext.destination);
+		}
+		self.notifyReady = function(dataLength) {
+			/* do nothing */
+		}
+
+		return self;
+	}
+
+	if (typeof(Audio) != 'undefined') {
+		var audio = new Audio();
+		if (audio.mozSetup) {
+			/* Use Audio Data API as backend */
+			self.sampleRate = 44100;
+			audio.mozSetup(1, self.sampleRate);
+
+			self.setSource = function(fn) {
+				fillBuffer = fn;
+			}
+			self.notifyReady = function(dataLength) {
+				var buffer = new Float32Array(dataLength);
+				fillBuffer(buffer);
+				var written = audio.mozWriteAudio(buffer);
+			}
+
+			return self;
+		}
+	}
+
+	/* use dummy no-sound backend. We still keep a handle to the callback function and
+	call it on demand, so that it's not filling up a buffer indefinitely */
+	self.sampleRate = 5500; /* something suitably low */
+	self.setSource = function(fn) {
+		fillBuffer = fn;
+	};
+	self.notifyReady = function(dataLength) {
+		var buffer = new Float32Array(dataLength);
+		fillBuffer(buffer);
+	}
+	return self;
+
+}
