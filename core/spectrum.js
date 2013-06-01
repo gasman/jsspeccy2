@@ -34,8 +34,6 @@ JSSpeccy.Spectrum = function(opts) {
 		ioBus: ioBus,
 		display: display
 	});
-	
-	sound.setProcessor(processor);
 
 	/* internal state to allow picking up mid-frame (e.g. when loading from a snapshot) */
 	var startNextFrameWithInterrupt = true;

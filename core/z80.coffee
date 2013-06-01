@@ -920,14 +920,14 @@ window.JSSpeccy.buildZ80 = (opts) ->
 	OUT_iCi_0 = (r) ->
 		"""
 			CONTEND_PORT_EARLY(regPairs[#{rpBC}]);
-			ioBus.write(regPairs[#{rpBC}], 0);
+			ioBus.write(regPairs[#{rpBC}], 0, tstates);
 			CONTEND_PORT_LATE(regPairs[#{rpBC}]);
 		"""
 
 	OUT_iCi_R = (r) ->
 		"""
 			CONTEND_PORT_EARLY(regPairs[#{rpBC}]);
-			ioBus.write(regPairs[#{rpBC}], regs[#{r}]);
+			ioBus.write(regPairs[#{rpBC}], regs[#{r}], tstates);
 			CONTEND_PORT_LATE(regPairs[#{rpBC}]);
 		"""
 
@@ -935,7 +935,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 		"""
 			var port = (regs[#{rA}] << 8) | READMEM(regPairs[#{rpPC}]); regPairs[#{rpPC}]++;
 			CONTEND_PORT_EARLY(port);
-			ioBus.write(port, regs[#{rA}]);
+			ioBus.write(port, regs[#{rA}], tstates);
 			CONTEND_PORT_LATE(port);
 		"""
 
@@ -945,7 +945,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 			var outitemp = READMEM(regPairs[#{rpHL}]);
 			regs[#{rB}]--;	/* This does happen first, despite what the specs say */
 			CONTEND_PORT_EARLY(regPairs[#{rpBC}]);
-			ioBus.write(regPairs[#{rpBC}], outitemp);
+			ioBus.write(regPairs[#{rpBC}], outitemp, tstates);
 			CONTEND_PORT_LATE(regPairs[#{rpBC}]);
 
 			regPairs[#{rpHL}]#{modifier};

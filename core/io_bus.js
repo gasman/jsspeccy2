@@ -21,11 +21,11 @@ JSSpeccy.IOBus = function(opts) {
 			return 0xff;
 		}
 	};
-	self.write = function(addr, val) {
+	self.write = function(addr, val, tstates) {
 		if (!(addr & 0x01)) {
 			display.setBorder(val & 0x07);
 
-			sound.updateBuzzer((val & 16) >> 4);	
+			sound.updateBuzzer((val & 16) >> 4, tstates);
 		}
 		if (!(addr & 0x8002)) {
 			memory.setPaging(val);
@@ -38,7 +38,7 @@ JSSpeccy.IOBus = function(opts) {
 		
 		if ((addr & 0xc002) == 0x8000) {
 			/* AY chip - data write */
-			sound.writeSoundRegister(val);
+			sound.writeSoundRegister(val, tstates);
 		}
 		
 	};

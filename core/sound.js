@@ -35,7 +35,6 @@
 JSSpeccy.Sound = function(opts) {
 	var self = {};
 	
-	var processor = 0;//opts.processor;
 	var frameLength = opts.model.frameLength;
 
 	var sampleRate = 44100;
@@ -765,15 +764,15 @@ JSSpeccy.Sound = function(opts) {
 		}	
 	}
 	
-	self.updateBuzzer = function(val) {
+	self.updateBuzzer = function(val, currentTstates) {
 		if (val==0) val = -1;
 
 		if (buzzer_val!=val) {	
-			var sound_size = (processor.getTstates() - lastaudio) * sampleRate * oversampleRate / 50 / frameLength;
+			var sound_size = (currentTstates - lastaudio) * sampleRate * oversampleRate / 50 / frameLength;
 			self.createSoundData(sound_size, buzzer_val);			
 			
 			buzzer_val = val;			
-			lastaudio = processor.getTstates();
+			lastaudio = currentTstates;
 		}
 	}
 	
@@ -787,10 +786,6 @@ JSSpeccy.Sound = function(opts) {
 		}
 	}
 
-	self.setProcessor = function(p) {
-		processor = p;
-	}
-	
 	self.endFrame = function() {
 		
 		var pad_val = 0;
@@ -811,12 +806,12 @@ JSSpeccy.Sound = function(opts) {
 		ayRegSelected = reg;
 	}
 
-	self.writeSoundRegister = function(val) {
+	self.writeSoundRegister = function(val, currentTstates) {
 
-		var sound_size = (processor.getTstates() - lastAyAudio) * sampleRate / 50 / frameLength;
+		var sound_size = (currentTstates - lastAyAudio) * sampleRate / 50 / frameLength;
 		handleAySound(sound_size);			
 			
-		lastAyAudio = processor.getTstates();
+		lastAyAudio = currentTstates;
 
 		AYWriteReg(ayRegSelected,val);
 	}
