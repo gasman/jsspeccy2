@@ -11,13 +11,13 @@ JSSpeccy.IOBus = function(opts) {
 	self.read = function(addr) {
 		if ((addr & 0x0001) === 0x0000) {
 			return keyboard.poll(addr);
+		} else if ((addr & 0xc002) == 0xc000) {
+			/* AY chip */
+			return sound.readSoundRegister();
 		} else if ((addr & 0x00e0) === 0x0000) {
 			/* kempston joystick */
 			return 0;
-		} else if (addr == 0xfffd) {
-			return sound.readSoundRegister();
-		}
-		else {
+		} else {
 			return 0xff;
 		}
 	};
@@ -31,11 +31,13 @@ JSSpeccy.IOBus = function(opts) {
 			memory.setPaging(val);
 		}
 		
-		if (addr==0xfffd) {
+		if ((addr & 0xc002) == 0xc000) {
+			/* AY chip - register select */
 			sound.selectSoundRegister( val & 0xF );
 		}
 		
-		if (addr==0xbffd || addr == 0xbefd) {
+		if ((addr & 0xc002) == 0x8000) {
+			/* AY chip - data write */
 			sound.writeSoundRegister(val);
 		}
 		
