@@ -41,7 +41,7 @@ This will place all web-distributable files into the 'dist' folder.
 
 Browser support
 ---------------
-Tested successfully on Chrome 20 and Firefox 13. Support for typed arrays and
+Tested successfully on Chrome 27 and Firefox 21. Support for typed arrays and
 the PixelData API are absolutely required, and it'll almost certainly stay that
 way.
 
