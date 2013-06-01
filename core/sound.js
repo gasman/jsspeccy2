@@ -128,9 +128,13 @@ JSSpeccy.Sound = function(opts) {
 		audioNode = audioContext.createJavaScriptNode(8192, 1, 1);
 	}
 
-	if (audioNode==null && typeof(Audio)!='undefined') {
+	if (audioNode === null && typeof(Audio) != 'undefined') {
 		audio = new Audio();
-		audio.mozSetup(1, sampleRate);
+		if (audio.mozSetup) {
+			audio.mozSetup(1, sampleRate);
+		} else {
+			audio = null;
+		}
 	}
 
 	function AY8912_reset() {
