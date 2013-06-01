@@ -149,6 +149,7 @@ JSSpeccy.Spectrum.MODEL_48K = {
 	tstatesUntilOrigin: 14336,
 	tstatesPerScanline: 224,
 	frameLength: 69888,
+	clockSpeed: 3500000,
 	contentionPattern: [6,5,4,3,2,1,0,0]
 };
 JSSpeccy.buildContentionTables(JSSpeccy.Spectrum.MODEL_48K);
@@ -160,6 +161,7 @@ JSSpeccy.Spectrum.MODEL_128K = {
 	tstatesUntilOrigin: 14362,
 	tstatesPerScanline: 228,
 	frameLength: 70908,
+	clockSpeed: 3546900,
 	contentionPattern: [6,5,4,3,2,1,0,0]
 };
 JSSpeccy.buildContentionTables(JSSpeccy.Spectrum.MODEL_128K);

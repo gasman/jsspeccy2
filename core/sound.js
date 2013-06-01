@@ -35,9 +35,11 @@
 JSSpeccy.SoundGenerator = function(opts) {
 	var self = {};
 
+	var clockSpeed = opts.model.clockSpeed;
 	var frameLength = opts.model.frameLength;
 	var backend = opts.soundBackend;
 	var sampleRate = backend.sampleRate;
+	var samplesPerFrame = sampleRate * frameLength / clockSpeed; /* TODO: account for this not being an integer by generating a variable number of samples per frame */
 
 	var oversampleRate = 8;
 	var buzzer_val = 0;
@@ -122,7 +124,7 @@ JSSpeccy.SoundGenerator = function(opts) {
     var AY8912_VolTable2 = new Int32Array(64);
 	
 	var AY_OutNoise = 0;
-	AY8912_init(1773000, sampleRate, 8);
+	AY8912_init(clockSpeed / 2, sampleRate, 8);
 
 	function AY8912_reset() {
 		AY8912_register_latch = 0;
@@ -740,7 +742,7 @@ JSSpeccy.SoundGenerator = function(opts) {
 		if (val==0) val = -1;
 
 		if (buzzer_val!=val) {	
-			var sound_size = (currentTstates - lastaudio) * sampleRate * oversampleRate / 50 / frameLength;
+			var sound_size = (currentTstates - lastaudio) * sampleRate * oversampleRate / clockSpeed;
 			self.createSoundData(sound_size, buzzer_val);			
 			
 			buzzer_val = val;			
@@ -759,19 +761,19 @@ JSSpeccy.SoundGenerator = function(opts) {
 	}
 
 	self.endFrame = function() {
-		
+
 		var pad_val = 0;
 		if (lastaudio) pad_val = buzzer_val;
-		
-		self.createSoundData(sampleRate * oversampleRate / 50 - soundDataFrameBytes,pad_val);	
-		handleAySound(sampleRate / 50 - soundDataAyFrameBytes);
+
+		self.createSoundData(samplesPerFrame * oversampleRate - soundDataFrameBytes,pad_val);
+		handleAySound(samplesPerFrame - soundDataAyFrameBytes);
 		lastaudio = 0;
 		lastAyAudio = 0;
 		soundDataFrameBytes = 0;
-		soundDataAyFrameBytes = 0;		
+		soundDataAyFrameBytes = 0;
 		if (frameCount++<2) return;
 		backend.notifyReady(soundData.length / oversampleRate);
-		
+
 	}
 	
 	self.selectSoundRegister = function(reg) {
@@ -780,8 +782,8 @@ JSSpeccy.SoundGenerator = function(opts) {
 
 	self.writeSoundRegister = function(val, currentTstates) {
 
-		var sound_size = (currentTstates - lastAyAudio) * sampleRate / 50 / frameLength;
-		handleAySound(sound_size);			
+		var sound_size = (currentTstates - lastAyAudio) * sampleRate / clockSpeed;
+		handleAySound(sound_size);
 			
 		lastAyAudio = currentTstates;
 
@@ -794,7 +796,7 @@ JSSpeccy.SoundGenerator = function(opts) {
 	
 	self.reset = function() {
 		AY_OutNoise = 0;
-		AY8912_init(1773000, sampleRate, 8);
+		AY8912_init(clockSpeed / 2, sampleRate, 8);
 	}
 
 	return self;
