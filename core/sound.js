@@ -36,7 +36,7 @@ JSSpeccy.Sound = function(opts) {
 	var self = {};
 	
 	var processor = 0;//opts.processor;
-	var display = opts.display;
+	var frameLength = opts.model.frameLength;
 
 	var sampleRate = 44100;
 	var oversampleRate = 8;
@@ -769,7 +769,7 @@ JSSpeccy.Sound = function(opts) {
 		if (val==0) val = -1;
 
 		if (buzzer_val!=val) {	
-			var sound_size = (processor.getTstates() - lastaudio) * sampleRate * oversampleRate / 50 / display.frameLength;
+			var sound_size = (processor.getTstates() - lastaudio) * sampleRate * oversampleRate / 50 / frameLength;
 			self.createSoundData(sound_size, buzzer_val);			
 			
 			buzzer_val = val;			
@@ -813,7 +813,7 @@ JSSpeccy.Sound = function(opts) {
 
 	self.writeSoundRegister = function(val) {
 
-		var sound_size = (processor.getTstates() - lastAyAudio) * sampleRate / 50 / display.frameLength;
+		var sound_size = (processor.getTstates() - lastAyAudio) * sampleRate / 50 / frameLength;
 		handleAySound(sound_size);			
 			
 		lastAyAudio = processor.getTstates();

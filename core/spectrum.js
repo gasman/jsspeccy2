@@ -18,7 +18,7 @@ JSSpeccy.Spectrum = function(opts) {
 	});
 
 	var sound = JSSpeccy.Sound({
-		display : display
+		model : model
 	});
 
 	var ioBus = JSSpeccy.IOBus({
@@ -45,10 +45,10 @@ JSSpeccy.Spectrum = function(opts) {
 		if (startNextFrameWithInterrupt) {
 			processor.requestInterrupt();
 		}
-		processor.runFrame(display.frameLength);
+		processor.runFrame(model.frameLength);
 		display.endFrame();
 		sound.endFrame();
-		processor.setTstates(processor.getTstates() - display.frameLength);
+		processor.setTstates(processor.getTstates() - model.frameLength);
 		startNextFrameWithInterrupt = true;
 	};
 	self.reset = function() {
