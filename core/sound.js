@@ -39,7 +39,7 @@ JSSpeccy.SoundGenerator = function(opts) {
 	var frameLength = opts.model.frameLength;
 	var backend = opts.soundBackend;
 	var sampleRate = backend.sampleRate;
-	var samplesPerFrame = sampleRate * frameLength / clockSpeed; /* TODO: account for this not being an integer by generating a variable number of samples per frame */
+	var samplesPerFrame = Math.floor(sampleRate * frameLength / clockSpeed); /* TODO: account for this not being an integer by generating a variable number of samples per frame */
 
 	var oversampleRate = 8;
 	var buzzer_val = 0;

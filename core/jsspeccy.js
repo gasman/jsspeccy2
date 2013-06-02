@@ -196,13 +196,49 @@ function JSSpeccy(container, opts) {
 	self.isRunning = false;
 	self.currentTape = null;
 
+	var referenceTime = null;
+	var cyclesExecutedSinceReferenceTime = 0;
+	function initReferenceTime() {
+		referenceTime = Date.now();
+		cyclesExecutedSinceReferenceTime = 0;
+	}
+
+	var requestAnimationFrame = (
+		window.requestAnimationFrame || window.msRequestAnimationFrame ||
+		window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame ||
+		window.oRequestAnimationFrame ||
+		function(callback) {
+			setTimeout(function() {
+				callback(Date.now());
+			}, 10);
+		}
+	);
+
 	function tick() {
-		var startTime = (new Date()).getTime();
 		if (!self.isRunning) return;
-		spectrum.runFrame();
-		var endTime = (new Date()).getTime();
-		var waitTime = 20 - (endTime - startTime);
-		setTimeout(tick, Math.max(0, waitTime));
+
+		var timeElapsed = Date.now() - referenceTime;
+		var cyclesElapsed = timeElapsed * currentModel.clockSpeed / 1000;
+
+		var framesRun = 0;
+		while (cyclesExecutedSinceReferenceTime < cyclesElapsed) {
+			spectrum.runFrame();
+			cyclesExecutedSinceReferenceTime += currentModel.frameLength;
+			framesRun++;
+			if (framesRun > 2) {
+				/* if we're having to run more than two frames on this iteration, the emulation
+					must be running slow - bail out to avoid creating a backlog of frames */
+				initReferenceTime();
+				break;
+			}
+		}
+
+		/* bump referenceTime forward periodically so that cyclesElapsed doesn't overflow */
+		while (cyclesExecutedSinceReferenceTime > 10000000) {
+			referenceTime += 1000;
+			cyclesExecutedSinceReferenceTime -= currentModel.clockSpeed;
+		}
+		requestAnimationFrame(tick);
 	}
 
 	self.onStart = Event();
@@ -211,7 +247,10 @@ function JSSpeccy(container, opts) {
 		self.isRunning = true;
 		updateViewportIcon();
 		self.onStart.trigger();
-		tick();
+
+		initReferenceTime();
+
+		requestAnimationFrame(tick);
 	};
 	self.onStop = Event();
 	self.stop = function() {
@@ -257,6 +296,7 @@ function JSSpeccy(container, opts) {
 				controller: self
 			});
 			currentModel = newModel;
+			initReferenceTime();
 			self.onChangeModel.trigger(newModel);
 		}
 	};
