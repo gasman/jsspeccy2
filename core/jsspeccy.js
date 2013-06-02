@@ -26,31 +26,23 @@ function JSSpeccy(container, opts) {
 		opts = {};
 	}
 
-	var viewport = JSSpeccy.Viewport({
-		container: container,
-		scaleFactor: opts.scaleFactor || 2,
-		onClickIcon: function() {self.start();}
+
+	/* == Z80 core == */
+	/* define a list of rules to be triggered when the Z80 executes an opcode at a specified address;
+		each rule is a tuple of (address, opcode, expression_to_run). If expression_to_run evaluates
+		to false, the remainder of the opcode's execution is skipped */
+	var z80Traps = [
+		[0x056b, 0xc0, 'JSSpeccy.traps.tapeLoad()'],
+		[0x0111, 0xc0, 'JSSpeccy.traps.tapeLoad()']
+	];
+
+	JSSpeccy.buildZ80({
+		traps: z80Traps,
+		applyContention: true
 	});
 
-	if (!('dragToLoad' in opts) || opts['dragToLoad']) {
-		/* set up drag event on canvas to load files */
-		viewport.canvas.ondragenter = function() {
-			// Needed for web browser compatibility
-			return false;
-		};
-		viewport.canvas.ondragover = function () {
-			// Needed for web browser compatibility
-			return false;
-		};
-		viewport.canvas.ondrop = function(evt) {
-			var files = evt.dataTransfer.files;
-			self.loadLocalFile(files[0]);
-			return false;
-		};
-	}
 
-	var soundBackend = JSSpeccy.SoundBackend();
-
+	/* == Event mechanism == */
 	function Event() {
 		var self = {};
 		var listeners = [];
@@ -78,9 +70,37 @@ function JSSpeccy(container, opts) {
 		return self;
 	}
 
-	self.reset = function() {
-		spectrum.reset();
-	};
+
+	/* == Execution state == */
+	self.isDownloading = false;
+	self.isRunning = false;
+	self.currentTape = null;
+	var currentModel, spectrum;
+
+
+	/* == Set up viewport == */
+	var viewport = JSSpeccy.Viewport({
+		container: container,
+		scaleFactor: opts.scaleFactor || 2,
+		onClickIcon: function() {self.start();}
+	});
+
+	if (!('dragToLoad' in opts) || opts['dragToLoad']) {
+		/* set up drag event on canvas to load files */
+		viewport.canvas.ondragenter = function() {
+			// Needed for web browser compatibility
+			return false;
+		};
+		viewport.canvas.ondragover = function () {
+			// Needed for web browser compatibility
+			return false;
+		};
+		viewport.canvas.ondrop = function(evt) {
+			var files = evt.dataTransfer.files;
+			self.loadLocalFile(files[0]);
+			return false;
+		};
+	}
 
 	function updateViewportIcon() {
 		if (self.isDownloading) {
@@ -92,7 +112,22 @@ function JSSpeccy(container, opts) {
 		}
 	}
 
-	self.isDownloading = false;
+
+	/* == Keyboard control == */
+	var keyboard = JSSpeccy.Keyboard();
+	self.deactivateKeyboard = function() {
+		keyboard.active = false;
+	};
+	self.activateKeyboard = function() {
+		keyboard.active = true;
+	};
+
+
+	/* == Audio == */
+	var soundBackend = JSSpeccy.SoundBackend();
+
+
+	/* == Snapshot / Tape file handling == */
 	self.loadLocalFile = function(file, opts) {
 		var reader = new FileReader();
 		self.isDownloading = true;
@@ -172,7 +207,7 @@ function JSSpeccy(container, opts) {
 		}
 	};
 
-	/* Load a snapshot from a snapshot object (i.e. the result of loadSna) */
+	/* Load a snapshot from a snapshot object (i.e. JSSpeccy.SnaFile or JSSpeccy.Z80File) */
 	function loadSnapshot(snapshot) {
 		self.setModel(snapshot.model);
 		self.reset(); /* required for the scenario that setModel does not change the current
@@ -193,9 +228,29 @@ function JSSpeccy(container, opts) {
 		}
 	}
 
-	self.isRunning = false;
-	self.currentTape = null;
 
+	/* == Selecting Spectrum model == */
+	self.onChangeModel = Event();
+	self.getModel = function() {
+		return currentModel;
+	};
+	self.setModel = function(newModel) {
+		if (newModel != currentModel) {
+			spectrum = JSSpeccy.Spectrum({
+				viewport: viewport,
+				keyboard: keyboard,
+				model: newModel,
+				soundBackend: soundBackend,
+				controller: self
+			});
+			currentModel = newModel;
+			initReferenceTime();
+			self.onChangeModel.trigger(newModel);
+		}
+	};
+
+
+	/* == Timing / main execution loop == */
 	var referenceTime = null;
 	var cyclesExecutedSinceReferenceTime = 0;
 	function initReferenceTime() {
@@ -258,48 +313,12 @@ function JSSpeccy(container, opts) {
 		updateViewportIcon();
 		self.onStop.trigger();
 	};
-	self.deactivateKeyboard = function() {
-		keyboard.active = false;
-	};
-	self.activateKeyboard = function() {
-		keyboard.active = true;
+	self.reset = function() {
+		spectrum.reset();
 	};
 
-	var keyboard = JSSpeccy.Keyboard();
 
-	/* define a list of rules to be triggered when the Z80 executes an opcode at a specified address;
-		each rule is a tuple of (address, opcode, expression_to_run). If expression_to_run evaluates
-		to false, the remainder of the opcode's execution is skipped */
-	var z80Traps = [
-		[0x056b, 0xc0, 'JSSpeccy.traps.tapeLoad()'],
-		[0x0111, 0xc0, 'JSSpeccy.traps.tapeLoad()']
-	];
-
-	JSSpeccy.buildZ80({
-		traps: z80Traps,
-		applyContention: true
-	});
-
-	var currentModel, spectrum;
-
-	self.onChangeModel = Event();
-	self.getModel = function() {
-		return currentModel;
-	};
-	self.setModel = function(newModel) {
-		if (newModel != currentModel) {
-			spectrum = JSSpeccy.Spectrum({
-				viewport: viewport,
-				keyboard: keyboard,
-				model: newModel,
-				soundBackend: soundBackend,
-				controller: self
-			});
-			currentModel = newModel;
-			initReferenceTime();
-			self.onChangeModel.trigger(newModel);
-		}
-	};
+	/* == Startup conditions == */
 	self.setModel(JSSpeccy.Spectrum.MODEL_128K);
 
 	if (opts.loadFile) {
@@ -311,6 +330,7 @@ function JSSpeccy(container, opts) {
 	} else {
 		self.stop();
 	}
+
 
 	return self;
 }
