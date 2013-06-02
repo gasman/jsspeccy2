@@ -1,6 +1,6 @@
 /**
- * @license JSSpeccy v2.1 - http://jsspeccy.zxdemo.org/
- * Copyright 2012 Matt Westcott <matt@west.co.tt>
+ * @license JSSpeccy v2.2 - http://jsspeccy.zxdemo.org/
+ * Copyright 2013 Matt Westcott <matt@west.co.tt> and contributors
  *
  * This program is free software: you can redistribute it and/or modify it under the terms of
  * the GNU General Public License as published by the Free Software Foundation, either
