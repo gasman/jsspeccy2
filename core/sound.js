@@ -726,6 +726,7 @@ JSSpeccy.SoundGenerator = function(opts) {
 	backend.setSource(fillBuffer);
 
 	function handleAySound(size) {
+		if (!backend.isEnabled) return;
 		size = Math.floor(size);
 		while (size--) {
 			WCount++;
@@ -751,6 +752,7 @@ JSSpeccy.SoundGenerator = function(opts) {
 	}
 	
 	self.createSoundData = function (size, val) {
+		if (!backend.isEnabled) return;
 		size = Math.floor(size);
 		if (size>=1) {
 			for (var i=0; i<size; i++) {
@@ -772,7 +774,9 @@ JSSpeccy.SoundGenerator = function(opts) {
 		soundDataFrameBytes = 0;
 		soundDataAyFrameBytes = 0;
 		if (frameCount++<2) return;
-		backend.notifyReady(soundData.length / oversampleRate);
+		if (backend.isEnabled) {
+			backend.notifyReady(soundData.length / oversampleRate);
+		}
 
 	}
 	
@@ -807,8 +811,12 @@ JSSpeccy.SoundBackend = function() {
 
 	/* Regardless of the underlying implementation, an instance of SoundBackend exposes the API:
 		sampleRate: sample rate required by this backend
+		isEnabled: whether audio is currently enabled
 		setSource(fn): specify a function fn to be called whenever we want to receive audio data.
 			fn is passed a buffer object to be filled
+		setAudioState(state): if state == true, enable audio; if state == false, disable.
+			Return new state (may not match the passed in state - e.g. if sound is unavailable,
+			will always return false)
 		notifyReady(dataLength): tell the backend that there is dataLength samples of audio data
 			ready to be received via the callback we set with setSource. Ignored for event-based
 			backends (= Web Audio) that trigger the callback whenever they feel like it...
@@ -822,13 +830,36 @@ JSSpeccy.SoundBackend = function() {
 		var audioContext = new AudioContext();
 		var audioNode = audioContext.createJavaScriptNode(8192, 1, 1);
 
+		onAudioProcess = function(e) {
+			var buffer = e.outputBuffer.getChannelData(0);
+			fillBuffer(buffer);
+		};
+
 		self.sampleRate = 44100;
+		self.isEnabled = false;
 		self.setSource = function(fillBufferCallback) {
-			audioNode.onaudioprocess = function(e) {
-				var buffer = e.outputBuffer.getChannelData(0);
-				fillBufferCallback(buffer);
+			fillBuffer = fillBufferCallback;
+			if (self.isEnabled) {
+				audioNode.onaudioprocess = onAudioProcess;
+				audioNode.connect(audioContext.destination);
 			};
-			audioNode.connect(audioContext.destination);
+		}
+		self.setAudioState = function(state) {
+			if (state) {
+				/* enable */
+				self.isEnabled = true;
+				if (fillBuffer) {
+					audioNode.onaudioprocess = onAudioProcess;
+					audioNode.connect(audioContext.destination);
+				}
+				return true;
+			} else {
+				/* disable */
+				self.isEnabled = false;
+				audioNode.onaudioprocess = null;
+				audioNode.disconnect(0);
+				return false;
+			}
 		}
 		self.notifyReady = function(dataLength) {
 			/* do nothing */
@@ -844,13 +875,21 @@ JSSpeccy.SoundBackend = function() {
 			self.sampleRate = 44100;
 			audio.mozSetup(1, self.sampleRate);
 
+			self.isEnabled = false;
+			self.setAudioState = function(state) {
+				self.isEnabled = state;
+				return state;
+			}
+
 			self.setSource = function(fn) {
 				fillBuffer = fn;
 			}
 			self.notifyReady = function(dataLength) {
 				var buffer = new Float32Array(dataLength);
 				fillBuffer(buffer);
-				var written = audio.mozWriteAudio(buffer);
+				if (self.isEnabled) {
+					var written = audio.mozWriteAudio(buffer);
+				}
 			}
 
 			return self;
@@ -860,6 +899,10 @@ JSSpeccy.SoundBackend = function() {
 	/* use dummy no-sound backend. We still keep a handle to the callback function and
 	call it on demand, so that it's not filling up a buffer indefinitely */
 	self.sampleRate = 5500; /* something suitably low */
+	self.isEnabled = false;
+	self.setAudioState = function(state) {
+		return false;
+	}
 	self.setSource = function(fn) {
 		fillBuffer = fn;
 	};

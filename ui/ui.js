@@ -1,6 +1,6 @@
 JSSpeccy.UI = function(opts) {
 	var self = {};
-	
+
 	var container = opts.container;
 	if (typeof(container) === 'string') {
 		container = document.getElementById(container);
@@ -17,7 +17,7 @@ JSSpeccy.UI = function(opts) {
 			elem.textContent = text;
 		};
 	}
-	
+
 	$(container).addClass('jsspeccy');
 
 
@@ -46,6 +46,16 @@ JSSpeccy.UI = function(opts) {
 	$('button.reset', toolbar).click(function() {
 		controller.reset();
 	});
+
+	var audioButton = $('button.audio', toolbar);
+	audioButton.click(function() {
+		controller.setAudioState(!controller.getAudioState());
+	});
+	function refreshAudioButton(audioState) {
+		audioButton.toggleClass('enabled', audioState);
+	}
+	controller.onChangeAudioState.bind(refreshAudioButton);
+	refreshAudioButton(controller.getAudioState());
 
 	$('button.open', toolbar).click(function() {
 		showPanel('.open-file');

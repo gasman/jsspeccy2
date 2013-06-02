@@ -92,6 +92,8 @@ autoload (default = false)
 autostart (default = true)
     If true, start the emulator running immediately on page load; if false, the
     emulation is initially paused.
+audio (default = true)
+    Indicates whether audio is enabled.
 dragToLoad (default = true)
     If true, the user can load files by dragging them onto the emulator window.
 loadFile
@@ -154,6 +156,8 @@ deactivateKeyboard()
 activateKeyboard()
     Resume responding to keypresses after a previous call to
     deactivateKeyboard().
+setAudioState(state)
+    Enable / disable audio by passing true / false respectively.
 
 Events
 ------
@@ -170,3 +174,6 @@ onStop
 onChangeModel
     Fired when the currently emulated model of Spectrum is changed; the model
     structure (see setModel above) is passed as a parameter to the callback.
+onChangeAudioState
+    Fired when audio is enabled or disabled; the audio state (true/false) is
+    passed as a parameter to the callback.

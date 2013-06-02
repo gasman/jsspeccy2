@@ -43,6 +43,12 @@
 .jsspeccy .toolbar .reset {
 	background-image: url(images/48x48_kaboodleloop.png);
 }
+.jsspeccy .toolbar .audio {
+	background-image: url(images/48x48_sound_off.png);
+}
+.jsspeccy .toolbar .audio.enabled {
+	background-image: url(images/48x48_sound_on.png);
+}
 .jsspeccy .toolbar .open {
 	background-image: url(images/48x48_folder_blue_open.png);
 }

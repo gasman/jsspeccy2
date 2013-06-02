@@ -125,7 +125,15 @@ function JSSpeccy(container, opts) {
 
 	/* == Audio == */
 	var soundBackend = JSSpeccy.SoundBackend();
-
+	self.onChangeAudioState = Event();
+	self.getAudioState = function() {
+		return soundBackend.isEnabled;
+	};
+	self.setAudioState = function(requestedState) {
+		var originalState = soundBackend.isEnabled;
+		var newState = soundBackend.setAudioState(requestedState);
+		if (originalState != newState) self.onChangeAudioState.trigger(newState);
+	};
 
 	/* == Snapshot / Tape file handling == */
 	self.loadLocalFile = function(file, opts) {
@@ -323,6 +331,12 @@ function JSSpeccy(container, opts) {
 
 	if (opts.loadFile) {
 		self.loadFromUrl(opts.loadFile, {'autoload': opts.autoload});
+	}
+
+	if (!('audio' in opts) || opts['audio']) {
+		self.setAudioState(true);
+	} else {
+		self.setAudioState(false);
 	}
 
 	if (!('autostart' in opts) || opts['autostart']) {
