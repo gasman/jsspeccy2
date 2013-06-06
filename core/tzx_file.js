@@ -1,9 +1,30 @@
 JSSpeccy.TzxFile = function(data) {
 	var self = {};
-
+	
 	var blocks = [];
 	var tzx = new DataView(data);
 
+	var sound = null;
+	
+	var tzxPlaying = false;
+	var tzxTotalTs = 0;
+	var earBit = 0;
+	var tzxState = 0;
+	var tzxAimTStates = 0;
+	var tzxByte = 0;
+	
+	var tzxPulsesDone = 0;
+	var tzxBitCounter = 0;
+	var tzxBitLimit = 0;
+
+	var tzxTurbo = false;
+	
+	var forceTurbo = false;
+	
+	var block = null;
+
+	var lastTstates = 0;
+	
 	var signature = "ZXTape!\x1A";
 	for (var i = 0; i < signature.length; i++) {
 		if (signature.charCodeAt(i) != tzx.getUint8(i)) {
@@ -19,12 +40,33 @@ JSSpeccy.TzxFile = function(data) {
 		offset++;
 		switch (blockType) {
 			case 0x10:
+
+				var pilotPulseLength = 2168;
+				var pilotPulseCount = 0;			  
+				var syncPulse1Length = 667;
+				var syncPulse2Length = 735;
+				var zeroBitLength = 855;
+				var oneBitLength = 1710;		  		
+				var lastByteMask = 8;
+			
 				var pause = tzx.getUint16(offset, true);
 				offset += 2;
 				var dataLength = tzx.getUint16(offset, true);
 				offset += 2;
+				
+				if (tzx.getUint8(offset)>=128)
+					pilotPulseCount = 3223
+				else
+					pilotPulseCount = 8063;				
 				blocks.push({
 					'type': 'StandardSpeedData',
+					'pilotPulseLength': pilotPulseLength,
+					'syncPulse1Length': syncPulse1Length,
+					'syncPulse2Length': syncPulse2Length,
+					'zeroBitLength': zeroBitLength,
+					'oneBitLength': oneBitLength,
+					'pilotPulseCount': pilotPulseCount,
+					'lastByteMask': lastByteMask,
 					'pause': pause,
 					'data': new Uint8Array(data, offset, dataLength)
 				});
@@ -40,6 +82,7 @@ JSSpeccy.TzxFile = function(data) {
 				var lastByteMask = tzx.getUint8(offset); offset += 1;
 				var pause = tzx.getUint16(offset, true); offset += 2;
 				var dataLength = tzx.getUint16(offset, true) | (tzx.getUint8(offset+2) << 16); offset += 3;
+				tzxTurbo = true;
 				blocks.push({
 					'type': 'TurboSpeedData',
 					'pilotPulseLength': pilotPulseLength,
@@ -57,6 +100,7 @@ JSSpeccy.TzxFile = function(data) {
 			case 0x12:
 				var pulseLength = tzx.getUint16(offset, true); offset += 2;
 				var pulseCount = tzx.getUint16(offset, true); offset += 2;
+				tzxTurbo = true;
 				blocks.push({
 					'type': 'PureTone',
 					'pulseLength': pulseLength,
@@ -65,9 +109,10 @@ JSSpeccy.TzxFile = function(data) {
 				break;
 			case 0x13:
 				var pulseCount = tzx.getUint8(offset); offset += 1;
+				tzxTurbo = true;
 				blocks.push({
 					'type': 'PulseSequence',
-					'pulseLengths': new Uint16Array(data, offset, pulseCount)
+					'pulseLengths': new Uint8Array(data, offset, pulseCount*2)
 				});
 				offset += (pulseCount * 2);
 				break;
@@ -77,6 +122,7 @@ JSSpeccy.TzxFile = function(data) {
 				var lastByteMask = tzx.getUint8(offset); offset += 1;
 				var pause = tzx.getUint16(offset, true); offset += 2;
 				var dataLength = tzx.getUint16(offset, true) | (tzx.getUint8(offset+2) << 16); offset += 3;
+				tzxTurbo = true;
 				blocks.push({
 					'type': 'PureData',
 					'zeroBitLength': zeroBitLength,
@@ -92,6 +138,7 @@ JSSpeccy.TzxFile = function(data) {
 				var pause = tzx.getUint16(offset, true); offset += 2;
 				var lastByteMask = tzx.getUint8(offset); offset += 1;
 				var dataLength = tzx.getUint16(offset, true) | (tzx.getUint8(offset+2) << 16); offset += 3;
+				tzxTurbo = true;
 				blocks.push({
 					'type': 'DirectRecording',
 					'tstatesPerSample': tstatesPerSample,
@@ -146,7 +193,7 @@ JSSpeccy.TzxFile = function(data) {
 				var callCount = tzx.getUint16(offset, true); offset += 2;
 				blocks.push({
 					'type': 'CallSequence',
-					'offsets': new Uint16Array(data, offset, callCount)
+					'offsets': new Uint18rray(data, offset, callCount*2)
 				});
 				offset += (callCount * 2);
 				break;
@@ -220,6 +267,11 @@ JSSpeccy.TzxFile = function(data) {
 					'type': 'Glue'
 				});
 				break;
+			case 0xFE:
+				blocks.push({
+					'type': 'Stop'
+				});
+				break;				
 			default:
 				/* follow extension rule: next 4 bytes = length of block */
 				var blockLength = tzx.getUint32(offset, true);
@@ -231,6 +283,9 @@ JSSpeccy.TzxFile = function(data) {
 				offset += blockLength;
 		}
 	}
+	blocks.push({
+					'type': 'Stop'
+				});
 
 	var nextBlockIndex = 0;
 	var loopToBlockIndex;
@@ -249,14 +304,39 @@ JSSpeccy.TzxFile = function(data) {
 			switch (block.type) {
 				case 'StandardSpeedData':
 				case 'TurboSpeedData':
-				case 'PureTone':
-				case 'PulseSequence':
-				case 'PureData':
 				case 'DirectRecording':
 				case 'Pause':
 					/* found a meaningful block */
+					tzxState = 0;
+					tzxByte = 0;
+					tzxAimTStates = block.pause * 3500;
 					nextBlockIndex++;
 					return block;
+				case 'PureTone':
+					tzxState = 0;
+					tzxByte = 1;
+					tzxAimTStates = block.pulseLength;
+					nextBlockIndex++;
+					return block;
+				case 'PulseSequence':
+					tzxState = 0;
+					tzxByte = 2;
+					tzxPulsesDone = 1;
+					tzxAimTStates = block.pulseLengths[0] + 256 * block.pulseLengths[1] ;
+					nextBlockIndex++;
+					return block;
+
+				case 'PureData':
+					tzxState = 3;
+					tzxByte = 0;
+					if ((block.data[tzxByte] & 128) > 0) tzxAimTStates = block.oneBitLength; else tzxAimTStates = block.zeroBitLength;
+					tzxPulsesDone = 2;
+					if (tzxByte == block.data.length-1) tzxBitLimit = 1<< (8 - block.lastByteMask); else tzxBitLimit = 1;
+					tzxBitCounter = 128;
+			
+					nextBlockIndex++;
+					return block;
+					break;
 				case 'JumpToBlock':
 					nextBlockIndex += block.offset;
 					break;
@@ -278,14 +358,19 @@ JSSpeccy.TzxFile = function(data) {
 						onto the call stack in reverse order, starting with the block immediately
 						after the CallSequence (which we go to when leaving the sequence) */
 					callStack.unshift(nextBlockIndex+1);
-					for (var i = block.offsets.length - 1; i >= 0; i--) {
-						callStack.unshift(nextBlockIndex + block.offsets[i]);
+					for (var i = block.offsets.length - 2; i >= 0; i-=2) {
+						callStack.unshift(nextBlockIndex + block.offsets[i] + 256 * block.offsets[i+1]);
 					}
 					/* now visit the first destination on the list */
 					nextBlockIndex = callStack.shift();
 					break;
 				case 'ReturnFromSequence':
 					nextBlockIndex = callStack.shift();
+					break;
+				case 'Stop':
+					tzxAimTStates = 0;
+					nextBlockIndex++;
+					return block;
 					break;
 				default:
 					/* not one of the types we care about; skip past it */
@@ -298,11 +383,193 @@ JSSpeccy.TzxFile = function(data) {
 		while (true) {
 			var block = self.getNextMeaningfulBlock();
 			if (!block) return null;
+			
 			if (block.type == 'StandardSpeedData' || block.type == 'TurboSpeedData') {
 				return block.data;
 			}
 			/* FIXME: avoid infinite loop if the TZX file consists only of meaningful but non-loadable blocks */
 		}
+	};
+	
+	
+	self.updateEarState = function(tstates) {
+		
+		if (tstates<lastTstates) lastTstates = 0;
+		
+		if ((!tzxTurbo & !forceTurbo) || !tzxPlaying) return;
+
+		if (block == null) block = self.getNextMeaningfulBlock();
+		
+		tzxTotalTs += (tstates - lastTstates);
+		lastTstates = tstates;
+
+		while (tzxTotalTs >= tzxAimTStates & tzxPlaying) {
+		
+			tzxTotalTs  = tzxTotalTs - tzxAimTStates;
+
+			switch (block.type) {
+				case 'StandardSpeedData':
+				case 'TurboSpeedData':
+				case 'PureData':
+					switch(tzxState) {
+						case 0:	//Playing Pilot tone.
+							earBit = earBit ^ 64;
+							if (tzxByte < block.pilotPulseCount) {// TZXByte holds number of pulses
+								tzxAimTStates = block.pilotPulseLength;
+								tzxByte = tzxByte + 1;
+							}
+							else {
+								tzxByte = 0;
+								tzxState = 1; // Set to SYNC1 Pulse output
+								tzxAimTStates = block.syncPulse1Length;
+							}
+							break;
+						case 1:	// SYNC 1
+							earBit = earBit ^ 64;
+							tzxState = 2 ;// Set to SYNC2 Pulse output
+							tzxAimTStates = block.syncPulse2Length;
+							break;
+						case 2:	// SYNC 2
+							earBit = earBit ^ 64;
+							tzxState = 3; // Set to DATA Byte(s) output
+							tzxByte = 0;
+							if ((block.data[tzxByte] & 128) > 0) // Set next pulse length
+								tzxAimTStates = block.oneBitLength
+							else
+								tzxAimTStates = block.zeroBitLength;
+
+							tzxPulsesDone = 2; // *2* edges per Data BIT, one on, one off
+							tzxBitCounter = 128; // Start with the full byte
+							tzxBitLimit = 1;
+							break;
+						case 3:
+							earBit = earBit ^ 64;
+							tzxPulsesDone--;
+							if (!tzxPulsesDone) { // Done both pulses for this bit?
+								if (tzxBitCounter > tzxBitLimit) { // Done all the bits for this byte?
+									tzxBitCounter = tzxBitCounter >> 1; // Bitcounter counts *down*
+									tzxPulsesDone = 2;
+									if ((block.data[tzxByte] & tzxBitCounter) > 0)
+										tzxAimTStates = block.oneBitLength
+									else
+										tzxAimTStates = block.zeroBitLength
+								}
+								else { // all bits done, setup for next byte
+									tzxByte++;
+									if (tzxByte < block.data.length) { // last byte?
+										if (tzxByte == block.data.length - 1) 
+											tzxBitLimit = 1 << (8 - block.lastByteMask) // if so, set up the last bits used
+										else
+											tzxBitLimit = 1; // else use full 8 bits
+
+										tzxBitCounter = 128;
+										tzxPulsesDone = 2;
+										if ((block.data[tzxByte] & 128) > 0) 
+											tzxAimTStates = block.oneBitLength
+										else
+											tzxAimTStates = block.zeroBitLength;
+
+									}
+									else {
+										if (block.pause > 0) {
+											tzxAimTStates = block.pause * 3500;
+											tzxState = 4; // Set to Pause output
+										}
+										else {
+											tzxState = 0;
+											block = self.getNextMeaningfulBlock();
+										}
+									}
+								}
+							}
+							else { // Not done both pulses, flip the ear bit next time
+								if ((block.data[tzxByte] & tzxBitCounter) > 0)
+									tzxAimTStates = block.oneBitLength
+								else
+									tzxAimTStates = block.zeroBitLength;
+
+							}
+							break;
+						case 4:
+							block = self.getNextMeaningfulBlock();
+							break;
+					}
+					break;
+				case 'PureTone':
+					earBit = earBit ^ 64;
+					if (tzxByte < block.pulseCount) {
+						tzxAimTStates = block.pulseLength;
+						tzxByte++;
+					}
+					else
+						block = self.getNextMeaningfulBlock();
+					break;
+					
+				case 'PulseSequence':
+					earBit = earBit ^ 64;			
+
+					if (tzxByte < block.pulseLengths.length) {
+						tzxAimTStates = block.pulseLengths[tzxByte] + 256 * block.pulseLengths[tzxByte+1];
+						tzxByte += 2;
+					}
+					else
+						block = self.getNextMeaningfulBlock();
+					break;
+				
+				case 'DirectRecording':
+					//not implemented
+					block = self.getNextMeaningfulBlock();
+					break;
+				case 'Pause':
+					if (block.pause==0) {
+						self.stopTape();
+					}
+					else {
+						tzxAimTStates = block.pause * 3500;
+						block = self.getNextMeaningfulBlock();
+					}
+					break;
+				case 'Stop':
+					self.stopTape();
+					break;
+					
+				default:
+					block = self.getNextMeaningfulBlock();
+					
+			}
+			if (sound!=null) sound.setEarBit(earBit,tstates);
+		}
+	};
+		
+	self.startTape = function() {
+		tzxPlaying = true;
+		tzxTotalTs = 0;
+		tzxByte = 0;
+		tzxState = 0;
+		earBit = 0;
+	};
+
+	self.stopTape = function() {
+		if (tzxPlaying) tzxPlaying = false;
+	};
+	
+	self.startStopTape = function() {
+		if (tzxPlaying) stopTape(); else startTape();
+	};
+	
+	self.isTurbo = function() {
+		return tzxTurbo | forceTurbo;
+	};
+
+	self.getEarBit = function() {
+		return earBit;
+	};
+	
+	self.setForce = function(val) {
+		forceTurbo = val;
+	};
+	self.setSound = function(soundGen) {
+		sound = soundGen;
 	};
 
 	return self;

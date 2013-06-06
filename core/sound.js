@@ -751,6 +751,10 @@ JSSpeccy.SoundGenerator = function(opts) {
 		}
 	}
 	
+	self.setEarBit = function(val, currentTstates) {
+		//do nothing yet
+	}
+	
 	self.createSoundData = function (size, val) {
 		if (!backend.isEnabled) return;
 		size = Math.floor(size);

@@ -20,6 +20,24 @@ JSSpeccy.TapFile = function(data) {
 		return block;
 	};
 
+	self.stopTape = function() {
+		return;
+	}
+
+	self.startTape = function() {
+		return;
+	}
+	
+	self.isTurbo = function() {
+		return false;
+	}
+	
+	self.setSound = function(soundGen) {
+	}
+
+	self.updateEar = function(tstates) {
+	}
+	
 	return self;
 };
 
@@ -37,3 +55,4 @@ JSSpeccy.TapFile.isValid = function(data) {
 
 	return (pos == data.byteLength); /* file is a valid TAP if pos is exactly at EOF and no further */
 };
+

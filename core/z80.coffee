@@ -102,6 +102,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 		var memory = opts.memory;
 		var ioBus = opts.ioBus;
 		var display = opts.display;
+		var controller = opts.controller;
 
 		var registerBuffer = new ArrayBuffer(26);
 		/* Expose registerBuffer as both register pairs and individual registers */
@@ -2414,6 +2415,7 @@ window.JSSpeccy.buildZ80 = (opts) ->
 						default:
 							throw("Unknown opcode prefix: " + lastOpcodePrefix);
 					}
+					if (controller && controller.currentTape) controller.currentTape.updateEarState(tstates);
 				}
 				while (display.nextEventTime != null && display.nextEventTime <= tstates) display.doEvent();
 			};
