@@ -1,12 +1,12 @@
-JSSpeccy: A ZX Spectrum emulator in pure Javascript
+JSSpeccy: A ZX Spectrum emulator in pure JavaScript
 ===================================================
 
 https://github.com/gasman/jsspeccy2
 
 Foreword to version 2.x
 -----------------------
-When I started this project in 2009, writing an emulator in Javascript was a
-silly idea. Now, thanks to advances in Javascript engines, and new APIs
+When I started this project in 2009, writing an emulator in JavaScript was a
+silly idea. Now, thanks to advances in JavaScript engines, and new APIs
 emerging from HTML5 and WebGL, it has become a significantly less silly idea,
 which means that the time is right for a more serious attempt at the job.
 
@@ -16,8 +16,8 @@ Everything, basically... it's a ground-up rewrite. In particular:
 
 * Z80 core uses typed arrays[0] where appropriate, for a healthy performance
   boost (and significantly less faffing around with '& 0xff' everywhere to get
-  around the lack of strong typing in Javascript)
-* More Javascript-ish architecture - the Z80 instruction set is built up
+  around the lack of strong typing in JavaScript)
+* More JavaScript-ish architecture - the Z80 instruction set is built up
   through copious use of closures, rather than borrowing Fuse's Perl generator
   script wholesale. (It's still heavily based on Fuse's Z80 core though.)
 * 128K support!
@@ -30,7 +30,7 @@ Everything, basically... it's a ground-up rewrite. In particular:
 
 Building
 --------
-perl, CoffeeScript[1] and Closure Compiler[2] are required. To build:
+Perl, CoffeeScript[1] and Closure Compiler[2] are required. To build:
 
     make
 
