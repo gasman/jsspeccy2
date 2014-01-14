@@ -828,44 +828,54 @@ JSSpeccy.SoundBackend = function() {
 	if (AudioContext) {
 		/* Use Web Audio API as backend */
 		var audioContext = new AudioContext();
-		var audioNode = audioContext.createJavaScriptNode(8192, 1, 1);
-
-		onAudioProcess = function(e) {
-			var buffer = e.outputBuffer.getChannelData(0);
-			fillBuffer(buffer);
-		};
-
-		self.sampleRate = 44100;
-		self.isEnabled = false;
-		self.setSource = function(fillBufferCallback) {
-			fillBuffer = fillBufferCallback;
-			if (self.isEnabled) {
-				audioNode.onaudioprocess = onAudioProcess;
-				audioNode.connect(audioContext.destination);
-			};
+		var audioNode = null;
+		
+		//Web audio Api changed createJavaScriptNode to CreateScriptProcessor - we support both
+		if (audioContext.createJavaScriptNode!=null) {
+			audioNode = audioContext.createJavaScriptNode(8192, 1, 1);
+		} else if (audioContext.createScriptProcessor!=null) {
+			audioNode = audioContext.createScriptProcessor(8192, 1, 1);
 		}
-		self.setAudioState = function(state) {
-			if (state) {
-				/* enable */
-				self.isEnabled = true;
-				if (fillBuffer) {
+
+                if (audioNode!=null) {
+
+			onAudioProcess = function(e) {
+				var buffer = e.outputBuffer.getChannelData(0);
+				fillBuffer(buffer);
+			};
+
+			self.sampleRate = 44100;
+			self.isEnabled = false;
+			self.setSource = function(fillBufferCallback) {
+				fillBuffer = fillBufferCallback;
+				if (self.isEnabled) {
 					audioNode.onaudioprocess = onAudioProcess;
 					audioNode.connect(audioContext.destination);
-				}
-				return true;
-			} else {
-				/* disable */
-				self.isEnabled = false;
-				audioNode.onaudioprocess = null;
-				audioNode.disconnect(0);
-				return false;
+				};
 			}
-		}
-		self.notifyReady = function(dataLength) {
-			/* do nothing */
-		}
+			self.setAudioState = function(state) {
+				if (state) {
+					/* enable */
+					self.isEnabled = true;
+					if (fillBuffer) {
+						audioNode.onaudioprocess = onAudioProcess;
+						audioNode.connect(audioContext.destination);
+					}
+					return true;
+				} else {
+					/* disable */
+					self.isEnabled = false;
+					audioNode.onaudioprocess = null;
+					audioNode.disconnect(0);
+					return false;
+				}
+			}
+			self.notifyReady = function(dataLength) {
+				/* do nothing */
+			}
 
-		return self;
+			return self;
+                }
 	}
 
 	if (typeof(Audio) != 'undefined') {
