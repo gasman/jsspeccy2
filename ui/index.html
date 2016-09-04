@@ -59,7 +59,10 @@
 		</style>
 		<script>
 			$(function() {
-				var jsspeccy = JSSpeccy('jsspeccy-viewport', {'autostart': true});
+				var jsspeccy = JSSpeccy('jsspeccy-viewport', {
+					'autostart': true,
+					'measurePerformance': true
+				});
 				JSSpeccy.UI({
 					container: 'jsspeccy',
 					controller: jsspeccy

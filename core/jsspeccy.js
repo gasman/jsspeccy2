@@ -26,6 +26,8 @@ function JSSpeccy(container, opts) {
 		opts = {};
 	}
 
+	var originalDocumentTitle = document.title;
+
 
 	/* == Z80 core == */
 	/* define a list of rules to be triggered when the Z80 executes an opcode at a specified address;
@@ -268,6 +270,10 @@ function JSSpeccy(container, opts) {
 		cyclesExecutedSinceReferenceTime = 0;
 	}
 
+	var PERFORMANCE_FRAME_COUNT = 10;  /* average over this many frames when measuring performance */
+	var performanceTotalMilliseconds = 0;
+	var performanceFrameNum = 0;
+
 	var requestAnimationFrame = (
 		window.requestAnimationFrame || window.msRequestAnimationFrame ||
 		window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame ||
@@ -287,7 +293,19 @@ function JSSpeccy(container, opts) {
 
 		var framesRun = 0;
 		while (cyclesExecutedSinceReferenceTime < cyclesElapsed) {
+			var stampBefore = performance.now();
 			spectrum.runFrame();
+			var stampAfter = performance.now();
+
+			if (opts.measurePerformance) {
+				performanceTotalMilliseconds += (stampAfter - stampBefore);
+				performanceFrameNum = (performanceFrameNum + 1) % PERFORMANCE_FRAME_COUNT;
+				if (performanceFrameNum === 0) {
+					document.title = originalDocumentTitle + ' ' + (performanceTotalMilliseconds / PERFORMANCE_FRAME_COUNT).toFixed(1) + " ms/frame";
+					performanceTotalMilliseconds = 0;
+				}
+			}
+
 			cyclesExecutedSinceReferenceTime += currentModel.frameLength;
 			framesRun++;
 			if (framesRun > 2) {
