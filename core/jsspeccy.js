@@ -266,7 +266,7 @@ function JSSpeccy(container, opts) {
 	var referenceTime = null;
 	var cyclesExecutedSinceReferenceTime = 0;
 	function initReferenceTime() {
-		referenceTime = Date.now();
+		referenceTime = performance.now();
 		cyclesExecutedSinceReferenceTime = 0;
 	}
 
@@ -280,7 +280,7 @@ function JSSpeccy(container, opts) {
 		window.oRequestAnimationFrame ||
 		function(callback) {
 			setTimeout(function() {
-				callback(Date.now());
+				callback(performance.now());
 			}, 10);
 		}
 	);
@@ -288,7 +288,7 @@ function JSSpeccy(container, opts) {
 	function tick() {
 		if (!self.isRunning) return;
 
-		var timeElapsed = Date.now() - referenceTime;
+		var timeElapsed = performance.now() - referenceTime;
 		var cyclesElapsed = timeElapsed * currentModel.clockSpeed / 1000;
 
 		var framesRun = 0;
