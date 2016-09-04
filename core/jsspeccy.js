@@ -194,9 +194,7 @@ function JSSpeccy(container, opts) {
 			var signature = String.fromCharCode.apply(null, signatureBytes);
 			if (signature == "ZXTape!\x1A") {
 				fileType = 'tzx';
-			} else if (data.byteLength === 49179 ||
-			           data.byteLength === 131103 ||
-			           data.byteLength === 147487) {
+			} else if (data.byteLength === 49179 || data.byteLength === 131103 || data.byteLength === 147487) {
 				fileType = 'sna';
 			} else if (JSSpeccy.TapFile.isValid(data)) {
 				fileType = 'tap';
