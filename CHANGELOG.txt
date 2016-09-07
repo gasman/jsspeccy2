@@ -2,6 +2,7 @@
 ================
 
 * 128K .SNA file support (Martin Bórik)
+* Updated timing logic, including use of performance.now in place of Date.now (Peter Marťák, Matt Westcott)
 
 
 2.2 (2013-06-02)

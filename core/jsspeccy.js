@@ -261,11 +261,14 @@ function JSSpeccy(container, opts) {
 
 
 	/* == Timing / main execution loop == */
-	var referenceTime = null;
-	var cyclesExecutedSinceReferenceTime = 0;
+	var msPerFrame;
+	var remainingMs = 0; /* number of milliseconds that have passed that have not yet been
+	'consumed' by running a frame of emulation */
+
 	function initReferenceTime() {
-		referenceTime = performance.now();
-		cyclesExecutedSinceReferenceTime = 0;
+		msPerFrame = (currentModel.frameLength * 1000) / currentModel.clockSpeed;
+		remainingMs = 0;
+		lastFrameStamp = performance.now();
 	}
 
 	var PERFORMANCE_FRAME_COUNT = 10;  /* average over this many frames when measuring performance */
@@ -286,12 +289,11 @@ function JSSpeccy(container, opts) {
 	function tick() {
 		if (!self.isRunning) return;
 
-		var timeElapsed = performance.now() - referenceTime;
-		var cyclesElapsed = timeElapsed * currentModel.clockSpeed / 1000;
-
-		var framesRun = 0;
-		while (cyclesExecutedSinceReferenceTime < cyclesElapsed) {
-			var stampBefore = performance.now();
+		stampBefore = performance.now();
+		var timeElapsed = stampBefore - lastFrameStamp;
+		remainingMs += stampBefore - lastFrameStamp;
+		if (remainingMs > msPerFrame) {
+			/* run a frame of emulation */
 			spectrum.runFrame();
 			var stampAfter = performance.now();
 
@@ -299,26 +301,25 @@ function JSSpeccy(container, opts) {
 				performanceTotalMilliseconds += (stampAfter - stampBefore);
 				performanceFrameNum = (performanceFrameNum + 1) % PERFORMANCE_FRAME_COUNT;
 				if (performanceFrameNum === 0) {
-					document.title = originalDocumentTitle + ' ' + (performanceTotalMilliseconds / PERFORMANCE_FRAME_COUNT).toFixed(1) + " ms/frame";
+					document.title = originalDocumentTitle + ' ' + (performanceTotalMilliseconds / PERFORMANCE_FRAME_COUNT).toFixed(1) + " ms/frame; elapsed: " + timeElapsed;
 					performanceTotalMilliseconds = 0;
 				}
 			}
 
-			cyclesExecutedSinceReferenceTime += currentModel.frameLength;
-			framesRun++;
-			if (framesRun > 2) {
-				/* if we're having to run more than two frames on this iteration, the emulation
-					must be running slow - bail out to avoid creating a backlog of frames */
-				initReferenceTime();
-				break;
-			}
-		}
+			remainingMs -= msPerFrame;
 
-		/* bump referenceTime forward periodically so that cyclesElapsed doesn't overflow */
-		while (cyclesExecutedSinceReferenceTime > 10000000) {
-			referenceTime += 1000;
-			cyclesExecutedSinceReferenceTime -= currentModel.clockSpeed;
+			/* As long as requestAnimationFrame runs more frequently than the Spectrum's frame rate -
+			which should normally be the case for a focused browser window (approx 60Hz vs 50Hz) -
+			there should be either zero or one emulation frames run per call to tick(). If there's more
+			than one emulation frame to run (i.e. remainingMs > msPerFrame at this point), we have
+			insufficient performance to run at full speed (either the frame is taking more than 20ms to
+			execute, or requestAnimationFrame is being called too infrequently). If so, clear
+			remainingMs so that it doesn't grow indefinitely
+			*/
+			if (remainingMs > msPerFrame) remainingMs = 0;
 		}
+		lastFrameStamp = stampBefore;
+
 		requestAnimationFrame(tick);
 	}
 
