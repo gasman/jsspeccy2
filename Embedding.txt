@@ -79,6 +79,28 @@ document 'ready' handler:
 </html>
 
 
+Pixel scaling
+-------------
+
+Whenever the browser is required to scale up the screen image - either because
+a scaleFactor greater than one is in use, or it is being shown on a high-DPI
+display (otherwise known as Retina in Apple world...), all mainstream browsers
+will use anti-aliasing by default, resulting in soft-edged pixels. To enable
+hard-edged pixels instead, set the following CSS rules on the container
+element:
+
+<style>
+    #speccy {
+        image-rendering: optimizeSpeed;
+        image-rendering: -moz-crisp-edges;
+        image-rendering: -o-crisp-edges;
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+        image-rendering: pixelated;
+        -ms-interpolation-mode: nearest-neighbor;
+    }
+</style>
+
 
 Configuration settings
 ----------------------
