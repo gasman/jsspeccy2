@@ -116,6 +116,8 @@ autostart (default = true)
     emulation is initially paused.
 audio (default = true)
     Indicates whether audio is enabled.
+border (default = true)
+    Whether to display the screen border.
 dragToLoad (default = true)
     If true, the user can load files by dragging them onto the emulator window.
 loadFile

@@ -84,6 +84,7 @@ function JSSpeccy(container, opts) {
 	var viewport = JSSpeccy.Viewport({
 		container: container,
 		scaleFactor: opts.scaleFactor || 2,
+		border: opts.border,
 		onClickIcon: function() {self.start();}
 	});
 

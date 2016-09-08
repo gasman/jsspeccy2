@@ -4,6 +4,7 @@ JSSpeccy.Display = function(opts) {
 	var viewport = opts.viewport;
 	var memory = opts.memory;
 	var model = opts.model || JSSpeccy.Spectrum.MODEL_128K;
+	var border = ('undefined' != typeof viewport.border) ? viewport.border : true;
 	
 	var palette = new Uint8Array([
 		/* dark */
@@ -37,11 +38,11 @@ JSSpeccy.Display = function(opts) {
 	var TSTATES_PER_SCANLINE = model.tstatesPerScanline;
 	self.frameLength = model.frameLength;
 	
-	var BEAM_X_MAX = (32 + RIGHT_BORDER_CHARS);
-	var BEAM_Y_MAX = (192 + BOTTOM_BORDER_LINES);
+	var BEAM_X_MAX = 32 + (border ? RIGHT_BORDER_CHARS : 0);
+	var BEAM_Y_MAX = 192 + (border ? BOTTOM_BORDER_LINES : 0);
 	
-	var CANVAS_WIDTH = 256 + 8 * (LEFT_BORDER_CHARS + RIGHT_BORDER_CHARS);
-	var CANVAS_HEIGHT = 192 + TOP_BORDER_LINES + BOTTOM_BORDER_LINES;
+	var CANVAS_WIDTH = 256 + (border ? ((LEFT_BORDER_CHARS + RIGHT_BORDER_CHARS) * 8) : 0);
+	var CANVAS_HEIGHT = 192 + (border ? (TOP_BORDER_LINES + BOTTOM_BORDER_LINES) : 0);
 	
 	viewport.setResolution(CANVAS_WIDTH, CANVAS_HEIGHT);
 	var ctx = viewport.canvas.getContext('2d');
@@ -65,8 +66,8 @@ JSSpeccy.Display = function(opts) {
 	
 	self.startFrame = function() {
 		self.nextEventTime = currentLineStartTime = TSTATES_UNTIL_ORIGIN - (TOP_BORDER_LINES * TSTATES_PER_SCANLINE) - (LEFT_BORDER_CHARS * TSTATES_PER_CHAR);
-		beamX = -LEFT_BORDER_CHARS;
-		beamY = -TOP_BORDER_LINES;
+		beamX = (border ? -LEFT_BORDER_CHARS : 0);
+		beamY = (border ? -TOP_BORDER_LINES : 0);
 		pixelLineAddress = 0x0000;
 		attributeLineAddress = 0x1800;
 		imageDataPos = 0;
@@ -121,7 +122,7 @@ JSSpeccy.Display = function(opts) {
 		if (beamX < BEAM_X_MAX) {
 			self.nextEventTime += TSTATES_PER_CHAR;
 		} else {
-			beamX = -LEFT_BORDER_CHARS;
+			beamX = (border ? -LEFT_BORDER_CHARS : 0);
 			beamY++;
 			
 			if (beamY >= 0 && beamY < 192) {
