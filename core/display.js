@@ -4,7 +4,7 @@ JSSpeccy.Display = function(opts) {
 	var viewport = opts.viewport;
 	var memory = opts.memory;
 	var model = opts.model || JSSpeccy.Spectrum.MODEL_128K;
-	var border = ('undefined' != typeof viewport.border) ? viewport.border : true;
+	var border = opts.borderEnabled;
 	var filter = false;
 	
 	var palette = new Int32Array([

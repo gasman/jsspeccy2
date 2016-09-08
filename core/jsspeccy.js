@@ -251,7 +251,8 @@ function JSSpeccy(container, opts) {
 				keyboard: keyboard,
 				model: newModel,
 				soundBackend: soundBackend,
-				controller: self
+				controller: self,
+				borderEnabled: ('border' in opts) ? opts.border : true
 			});
 			currentModel = newModel;
 			initReferenceTime();

@@ -15,7 +15,8 @@ JSSpeccy.Spectrum = function(opts) {
 	var display = JSSpeccy.Display({
 		viewport: viewport,
 		memory: memory,
-		model: model
+		model: model,
+		borderEnabled: opts.borderEnabled
 	});
 
 	var sound = JSSpeccy.SoundGenerator({
