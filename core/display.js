@@ -111,14 +111,14 @@ JSSpeccy.Display = function(opts) {
 				paperColor = palette[(attributeByte & 0x78) >> 3];
 			}
 			
-			pixels[imageDataPos++] = ((pixelByte & 0x80) !== 0) ? inkColor : paperColor;
-			pixels[imageDataPos++] = ((pixelByte & 0x40) !== 0) ? inkColor : paperColor;
-			pixels[imageDataPos++] = ((pixelByte & 0x20) !== 0) ? inkColor : paperColor;
-			pixels[imageDataPos++] = ((pixelByte & 0x10) !== 0) ? inkColor : paperColor;
-			pixels[imageDataPos++] = ((pixelByte & 0x08) !== 0) ? inkColor : paperColor;
-			pixels[imageDataPos++] = ((pixelByte & 0x04) !== 0) ? inkColor : paperColor;
-			pixels[imageDataPos++] = ((pixelByte & 0x02) !== 0) ? inkColor : paperColor;
-			pixels[imageDataPos++] = ((pixelByte & 0x01) !== 0) ? inkColor : paperColor;
+			pixels[imageDataPos++] = (pixelByte & 0x80) ? inkColor : paperColor;
+			pixels[imageDataPos++] = (pixelByte & 0x40) ? inkColor : paperColor;
+			pixels[imageDataPos++] = (pixelByte & 0x20) ? inkColor : paperColor;
+			pixels[imageDataPos++] = (pixelByte & 0x10) ? inkColor : paperColor;
+			pixels[imageDataPos++] = (pixelByte & 0x08) ? inkColor : paperColor;
+			pixels[imageDataPos++] = (pixelByte & 0x04) ? inkColor : paperColor;
+			pixels[imageDataPos++] = (pixelByte & 0x02) ? inkColor : paperColor;
+			pixels[imageDataPos++] = (pixelByte & 0x01) ? inkColor : paperColor;
 		}
 		
 		/* increment beam / nextEventTime for next event */
