@@ -6,28 +6,38 @@ JSSpeccy.Display = function(opts) {
 	var model = opts.model || JSSpeccy.Spectrum.MODEL_128K;
 	var border = ('undefined' != typeof viewport.border) ? viewport.border : true;
 	
-	var palette = new Uint8Array([
-		/* dark */
-		0x00, 0x00, 0x00, 0xff,
-		0x20, 0x30, 0xc0, 0xff,
-		0xc0, 0x40, 0x10, 0xff,
-		0xc0, 0x40, 0xc0, 0xff,
-		0x40, 0xb0, 0x10, 0xff,
-		0x50, 0xc0, 0xb0, 0xff,
-		0xe0, 0xc0, 0x10, 0xff,
-		0xc0, 0xc0, 0xc0, 0xff,
-		
-		/* bright */
-		0x00, 0x00, 0x00, 0xff,
-		0x30, 0x40, 0xff, 0xff,
-		0xff, 0x40, 0x30, 0xff,
-		0xff, 0x70, 0xf0, 0xff,
-		0x50, 0xe0, 0x10, 0xff,
-		0x50, 0xe0, 0xff, 0xff,
-		0xff, 0xe8, 0x50, 0xff,
-		0xff, 0xff, 0xff, 0xff
+	var palette = new Int32Array([
+		/* RGBA dark */
+		0x000000ff,
+		0x2030c0ff,
+		0xc04010ff,
+		0xc040c0ff,
+		0x40b010ff,
+		0x50c0b0ff,
+		0xe0c010ff,
+		0xc0c0c0ff,
+		/* RGBA bright */
+		0x000000ff,
+		0x3040ffff,
+		0xff4030ff,
+		0xff70f0ff,
+		0x50e010ff,
+		0x50e0ffff,
+		0xffe850ff,
+		0xffffffff
 	]);
-	
+
+	var testUint8 = new Uint8Array(new Uint16Array([0x8000]).buffer);
+	var isLittleEndian = (testUint8[0] === 0);
+	if(isLittleEndian) {
+		/* need to reverse the byte ordering of palette */
+		for(var i = 0; i < 16; i++) {
+			var color = palette[i];
+			palette[i] = ((color << 24) & 0xff000000) | ((color << 8) & 0xff0000) | ((color >>> 8) & 0xff00) | ((color >>> 24) & 0xff);
+		}
+	}
+
+
 	var LEFT_BORDER_CHARS = 4;
 	var RIGHT_BORDER_CHARS = 4;
 	var TOP_BORDER_LINES = 24;
@@ -46,8 +56,8 @@ JSSpeccy.Display = function(opts) {
 	
 	viewport.setResolution(CANVAS_WIDTH, CANVAS_HEIGHT);
 	var ctx = viewport.canvas.getContext('2d');
-	var imageData = ctx.createImageData(CANVAS_WIDTH, CANVAS_HEIGHT);
-	var pixels = imageData.data;
+	var imageData = ctx.getImageData(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+	var pixels = new Int32Array(imageData.data.buffer);
 	
 	var borderColour = 7;
 	self.setBorder = function(val) {
@@ -77,12 +87,8 @@ JSSpeccy.Display = function(opts) {
 	self.doEvent = function() {
 		if (beamY < 0 | beamY >= 192 | beamX < 0 | beamX >= 32) {
 			/* border */
-			var p = borderColour << 2;
 			for (var i = 0; i < 8; i++) {
-				pixels[imageDataPos++] = palette[p];
-				pixels[imageDataPos++] = palette[p+1];
-				pixels[imageDataPos++] = palette[p+2];
-				pixels[imageDataPos++] = 0xff;
+				pixels[imageDataPos++] = palette[borderColour];
 			}
 			//console.log(self.nextEventTime, beamX, beamY, '= border');
 		} else {
@@ -93,24 +99,18 @@ JSSpeccy.Display = function(opts) {
 			var ink, paper;
 			if ( (attributeByte & 0x80) && (flashPhase & 0x10) ) {
 				/* FLASH: invert ink / paper */
-				ink = (attributeByte & 0x78) >> 1;
-				paper = ( (attributeByte & 0x07) << 2 ) | ( (attributeByte & 0x40) >> 1 );
+				ink = palette[(attributeByte & 0x78) >> 3];
+				paper = palette[(attributeByte & 0x07) | ((attributeByte & 0x40) >> 3)];
 			} else {
-				ink = ( (attributeByte & 0x07) << 2 ) | ( (attributeByte & 0x40) >> 1 );
-				paper = (attributeByte & 0x78) >> 1;
+				ink = palette[(attributeByte & 0x07) | ((attributeByte & 0x40) >> 3)];
+				paper = palette[(attributeByte & 0x78) >> 3];
 			}
 			
 			for (var b = 0x80; b; b >>= 1) {
 				if (pixelByte & b) {
-					pixels[imageDataPos++] = palette[ink];
-					pixels[imageDataPos++] = palette[ink+1];
-					pixels[imageDataPos++] = palette[ink+2];
-					pixels[imageDataPos++] = 0xff;
+					pixels[imageDataPos++] = ink;
 				} else {
-					pixels[imageDataPos++] = palette[paper];
-					pixels[imageDataPos++] = palette[paper+1];
-					pixels[imageDataPos++] = palette[paper+2];
-					pixels[imageDataPos++] = 0xff;
+					pixels[imageDataPos++] = paper;
 				}
 			}
 			
