@@ -87,34 +87,38 @@ JSSpeccy.Display = function(opts) {
 	self.doEvent = function() {
 		if (beamY < 0 | beamY >= 192 | beamX < 0 | beamX >= 32) {
 			/* border */
-			for (var i = 0; i < 8; i++) {
-				pixels[imageDataPos++] = palette[borderColour];
-			}
-			//console.log(self.nextEventTime, beamX, beamY, '= border');
+			var color = palette[borderColour];
+			pixels[imageDataPos++] = color;
+			pixels[imageDataPos++] = color;
+			pixels[imageDataPos++] = color;
+			pixels[imageDataPos++] = color;
+			pixels[imageDataPos++] = color;
+			pixels[imageDataPos++] = color;
+			pixels[imageDataPos++] = color;
+			pixels[imageDataPos++] = color;
 		} else {
 			/* main screen area */
 			var pixelByte = memory.readScreen( pixelLineAddress | beamX );
 			var attributeByte = memory.readScreen( attributeLineAddress | beamX );
 			
-			var ink, paper;
+			var inkColor, paperColor;
 			if ( (attributeByte & 0x80) && (flashPhase & 0x10) ) {
 				/* FLASH: invert ink / paper */
-				ink = palette[(attributeByte & 0x78) >> 3];
-				paper = palette[(attributeByte & 0x07) | ((attributeByte & 0x40) >> 3)];
+				inkColor = palette[(attributeByte & 0x78) >> 3];
+				paperColor = palette[(attributeByte & 0x07) | ((attributeByte & 0x40) >> 3)];
 			} else {
-				ink = palette[(attributeByte & 0x07) | ((attributeByte & 0x40) >> 3)];
-				paper = palette[(attributeByte & 0x78) >> 3];
+				inkColor = palette[(attributeByte & 0x07) | ((attributeByte & 0x40) >> 3)];
+				paperColor = palette[(attributeByte & 0x78) >> 3];
 			}
 			
-			for (var b = 0x80; b; b >>= 1) {
-				if (pixelByte & b) {
-					pixels[imageDataPos++] = ink;
-				} else {
-					pixels[imageDataPos++] = paper;
-				}
-			}
-			
-			//console.log(self.nextEventTime, beamX, beamY, '= screen', pixelLineAddress | beamX, attributeLineAddress | beamX);
+			pixels[imageDataPos++] = ((pixelByte & 0x80) !== 0) ? inkColor : paperColor;
+			pixels[imageDataPos++] = ((pixelByte & 0x40) !== 0) ? inkColor : paperColor;
+			pixels[imageDataPos++] = ((pixelByte & 0x20) !== 0) ? inkColor : paperColor;
+			pixels[imageDataPos++] = ((pixelByte & 0x10) !== 0) ? inkColor : paperColor;
+			pixels[imageDataPos++] = ((pixelByte & 0x08) !== 0) ? inkColor : paperColor;
+			pixels[imageDataPos++] = ((pixelByte & 0x04) !== 0) ? inkColor : paperColor;
+			pixels[imageDataPos++] = ((pixelByte & 0x02) !== 0) ? inkColor : paperColor;
+			pixels[imageDataPos++] = ((pixelByte & 0x01) !== 0) ? inkColor : paperColor;
 		}
 		
 		/* increment beam / nextEventTime for next event */
