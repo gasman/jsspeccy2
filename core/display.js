@@ -5,6 +5,7 @@ JSSpeccy.Display = function(opts) {
 	var memory = opts.memory;
 	var model = opts.model || JSSpeccy.Spectrum.MODEL_128K;
 	var border = ('undefined' != typeof viewport.border) ? viewport.border : true;
+	var filter = false;
 	
 	var palette = new Int32Array([
 		/* RGBA dark */
@@ -58,6 +59,10 @@ JSSpeccy.Display = function(opts) {
 	var ctx = viewport.canvas.getContext('2d');
 	var imageData = ctx.getImageData(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 	var pixels = new Int32Array(imageData.data.buffer);
+
+	/* for post-processing */
+	var imageData2 = ctx.createImageData(imageData);
+	var pixels2 = new Int32Array(imageData2.data.buffer);
 	
 	var borderColour = 7;
 	self.setBorder = function(val) {
@@ -146,7 +151,11 @@ JSSpeccy.Display = function(opts) {
 	};
 	
 	self.endFrame = function() {
-		ctx.putImageData(imageData, 0, 0);
+		if (filter) {
+			self.postProcess();
+		} else {
+			ctx.putImageData(imageData, 0, 0);
+		}
 	};
 
 	self.drawFullScreen = function() {
@@ -154,6 +163,50 @@ JSSpeccy.Display = function(opts) {
 		while (self.nextEventTime) self.doEvent();
 		self.endFrame();
 	};
-	
+
+	self.postProcess = function() {
+		var pix = pixels;
+		pixels2.set(pix);
+		var ofs = border ? (TOP_BORDER_LINES * CANVAS_WIDTH) + (LEFT_BORDER_CHARS << 3) : 0;
+		var skip = border ? ((LEFT_BORDER_CHARS + RIGHT_BORDER_CHARS) << 3) : 0;
+		var width = CANVAS_WIDTH;
+		var x = 0, y = 1; /* 1-pixel top/bottom margin */
+		var k0 = 0, k1 = 0, k2 = 0, k3 = 0, k4 = 0, k5 = 0, k6 = 0, k7 = 0, k8 = 0;
+		var avg0, avg1, avg2;
+		while (y++ < 191) {
+			while (x++ < 256) {
+				k0 = pix[ofs - 1]; k1 = pix[ofs]; k2 = pix[ofs + 1]; ofs += width;
+				k3 = pix[ofs - 1]; k4 = pix[ofs]; k5 = pix[ofs + 1]; ofs += width;
+				k6 = pix[ofs - 1]; k7 = pix[ofs]; k8 = pix[ofs + 1];
+				
+				var mixed = ((k4 !== k1 || k4 !== k7) && (k4 !== k3 || k4 !== k5));
+				
+				if (k4 === k0 && k4 === k2 && k4 !== k1 && k4 !== k3 && k4 !== k5) {
+					pixels2[ofs - width] = (((k4 ^ k3) & 0xfefefefe) >> 1) + (k4 & k3);
+				}
+				else if (k4 === k6 && k4 === k8 && k4 !== k3 && k4 !== k5 && k4 !== k7) {
+					pixels2[ofs - width] = (((k4 ^ k3) & 0xfefefefe) >> 1) + (k4 & k3);
+				}
+				else if (k4 === k0 && k4 === k6 && k4 !== k1 && k4 !== k3 && k4 !== k7) {
+					pixels2[ofs - width] = (((k4 ^ k1) & 0xfefefefe) >> 1) + (k4 & k1);
+				}
+				else if (k4 === k2 && k4 === k8 && k4 !== k1 && k4 !== k5 && k4 !== k7) {
+					pixels2[ofs - width] = (((k4 ^ k1) & 0xfefefefe) >> 1) + (k4 & k1);
+				}
+				else if (mixed) {
+					avg0 = (((k3 ^ k5) & 0xfefefefe) >> 1) + (k3 & k5);
+					avg1 = (((k1 ^ k7) & 0xfefefefe) >> 1) + (k1 & k7);
+					avg2 = (((avg0 ^ avg1) & 0xfefefefe) >> 1) + (avg0 & avg1);
+					avg2 = (((k4 ^ avg2) & 0xfefefefe) >> 1) + (k4 & avg2);
+					pixels2[ofs - width] = (((k4 ^ avg2) & 0xfefefefe) >> 1) + (k4 & avg2);
+				}
+				ofs -= (width + width - 1);
+			}
+			ofs += skip;
+			x = 0;
+		}
+		ctx.putImageData(imageData2, 0, 0);
+	};
+
 	return self;
 };
