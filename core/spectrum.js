@@ -16,7 +16,10 @@ JSSpeccy.Spectrum = function(opts) {
 		viewport: viewport,
 		memory: memory,
 		model: model,
-		borderEnabled: opts.borderEnabled
+		borderEnabled: opts.borderEnabled,
+		settings: {
+			'checkerboardFilter': controller.settings.checkerboardFilter
+		}
 	});
 
 	var sound = JSSpeccy.SoundGenerator({

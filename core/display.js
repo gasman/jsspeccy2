@@ -5,7 +5,11 @@ JSSpeccy.Display = function(opts) {
 	var memory = opts.memory;
 	var model = opts.model || JSSpeccy.Spectrum.MODEL_128K;
 	var border = opts.borderEnabled;
-	var filter = false;
+
+	var checkerboardFilterEnabled = opts.settings.checkerboardFilter.get();
+	opts.settings.checkerboardFilter.onChange.bind(function(newValue) {
+		checkerboardFilterEnabled = newValue;
+	});
 	
 	var palette = new Int32Array([
 		/* RGBA dark */
@@ -151,7 +155,7 @@ JSSpeccy.Display = function(opts) {
 	};
 	
 	self.endFrame = function() {
-		if (filter) {
+		if (checkerboardFilterEnabled) {
 			self.postProcess();
 		} else {
 			ctx.putImageData(imageData, 0, 0);

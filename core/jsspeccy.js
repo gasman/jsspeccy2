@@ -72,6 +72,27 @@ function JSSpeccy(container, opts) {
 		return self;
 	}
 
+	function Setting(initialValue) {
+		var self = {};
+
+		var value = initialValue;
+
+		self.onChange = Event();
+
+		self.get = function() {
+			return value;
+		};
+		self.set = function(newValue) {
+			if (newValue == value) return;
+			value = newValue;
+			self.onChange.trigger(newValue);
+		};
+		return self;
+	}
+
+	self.settings = {
+		'checkerboardFilter': Setting(opts.checkerboardFilter || false)
+	};
 
 	/* == Execution state == */
 	self.isDownloading = false;
