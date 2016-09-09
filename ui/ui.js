@@ -91,8 +91,10 @@ JSSpeccy.UI = function(opts) {
 	function reflectCheckerboardFilter(val) {
 		if (val) {
 			checkerboardFilterCheckbox.attr('checked', true);
+			$(container).addClass('hard-edged-pixels');
 		} else {
 			checkerboardFilterCheckbox.removeAttr('checked');
+			$(container).removeClass('hard-edged-pixels');
 		}
 	}
 	reflectCheckerboardFilter(controller.settings.checkerboardFilter.get());
