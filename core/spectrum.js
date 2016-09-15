@@ -32,12 +32,14 @@ JSSpeccy.Spectrum = function(opts) {
 		display: display,
 		memory: memory,
 		sound: sound,
+		controller: controller,
 		contentionTable: model.contentionTable
 	});
 
 	var processor = JSSpeccy.Z80({
 		memory: memory,
 		ioBus: ioBus,
+		controller: controller,
 		display: display
 	});
 
@@ -45,6 +47,7 @@ JSSpeccy.Spectrum = function(opts) {
 	var startNextFrameWithInterrupt = true;
 
 	self.runFrame = function() {
+
 		display.startFrame();
 		if (startNextFrameWithInterrupt) {
 			processor.requestInterrupt();
@@ -59,6 +62,7 @@ JSSpeccy.Spectrum = function(opts) {
 		processor.reset();
 		memory.reset();
 		sound.reset();
+		if (controller.currentTape!=null) controller.currentTape.stopTape();
 	};
 
 	self.loadSnapshot = function(snapshot) {
@@ -81,6 +85,8 @@ JSSpeccy.Spectrum = function(opts) {
 	JSSpeccy.traps.tapeLoad = function() {
 		if (!controller.currentTape) return true; /* no current tape, so return from trap;
 			resume the trapped instruction */
+		if (controller.currentTape.isTurbo()) return true;
+						
 		var block = controller.currentTape.getNextLoadableBlock();
 		if (!block) return true; /* no loadable blocks on tape, so return from trap */
 

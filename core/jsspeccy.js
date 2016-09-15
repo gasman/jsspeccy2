@@ -256,6 +256,8 @@ function JSSpeccy(container, opts) {
 			var snapshotBuffer = JSSpeccy.autoloaders[currentModel.tapeAutoloader].buffer;
 			var snapshot = JSSpeccy.Z80File(snapshotBuffer);
 			loadSnapshot(snapshot);
+			if (tape.isTurbo()) tape.startTape();
+
 		}
 	}
 

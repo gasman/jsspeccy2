@@ -7,10 +7,15 @@ JSSpeccy.IOBus = function(opts) {
 	var sound = opts.sound;
 	var contentionTable = opts.contentionTable;
 	var contentionTableLength = contentionTable.length;
+	var controller = opts.controller;
+	
+	var glKeyPortMask = 0xbf;
 	
 	self.read = function(addr) {
 		if ((addr & 0x0001) === 0x0000) {
-			return keyboard.poll(addr);
+			var earBit = 0;//
+			if (controller.currentTape!=null && controller.currentTape.getEarBit!=null) earBit = controller.currentTape.getEarBit();
+			return (keyboard.poll(addr) & glKeyPortMask) | earBit;
 		} else if ((addr & 0xc002) == 0xc000) {
 			/* AY chip */
 			return sound.readSoundRegister();
