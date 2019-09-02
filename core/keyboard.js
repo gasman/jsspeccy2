@@ -18,6 +18,7 @@ JSSpeccy.Keyboard = function() {
 		if (keyCode == null) return;
 		keyStates[keyCode.row] &= ~(keyCode.mask);
 		if (keyCode.caps) keyStates[0] &= 0xfe;
+		if (keyCode.sym) keyStates[7] &= 0xfd;
 	}
 	function keyUp(evt) {
 		registerKeyUp(evt.keyCode);
@@ -28,6 +29,7 @@ JSSpeccy.Keyboard = function() {
 		if (keyCode == null) return;
 		keyStates[keyCode.row] |= keyCode.mask;
 		if (keyCode.caps) keyStates[0] |= 0x01;
+		if (keyCode.sym) keyStates[7] |= 0x02;
 	}
 	function keyPress(evt) {
 		if (self.active && !evt.metaKey) return false;
@@ -81,10 +83,19 @@ JSSpeccy.Keyboard = function() {
 		
 		/* shifted combinations */
 		8: {row: 4, mask: 0x01, caps: true}, /* backspace => caps + 0 */
+		9: {row: 7, mask: 0x02, caps: true}, /* tab => caps + sym (ext) */
+		20: {row: 3, mask: 0x02, caps: true}, /* caps lock => caps + 2 */
+		27: {row: 3, mask: 0x01, caps: true}, /* escape => caps + 1 (edit) */
 		37: {row: 3, mask: 0x10, caps: true}, /* left arrow => caps + 5 */
 		38: {row: 4, mask: 0x08, caps: true}, /* up arrow => caps + 7 */
 		39: {row: 4, mask: 0x04, caps: true}, /* right arrow => caps + 8 */
 		40: {row: 4, mask: 0x10, caps: true}, /* down arrow => caps + 6 */
+		
+		/* symbols */
+		59: {row: 5, mask: 0x02, sym: true}, /* ; => sym + O */
+		188: {row: 7, mask: 0x08, sym: true}, /* , => sym + N */
+		190: {row: 7, mask: 0x04, sym: true}, /* . => sym + M */
+		222: {row: 4, mask: 0x08, sym: true}, /* ' => sym + 7 */
 		
 		999: null
 	};
