@@ -6,6 +6,8 @@ JSSpeccy.Memory = function(opts) {
 
 	var noContentionTable = model.noContentionTable;
 	var contentionTable = model.contentionTable;
+	
+	var floatingBus = 255;
 
 	function MemoryPage(data, isContended) {
 		var self = {};

@@ -105,10 +105,12 @@ JSSpeccy.Display = function(opts) {
 			pixels[imageDataPos++] = color;
 			pixels[imageDataPos++] = color;
 			pixels[imageDataPos++] = color;
+			memory.floatingBus = 255;
 		} else {
 			/* main screen area */
 			var pixelByte = memory.readScreen( pixelLineAddress | beamX );
 			var attributeByte = memory.readScreen( attributeLineAddress | beamX );
+			memory.floatingBus = attributeByte;
 			
 			var inkColor, paperColor;
 			if ( (attributeByte & 0x80) && (flashPhase & 0x10) ) {
