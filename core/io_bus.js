@@ -18,7 +18,7 @@ JSSpeccy.IOBus = function(opts) {
 			/* kempston joystick */
 			return 0;
 		} else {
-			return 0xff;
+			return memory.floatingBus;
 		}
 	};
 	self.write = function(addr, val, tstates) {
